@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+cloudflared.exe
+scratch/
+.env
+.idea/
+.vscode/
+templates/mobile_app.backup.html
+*.db.bak

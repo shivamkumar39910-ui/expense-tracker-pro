@@ -1,0 +1,43 @@
+{
+  "name": "Expense Tracker Pro 2.0",
+  "short_name": "ExpensePro",
+  "description": "Mobile Personal Finance, Forecasting & Multi-Wallet Manager",
+  "start_url": "/mobile",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/static/icons/icon.svg",
+      "sizes": "512x512 192x192 128x128 64x64",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Transaction",
+      "short_name": "Add",
+      "description": "Quickly record a new expense or income",
+      "url": "/mobile?action=new_expense",
+      "icons": [{ "src": "/static/icons/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Wallets & Accounts",
+      "short_name": "Wallets",
+      "description": "View account balances and transfers",
+      "url": "/mobile?tab=wallets",
+      "icons": [{ "src": "/static/icons/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Financial Insights",
+      "short_name": "Insights",
+      "description": "Check monthly forecast and anomaly detection",
+      "url": "/mobile?tab=insights",
+      "icons": [{ "src": "/static/icons/icon.svg", "sizes": "192x192" }]
+    }
+  ]
+}

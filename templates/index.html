@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home | Expense Tracker Pro
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- Hero Section -->
+
+    <div class="hero">
+
+        <h1>💰 Expense Tracker Pro</h1>
+
+        <p>
+            Manage your daily expenses, visualize spending trends,
+            and make smarter financial decisions with beautiful analytics.
+        </p>
+
+        <div class="home-buttons">
+
+            <a href="/add" class="btn">
+                ➕ Add Expense
+            </a>
+
+            <a href="/analysis" class="btn">
+                📊 View Analytics
+            </a>
+
+        </div>
+
+    </div>
+
+    <section class="features">
+
+        <div class="feature-card">
+
+            <h2>📈</h2>
+
+            <h3>Analytics</h3>
+
+            <p>
+            Beautiful charts and category-wise insights.
+            </p>
+
+        </div>
+
+       <div class="feature-card">
+
+            <h2>⚡</h2>
+
+            <h3>Fast Tracking</h3>
+
+            <p>
+            Add and manage expenses in just a few clicks.
+            </p>
+
+        </div>
+
+        <div class="feature-card">
+
+            <h2>🛡</h2>
+
+            <h3>Organized</h3>
+
+            <p>
+            Keep all your expenses categorized and easy to manage.
+            </p>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

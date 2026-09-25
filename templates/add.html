@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}
+Add Expense | Expense Tracker Pro
+{% endblock %}
+
+{% block content %}
+
+<div class="form-container">
+
+    <h1>➕ Add New Expense</h1>
+
+    <p class="form-subtitle">
+    Track every rupee wisely and build better financial habits.
+    </p>
+
+    {% if msg %}
+        <p class="success">{{ msg }}</p>
+    {% endif %}
+
+    <form method="POST">
+
+        <label>Category</label>
+
+        <select id="category" name="category" onchange="updateSubcategory()">
+
+            <option value="">Select Category</option>
+
+            <option value="food">Food</option>
+            <option value="travel">Travel</option>
+            <option value="education">Education</option>
+            <option value="house/room rent">House/Room Rent</option>
+            <option value="health/medical">Health/Medical</option>
+            <option value="lifestyle">Lifestyle</option>
+            <option value="bills">Bills</option>
+            <option value="social/other costs">Social/Other Costs</option>
+
+        </select>
+
+        <label>Subcategory</label>
+
+        <select id="subcategory" name="subcategory">
+
+            <option value="">Select Subcategory</option>
+
+        </select>
+
+        <label>Amount</label>
+
+        <input type="number"
+               name="amount"
+               placeholder="Enter amount"
+               required>
+
+        <div class="form-buttons">
+
+            <button type="submit" class="save-btn">
+                💾 Save Expense
+            </button>
+
+            <a href="/" class="back-btn">
+                ← Back
+            </a>
+
+        </div>
+
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+function updateSubcategory(){
+
+    const category = document.getElementById("category").value;
+    const subcategory = document.getElementById("subcategory");
+
+    let options = [];
+
+    if(category==="food"){
+        options=["Groceries","Breakfast","Lunch","Dinner"];
+    }
+
+    else if(category==="travel"){
+        options=["Bike","Car","Bus","Train","Airplane"];
+    }
+
+    else if(category==="education"){
+        options=["School Fee","College Fee","Coaching","Books"];
+    }
+
+    else if(category==="house/room rent"){
+        options=["Room Rent","House Rent","Maintenance","Home Loan EMI"];
+    }
+
+    else if(category==="health/medical"){
+        options=["Medicine","Doctor Visit","Insurance","Hospital"];
+    }
+
+    else if(category==="lifestyle"){
+        options=["Shopping","Entertainment","Gym","Salon"];
+    }
+
+    else if(category==="bills"){
+        options=["Electricity","Water","Internet","Mobile Recharge","Gas"];
+    }
+
+    else if(category==="social/other costs"){
+        options=["Gift","Donation","Subscription","Festival"];
+    }
+
+    subcategory.innerHTML =
+    '<option value="">Select Subcategory</option>';
+
+    options.forEach(function(item){
+
+        let option=document.createElement("option");
+
+        option.value=item;
+
+        option.text=item;
+
+        subcategory.appendChild(option);
+
+    });
+
+}
+
+</script>
+
+{% endblock %}

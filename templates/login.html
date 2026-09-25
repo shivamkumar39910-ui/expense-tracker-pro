@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}
+Login
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>🔐 Login</h1>
+
+    <p style="text-align:center;color:#6b7280;margin-bottom:25px;">
+        Login to your Expense Tracker account.
+    </p>
+
+    <form method="POST">
+
+        <label>Email</label>
+
+        <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required>
+
+        <label>Password</label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            required>
+
+        <button type="submit" class="btn btn-primary">
+            🔑 Login
+        </button>
+
+    </form>
+
+    <p style="text-align:center;margin-top:20px;">
+        Don't have an account?
+        <a href="/signup">Create Account</a>
+    </p>
+
+</div>
+
+{% endblock %}

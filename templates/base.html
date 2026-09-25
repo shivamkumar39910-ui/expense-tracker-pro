@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Expense Tracker Pro{% endblock %}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+    
+    <!-- Navigation Bar -->
+
+    <nav class="navbar">
+
+        <div class="logo">
+            💰 Expense Tracker Pro
+        </div>
+
+        <ul>
+
+            <li><a href="/">Home</a></li>
+
+{% if session.get("user_id") %}
+
+    <li>
+        <a href="/">
+            👋 {{ session["user_name"] }}
+        </a>
+    </li>
+
+    <li><a href="/add">Add Expense</a></li>
+
+    <li><a href="/analysis">Analytics</a></li>
+
+    <a href="/profile">Profile</a>
+
+    <li><a href="/logout">Logout</a></li>
+
+{% else %}
+
+    <li><a href="/login">Login</a></li>
+
+    <li><a href="/signup">Signup</a></li>
+
+{% endif %}
+
+            <li>
+                <button id="themeToggleBtn" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s;">
+                    🌙 Dark Mode
+                </button>
+            </li>
+
+        </ul>
+
+    </nav>
+
+    <!-- Global Toast Container -->
+    <div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <!-- Page Content -->
+
+    <main>
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+    <!-- Footer -->
+
+    <footer>
+
+    <p>Made with ❤️ using Python • Flask • HTML • CSS • JavaScript • Chart.js</p>
+
+    <p>© 2026 Expense Tracker Pro</p>
+
+</footer>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<script>
+    // Dark Mode Theme Switcher
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    if (themeToggleBtn) {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            document.body.classList.add("dark-mode");
+            themeToggleBtn.innerText = "☀️ Light Mode";
+        }
+
+        themeToggleBtn.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            const isDark = document.body.classList.contains("dark-mode");
+            localStorage.setItem("theme", isDark ? "dark" : "light");
+            themeToggleBtn.innerText = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+        });
+    }
+
+    // Global Toast Notification System
+    function showToast(message, type = "info") {
+        const container = document.getElementById("toastContainer");
+        if (!container) return;
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.style.cssText = `
+            background: ${type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : '#2563eb')};
+            color: white; padding: 12px 20px; border-radius: 12px; font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); font-size: 14px; transition: all 0.3s ease; opacity: 0; transform: translateY(10px);
+        `;
+        toast.innerText = message;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = "1"; toast.style.transform = "translateY(0)"; }, 50);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateY(10px)";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+
+{% block scripts %}
+{% endblock %}
+
+</body>
+</html>

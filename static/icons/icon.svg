@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+  </defs>
+  <!-- Background Rounded Rect -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <!-- Outer Glow Ring -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" />
+  
+  <!-- Financial Growth Chart Polyline -->
+  <path d="M 110 350 L 190 270 L 270 310 L 390 160" fill="none" stroke="url(#glow)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Dot at end of peak -->
+  <circle cx="390" cy="160" r="18" fill="#10B981" />
+  
+  <!-- Rupee / Currency Brand Glyph -->
+  <path d="M 190 170 L 290 170 M 190 205 L 280 205 M 190 170 L 190 260 C 230 260 255 240 255 210 C 255 170 215 170 190 170 Z M 225 245 L 285 330" 
+        fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" />
+</svg>

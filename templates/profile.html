@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}
+Profile
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="profile-card">
+
+        <h1>👤 My Profile</h1>
+
+        <p><strong>Name:</strong> {{ user[0] }}</p>
+
+        <p><strong>Email:</strong> {{ user[1] }}</p>
+
+        <hr>
+
+        <p><strong>Total Expenses:</strong> ₹{{ total_expense }}</p>
+
+        <p><strong>Total Transactions:</strong> {{ total_transactions }}</p>
+
+        <a href="/edit-profile">
+            <button>✏ Edit Profile</button>
+        </a>
+
+        <br>
+
+        <a href="/change-password">
+            <button>🔒 Change Password</button>
+        </a>
+        <br><br>
+
+        <button onclick="location.href='/set-budget'">
+            💰 Set Monthly Budget
+        </button>
+
+    </div>
+
+</div>
+
+{% endblock %}

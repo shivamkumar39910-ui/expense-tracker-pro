@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}
+Edit Expense
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <h1>✏ Edit Expense</h1>
+
+    <p style="text-align:center;color:#6b7280;margin-bottom:25px;">
+    Update your expense details.
+    </p>
+
+    <form method="POST">
+
+        <label>Category</label>
+
+        <input
+            type="text"
+            name="category"
+            value="{{ expense.category }}"
+            required>
+
+        <label>Subcategory</label>
+
+        <input
+            type="text"
+            name="subcategory"
+            value="{{ expense.subcategory }}"
+            required>
+
+        <label>Amount</label>
+
+        <input
+            type="number"
+            name="amount"
+            value="{{ expense.amount }}"
+            required>
+
+        <div class="edit-page-buttons">
+
+            <button type="submit" class="edit-btn">
+                💾 Update Expense
+            </button>
+
+            <br>
+
+            <a href="/" class="btn btn-secondary">
+                ← Back
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+ 
+
+{% endblock %}

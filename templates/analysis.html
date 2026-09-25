@@ -1,0 +1,1360 @@
+{% extends "base.html" %}
+
+{% block title %}
+Expense Analytics | Expense Tracker Pro
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- Dashboard Header -->
+
+    <div class="dashboard-header">
+
+        <h1>📊 Expense Dashboard</h1>
+
+        <p>
+            Track your expenses, monitor monthly trends,
+            and gain financial insights.
+        </p>
+
+    </div>
+
+
+    <!-- Stats Cards -->
+
+    <div class="stats-container">
+
+        <div class="stat-card">
+
+            <h3>💰 Total Expense</h3>
+
+            <h2 id="statTotalExpense">₹{{ total }}</h2>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>🧾 Transactions</h3>
+
+            <h2 id="statTransactionCount">{{ transaction_count }}</h2>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>📊 Avg Transaction</h3>
+
+            <h2 id="statAverageTransaction">₹{{ "%.2f"|format(avg_transaction) }}</h2>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>📅 Daily Average</h3>
+
+            <h2 id="statDailyAvg">₹{{ "%.2f"|format(daily_avg) }}</h2>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>📂 Categories</h3>
+
+            <h2 id="statCategoryCount">{{ category_count }}</h2>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>🏆 Highest Category</h3>
+
+            <h2 id="statHighestCategory">{{ highest_category.title() }}</h2>
+
+            <p id="statHighestAmount">₹{{ highest_amount }}</p>
+
+        </div>
+
+    </div>
+
+    <div class="budget-card">
+
+        <h2>💰 Monthly Budget</h2>
+
+        <div class="budget-info">
+
+        <p>
+            <strong>Budget:</strong>
+            ₹{{ "%.2f"|format(budget) }}
+        </p>
+
+        <p>
+            <strong>Spent:</strong>
+            ₹{{ "%.2f"|format(spent) }}
+        </p>
+
+        <p>
+            <strong>Remaining:</strong>
+            ₹{{ "%.2f"|format(remaining) }}
+        </p>
+
+    </div>
+
+        {% if budget > 0 %}
+
+            {% set percentage = (spent / budget * 100) %}
+
+            {% if percentage > 100 %}
+                {% set display_percentage = 100 %}
+            {% else %}
+                {% set display_percentage = percentage %}
+            {% endif %}
+
+            <div class="budget-usage">
+
+                <div class="budget-usage-header">
+                    <strong>Budget Usage</strong>
+
+                    <span class="usage-badge">
+                    {{ usage_percentage }}% Used
+                    </span>
+                </div>
+
+                <div class="budget-progress">
+                    <div
+                        class="budget-fill"
+                        data-width="{{ usage_percentage }}">
+                    </div>
+                </div>
+
+            </div>
+        {% else %}
+
+            <p class="no-budget">
+                No budget set for this month.
+            </p>
+
+        {% endif %}
+
+        <p class="budget-status">
+            <strong>Status:</strong> {{ status }}
+        </p>
+
+    </div>
+
+    <!-- Month-over-Month Comparison Card -->
+    <div class="budget-card" style="margin-top: 25px;">
+        <h2>📈 Month-over-Month (MoM) Comparison</h2>
+        <div class="budget-info">
+            <p>
+                <strong>This Month:</strong>
+                ₹{{ "%.2f"|format(spent) }}
+            </p>
+            <p>
+                <strong>Last Month:</strong>
+                ₹{{ "%.2f"|format(prev_month_spent) }}
+            </p>
+            <p>
+                <strong>MoM Trend:</strong>
+                {% if prev_month_spent == 0 %}
+                    <span style="color: #6b7280; font-weight: bold;">No Previous Data</span>
+                {% elif mom_change > 0 %}
+                    <span style="color: #ef4444; font-weight: bold;">▲ +{{ mom_change }}% Increase</span>
+                {% elif mom_change < 0 %}
+                    <span style="color: #10b981; font-weight: bold;">▼ {{ mom_change }}% Decrease</span>
+                {% else %}
+                    <span style="color: #2563eb; font-weight: bold;">0% Change</span>
+                {% endif %}
+            </p>
+        </div>
+        <p class="budget-status" style="margin-top: 12px; font-size: 0.95rem;">
+            💡 <strong>Insight:</strong>
+            {% if prev_month_spent == 0 %}
+                First active tracking month recorded for comparison.
+            {% elif mom_change > 0 %}
+                Your total expenditure increased by {{ mom_change }}% compared to last month.
+            {% elif mom_change < 0 %}
+                Great work! Your spending decreased by {{ (mom_change * -1) }}% compared to last month.
+            {% else %}
+                Your spending this month is identical to last month.
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Next Month Expense Forecast Card -->
+    <div class="budget-card" style="margin-top: 25px; background: linear-gradient(135deg, #1e1b4b, #312e81); color: white; border-radius: 22px; padding: 30px;">
+        <h2>🔮 Next-Month Expense Forecast</h2>
+        <div class="budget-info" style="margin-top: 15px;">
+            <p>
+                <strong>Estimated Spend:</strong>
+                <span style="font-size: 1.5rem; color: #38bdf8; font-weight: bold;">₹{{ "%.2f"|format(forecast.forecast) }}</span>
+            </p>
+            <p>
+                <strong>Expected Range:</strong>
+                ₹{{ "%.2f"|format(forecast.lower_bound) }} – ₹{{ "%.2f"|format(forecast.upper_bound) }}
+            </p>
+            <p>
+                <strong>Trend Trajectory:</strong>
+                {% if forecast.trend == 'Increasing' %}
+                    <span style="color: #f87171; font-weight: bold;">▲ Spending Increasing</span>
+                {% elif forecast.trend == 'Decreasing' %}
+                    <span style="color: #4ade80; font-weight: bold;">▼ Spending Decreasing</span>
+                {% else %}
+                    <span style="color: #93c5fd; font-weight: bold;">➡️ Stable Baseline</span>
+                {% endif %}
+            </p>
+        </div>
+        <p class="budget-status" style="margin-top: 16px; font-size: 0.88rem; color: #c7d2fe; background: rgba(255,255,255,0.08); padding: 12px 16px; border-radius: 12px; line-height: 1.5;">
+            🤖 <strong>Model Logic:</strong> {{ forecast.model_type }} | <strong>Confidence:</strong> {{ forecast.confidence }}<br>
+            <span style="font-size: 0.82rem; opacity: 0.85;">*Note: Statistical forecast based on historical weighted moving averages. Excludes non-recurring emergency spend.</span>
+        </p>
+    </div>
+
+    <!-- Anomaly Detection Radar -->
+    {% if anomalies %}
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <h2 class="section-title">
+            🚨 Spending Anomaly Radar
+        </h2>
+        <div class="insights-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            {% for a in anomalies %}
+            <div class="insight-card" style="padding: 20px; border-radius: 16px; background: #fff5f5; border-left: 5px solid #ef4444; box-shadow: 0 10px 25px rgba(239,68,68,0.08);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #991b1b; font-size: 1.1rem;">⚠️ Spiking Transaction</span>
+                    <span style="background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem;">₹{{ "%.2f"|format(a.amount) }}</span>
+                </div>
+                <p style="color: #7f1d1d; font-size: 0.95rem; margin: 4px 0;"><strong>Category:</strong> {{ a.category.title() }} ({{ a.subcategory.title() }})</p>
+                <p style="color: #7f1d1d; font-size: 0.95rem; margin: 4px 0;"><strong>Date:</strong> {{ a.date }}</p>
+                <p style="color: #991b1b; font-size: 0.9rem; margin-top: 8px; background: #fef2f2; padding: 8px 12px; border-radius: 8px;">💡 {{ a.reason }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Smart Insights Section -->
+    <div class="dashboard-section">
+        <h2 class="section-title">
+            💡 Smart Financial Insights
+        </h2>
+        <div class="insights-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            {% for insight in smart_insights %}
+            <div class="insight-card insight-{{ insight.type }}" style="padding: 20px; border-radius: 16px; background: white; border-left: 5px solid {% if insight.type == 'danger' %}#ef4444{% elif insight.type == 'warning' %}#f59e0b{% elif insight.type == 'success' %}#10b981{% else %}#2563eb{% endif %}; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-size: 1.5rem;">{{ insight.icon }}</span>
+                    <strong style="font-size: 1.1rem; color: #1e293b;">{{ insight.title }}</strong>
+                </div>
+                <p style="color: #475569; font-size: 0.95rem; margin: 0;">{{ insight.message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- AI Financial Mentor Card -->
+    {% if ai_insights %}
+    <div class="dashboard-section" style="margin-top: 30px;">
+        <h2 class="section-title">
+            🤖 AI Financial Mentor & Executive Summary
+        </h2>
+        <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 24px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 12px 30px rgba(37,99,235,0.18);">
+            <h3 style="margin-bottom: 10px; font-size: 1.2rem;">📝 Executive Financial Overview</h3>
+            <p style="font-size: 1.02rem; line-height: 1.6; opacity: 0.95; margin: 0;">{{ ai_insights.summary }}</p>
+        </div>
+        <div class="insights-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            {% for rec in ai_insights.recommendations %}
+            <div style="background: white; padding: 22px; border-radius: 18px; border-top: 4px solid #2563eb; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: #1e293b; font-size: 1.05rem;">{{ rec.title }}</strong>
+                    <span style="background: #e0e7ff; color: #3730a3; padding: 3px 10px; border-radius: 12px; font-weight: bold; font-size: 0.78rem;">{{ rec.tag }}</span>
+                </div>
+                <p style="color: #475569; font-size: 0.95rem; line-height: 1.5; margin: 0;">{{ rec.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; margin-top: 14px;">
+            *AI recommendations analyze actual historical spending patterns for guidance and financial awareness only.
+        </p>
+    </div>
+    {% endif %}
+
+
+    <!-- Category Ranking -->
+
+    <div class="dashboard-section">
+
+        <h2 class="section-title">
+
+            📊 Category-wise Ranking
+
+        </h2>
+
+        <div class="expense-list" id="categoryRankingList">
+
+            {% for cat, amt in data.items() %}
+
+            <div class="expense-item">
+
+                <strong>{{ loop.index }}.</strong>
+
+                {{ cat.title() }}
+
+                <span style="float:right;">₹{{ amt }}</span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <!-- Doughnut Chart -->
+
+    <div class="dashboard-section">
+
+        <h2 class="section-title">
+
+            🍩 Expense Distribution
+
+        </h2>
+
+        <div class="chart-box">
+
+            <canvas id="myChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- Monthly Trend -->
+
+    <div class="dashboard-section">
+
+        <h2 class="section-title">
+
+            📈 Monthly Expense Trend
+
+        </h2>
+
+        <div class="chart-box">
+
+            <canvas id="monthlyChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- Top Spending -->
+
+    <div class="dashboard-section">
+
+        <h2 class="section-title">
+
+            📊 Top Spending Categories
+
+        </h2>
+
+        <div class="chart-box">
+
+            <canvas id="rankingChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- Daily Spending Trend -->
+
+    <div class="dashboard-section">
+
+        <h2 class="section-title">
+
+            📅 Daily Spending Trend
+
+        </h2>
+
+        <div class="chart-box">
+
+            <canvas id="dailyTrendChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- Recent Transactions -->
+
+        <div class="dashboard-section">
+
+    <div class="transaction-header">
+
+        <h2 class="section-title">
+            🧾 Recent Transactions
+        </h2>
+
+        <div class="export-buttons">
+
+            <button id="exportPDF" class="export-btn">
+                📄 PDF
+            </button>
+
+            <button onclick="window.print()" class="export-btn">
+                🖨 Print
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="filter-bar">
+
+        <!-- Search -->
+
+        <div class="search-box">
+
+            <span>🔍</span>
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by date, category, subcategory or amount..."
+            >
+
+        </div>
+
+        <!-- Category -->
+
+        <select id="categoryFilter">
+
+            <option value="">📂 All Categories</option>
+
+            {% for cat in all_categories %}
+            <option value="{{cat}}">
+                {{cat}}
+            </option>
+            {% endfor %}
+
+        </select>
+
+        <!-- Quick Date Range -->
+        <select id="quickDateFilter">
+            <option value="all">🌐 All Time</option>
+            <option value="this_month">📅 This Month</option>
+            <option value="last_month">⏮ Last Month</option>
+            <option value="last_30_days">⏱ Last 30 Days</option>
+            <option value="custom">🛠 Custom Range</option>
+        </select>
+
+        <!-- Custom Date Range Inputs -->
+        <div id="customDateContainer" style="display: none; align-items: center; gap: 8px;">
+            <input type="date" id="fromDateInput" style="padding: 10px 14px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 14px; background: white;">
+            <span style="font-weight: bold; color: #64748b;">to</span>
+            <input type="date" id="toDateInput" style="padding: 10px 14px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 14px; background: white;">
+        </div>
+
+        <!-- Single Date -->
+
+        <select id="dateFilter">
+
+            <option value="">📅 Exact Date</option>
+
+            {% for d in all_dates %}
+            <option value="{{d}}">
+                {{d}}
+            </option>
+            {% endfor %}
+
+        </select>
+
+        <!-- Sort -->
+
+        <select id="sortFilter">
+
+            <option value="newest">⬇ Newest First</option>
+
+            <option value="oldest">⬆ Oldest First</option>
+
+            <option value="high">💰 Highest Amount</option>
+
+            <option value="low">💸 Lowest Amount</option>
+
+        </select>
+
+    </div>
+
+        <div class="transaction-table">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>S.No.</th>
+
+                        <th>Date</th>
+
+                        <th>Category</th>
+
+                        <th>Subcategory</th>
+
+                        <th>Amount</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="transactionBody">
+
+                    {% for item in transactions %}
+
+                    <tr class="transaction-row">
+
+                        <td>{{ loop.index }}</td>
+
+                        <td>{{ item.date }}</td>
+
+                        <td>{{ item.category }}</td>
+
+                        <td>{{ item.subcategory }}</td>
+
+                        <td>₹{{ item.amount }}</td>
+
+                        <td>
+
+                            <div class="action-buttons">
+
+                                <a href="/edit/{{ item.id }}" class="edit-btn">
+
+                                    ✏️
+
+                                </a>
+
+                                <a href="/delete/{{ item.id }}"
+                                   class="btn btn-danger"
+                                   onclick="return deleteExpense(event, this)">
+
+                                    🗑 Delete
+
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- Back Button -->
+
+    <div style="text-align:center;margin:40px 0;">
+
+        <a href="/" class="btn">
+
+            ⬅ Back to Home
+
+        </a>
+
+    </div>
+
+</div>
+
+<script>
+    const budgetFill = document.querySelector(".budget-fill");
+
+    if (budgetFill) {
+        let percentage = parseFloat(budgetFill.dataset.width) || 0;
+
+        // Progress bar maximum 100% rahegi
+        percentage = Math.min(percentage, 100);
+
+        budgetFill.style.width = percentage + "%";
+    }
+</script>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+
+// Full raw transaction objects passed from Flask
+const allTransactions = JSON.parse('{{ transactions | tojson | safe }}');
+
+// Global Chart.js instances for smooth updates
+let doughnutChart;
+let monthlyTrendChart;
+let topCategoryChart;
+let dailyTrendChart;
+
+// Helper: Format currency in Indian format
+function formatCurrency(num) {
+    return "₹" + Number(num).toLocaleString("en-IN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+}
+
+// Helper: Format Month-Year string from "YYYY-MM-DD"
+function getMonthYearStr(dateStr) {
+    if (!dateStr) return "";
+    const parts = dateStr.split("-");
+    if (parts.length < 3) return "";
+    const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    return dateObj.toLocaleString("en-US", { month: "short" }) + " " + dateObj.getFullYear();
+}
+
+const data = JSON.parse('{{ data | tojson | safe }}');
+const monthlyData = JSON.parse('{{ monthly_data | tojson | safe }}');
+
+
+
+// ======================
+// Doughnut Chart
+// ======================
+
+const labels = Object.keys(data);
+const values = Object.values(data);
+
+const ctx = document.getElementById("myChart");
+
+doughnutChart = new Chart(ctx, {
+
+    type:"doughnut",
+
+    data: {
+
+        labels: labels,
+
+        datasets: [{
+
+            data: values,
+
+            borderWidth:2,
+
+            borderColor:"#ffffff",
+
+            hoverOffset:18,
+
+            backgroundColor:[
+
+                "#2563EB",
+                "#10B981",
+                "#F59E0B",
+                "#EF4444",
+                "#8B5CF6",
+                "#06B6D4",
+                "#EC4899",
+                "#84CC16"
+
+            ]
+
+        }]
+
+    },
+
+    options:{
+
+        responsive:true,
+
+        maintainAspectRatio:false,
+
+        cutout:"65%",
+
+        animation:{
+
+            animateRotate:true,
+
+            animateScale:true,
+
+            duration:1800
+
+        },
+
+        plugins:{
+
+            legend:{
+
+                position:"right",
+
+                labels:{
+
+                    padding:20,
+
+                    font:{
+
+                        size:14
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+});
+
+
+
+// ======================
+// Monthly Expense Chart
+// ======================
+
+const monthCtx = document.getElementById("monthlyChart");
+
+monthlyTrendChart = new Chart(monthCtx,{
+
+    type:"bar",
+
+    data:{
+
+        labels:Object.keys(monthlyData),
+
+        datasets:[{
+
+label:"Expense",
+
+data:Object.values(monthlyData),
+
+backgroundColor:[
+"#3b82f6",
+"#60a5fa",
+"#93c5fd",
+"#2563eb",
+"#1d4ed8",
+"#1e40af"
+],
+
+borderRadius:20,
+
+borderSkipped:false,
+
+barPercentage:0.6,
+
+categoryPercentage:0.6
+
+}]
+
+    },
+
+    options:{
+
+        responsive:true,
+
+        maintainAspectRatio:false,
+
+        animation:{
+
+            duration:1800
+
+        },
+
+        plugins:{
+
+            legend:{
+
+                display:false
+
+            }
+
+        },
+
+        scales:{
+
+x:{
+
+grid:{
+display:false
+},
+
+ticks:{
+
+font:{
+size:14,
+weight:"bold"
+}
+
+}
+
+},
+
+y:{
+
+beginAtZero:true,
+
+grid:{
+
+color:"rgba(0,0,0,.08)"
+
+},
+
+ticks:{
+
+callback:function(value){
+
+return "₹"+value;
+
+}
+
+}
+
+}
+
+}
+
+    }
+
+});
+
+const rankingCtx = document.getElementById("rankingChart");
+
+topCategoryChart = new Chart(rankingCtx, {
+
+    type: "bar",
+
+    data: {
+
+        labels: labels,
+
+        datasets: [{
+
+            label: "Expense",
+
+            data: values,
+
+            backgroundColor: [
+                "#2563EB",
+                "#10B981",
+                "#F59E0B",
+                "#EF4444",
+                "#8B5CF6",
+                "#06B6D4",
+                "#EC4899"
+            ],
+
+            borderRadius: 12
+
+        }]
+
+    },
+
+    options: {
+
+        indexAxis: "y",
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            legend: {
+
+                display: false
+
+            }
+
+        },
+
+        scales: {
+
+            x: {
+
+                beginAtZero: true,
+
+                ticks: {
+
+                    callback: function(value){
+
+                        return "₹" + value;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+});
+
+// Daily Spending Trend Line Chart
+const dailyCtx = document.getElementById("dailyTrendChart");
+if (dailyCtx) {
+    const dailyTotals = {};
+    const sortedByDate = [...allTransactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+    sortedByDate.forEach(item => {
+        dailyTotals[item.date] = (dailyTotals[item.date] || 0) + item.amount;
+    });
+
+    dailyTrendChart = new Chart(dailyCtx, {
+        type: "line",
+        data: {
+            labels: Object.keys(dailyTotals),
+            datasets: [{
+                label: "Daily Spend",
+                data: Object.values(dailyTotals),
+                borderColor: "#2563EB",
+                backgroundColor: "rgba(37, 99, 235, 0.12)",
+                fill: true,
+                tension: 0.35,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointBackgroundColor: "#2563EB"
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(0,0,0,.08)" },
+                    ticks: { callback: function(val) { return "₹" + val; } }
+                }
+            }
+        }
+    });
+}
+
+// 2. Shared Filter Pipeline (Phase 2 Advanced Range Filtering)
+function getFilteredTransactions() {
+    const searchVal = document.getElementById("searchInput").value.toLowerCase().trim();
+    const categoryVal = document.getElementById("categoryFilter").value.toLowerCase().trim();
+    const dateVal = document.getElementById("dateFilter").value.trim();
+    const quickRange = document.getElementById("quickDateFilter").value;
+    const fromDate = document.getElementById("fromDateInput").value;
+    const toDate = document.getElementById("toDateInput").value;
+    const sortVal = document.getElementById("sortFilter").value;
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let filtered = allTransactions.filter(item => {
+        const itemDate = new Date(item.date + 'T00:00:00');
+
+        // Quick Range Logic
+        let rangeMatch = true;
+        if (quickRange === "this_month") {
+            rangeMatch = itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+        } else if (quickRange === "last_month") {
+            const prevM = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevY = currentMonth === 0 ? currentYear - 1 : currentYear;
+            rangeMatch = itemDate.getMonth() === prevM && itemDate.getFullYear() === prevY;
+        } else if (quickRange === "last_30_days") {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(now.getDate() - 30);
+            rangeMatch = itemDate >= thirtyDaysAgo && itemDate <= now;
+        } else if (quickRange === "custom") {
+            if (fromDate && item.date < fromDate) rangeMatch = false;
+            if (toDate && item.date > toDate) rangeMatch = false;
+        }
+
+        const textMatch = !searchVal || 
+            item.date.toLowerCase().includes(searchVal) ||
+            item.category.toLowerCase().includes(searchVal) ||
+            item.subcategory.toLowerCase().includes(searchVal) ||
+            item.amount.toString().includes(searchVal);
+
+        const categoryMatch = !categoryVal || item.category.toLowerCase() === categoryVal;
+        const dateMatch = !dateVal || item.date === dateVal;
+
+        return rangeMatch && textMatch && categoryMatch && dateMatch;
+    });
+
+    // Apply Sorting
+    if (sortVal === "high") {
+        filtered.sort((a, b) => b.amount - a.amount);
+    } else if (sortVal === "low") {
+        filtered.sort((a, b) => a.amount - b.amount);
+    } else if (sortVal === "newest") {
+        filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } else if (sortVal === "oldest") {
+        filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    return filtered;
+}
+
+// 3. Synchronize Stat Cards & Ranking List
+function updateStats(filtered) {
+    const totalExp = filtered.reduce((sum, item) => sum + item.amount, 0);
+
+    const catTotals = {};
+    const monthTotals = {};
+
+    filtered.forEach(item => {
+        const cat = item.category;
+        catTotals[cat] = (catTotals[cat] || 0) + item.amount;
+
+        const mKey = getMonthYearStr(item.date);
+        if (mKey) {
+            monthTotals[mKey] = (monthTotals[mKey] || 0) + item.amount;
+        }
+    });
+
+    const categories = Object.keys(catTotals);
+    const categoryCount = categories.length;
+
+    let highestCat = "None";
+    let highestAmt = 0;
+
+    categories.forEach(cat => {
+        if (catTotals[cat] > highestAmt) {
+            highestAmt = catTotals[cat];
+            highestCat = cat;
+        }
+    });
+
+    // Metrics Calculations
+    const txCount = filtered.length;
+    const avgTx = txCount > 0 ? totalExp / txCount : 0;
+    const uniqueDates = new Set(filtered.map(i => i.date));
+    const dailyAvg = uniqueDates.size > 0 ? totalExp / uniqueDates.size : 0;
+
+    // Update DOM Stat Cards
+    const totalElem = document.getElementById("statTotalExpense");
+    if (totalElem) totalElem.innerText = formatCurrency(totalExp);
+
+    const txCountElem = document.getElementById("statTransactionCount");
+    if (txCountElem) txCountElem.innerText = txCount;
+
+    const avgTxElem = document.getElementById("statAverageTransaction");
+    if (avgTxElem) avgTxElem.innerText = formatCurrency(avgTx);
+
+    const dailyAvgElem = document.getElementById("statDailyAvg");
+    if (dailyAvgElem) dailyAvgElem.innerText = formatCurrency(dailyAvg);
+
+    const countElem = document.getElementById("statCategoryCount");
+    if (countElem) countElem.innerText = categoryCount;
+
+    const highestCatElem = document.getElementById("statHighestCategory");
+    if (highestCatElem) highestCatElem.innerText = highestCat;
+
+    const highestAmtElem = document.getElementById("statHighestAmount");
+    if (highestAmtElem) highestAmtElem.innerText = formatCurrency(highestAmt);
+
+    // Update Category-wise Ranking List HTML
+    const rankingContainer = document.getElementById("categoryRankingList");
+    if (rankingContainer) {
+        if (categories.length === 0) {
+            rankingContainer.innerHTML = '<p class="no-budget">No category data matches the selected filter.</p>';
+        } else {
+            const sortedCats = Object.entries(catTotals).sort((a, b) => a[1] - b[1]);
+            let html = "";
+            sortedCats.forEach(([cat, amt], idx) => {
+                html += `
+                <div class="expense-item">
+                    <strong>${idx + 1}.</strong> ${cat}
+                    <span style="float:right;">₹${amt}</span>
+                </div>`;
+            });
+            rankingContainer.innerHTML = html;
+        }
+    }
+
+    return { catTotals, monthTotals };
+}
+
+// 4. Update Charts Datasets
+function updateCharts(catTotals, monthTotals, filtered) {
+    const catLabels = Object.keys(catTotals);
+    const catValues = Object.values(catTotals);
+
+    // Doughnut Chart
+    if (doughnutChart) {
+        doughnutChart.data.labels = catLabels;
+        doughnutChart.data.datasets[0].data = catValues;
+        doughnutChart.update();
+    }
+
+    // Monthly Trend Chart
+    if (monthlyTrendChart) {
+        monthlyTrendChart.data.labels = Object.keys(monthTotals);
+        monthlyTrendChart.data.datasets[0].data = Object.values(monthTotals);
+        monthlyTrendChart.update();
+    }
+
+    // Top Category Chart
+    if (topCategoryChart) {
+        topCategoryChart.data.labels = catLabels;
+        topCategoryChart.data.datasets[0].data = catValues;
+        topCategoryChart.update();
+    }
+
+    // Daily Spending Trend Chart
+    if (dailyTrendChart && filtered) {
+        const dailyTotals = {};
+        const sortedByDate = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedByDate.forEach(item => {
+            dailyTotals[item.date] = (dailyTotals[item.date] || 0) + item.amount;
+        });
+        dailyTrendChart.data.labels = Object.keys(dailyTotals);
+        dailyTrendChart.data.datasets[0].data = Object.values(dailyTotals);
+        dailyTrendChart.update();
+    }
+}
+
+// 5. Update Transaction Table
+function updateTable(filtered) {
+    const tbody = document.getElementById("transactionBody");
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align:center; padding: 20px; color: #6b7280;">
+                    No transactions match your criteria.
+                </td>
+            </tr>`;
+        return;
+    }
+
+    let html = "";
+    filtered.forEach((item, index) => {
+        html += `
+            <tr class="transaction-row">
+                <td>${index + 1}</td>
+                <td>${item.date}</td>
+                <td>${item.category}</td>
+                <td>${item.subcategory}</td>
+                <td>₹${item.amount}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="/edit/${item.id}" class="edit-btn">✏️</a>
+                        <a href="/delete/${item.id}" class="btn btn-danger" onclick="return deleteExpense(event, this)">🗑 Delete</a>
+                    </div>
+                </td>
+            </tr>`;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// Master Dashboard Synchronization Function
+function updateDashboard() {
+    const filtered = getFilteredTransactions();
+    const { catTotals, monthTotals } = updateStats(filtered);
+    updateCharts(catTotals, monthTotals, filtered);
+    updateTable(filtered);
+}
+
+function toggleCustomDate() {
+    const quickRange = document.getElementById("quickDateFilter").value;
+    const container = document.getElementById("customDateContainer");
+    if (container) {
+        container.style.display = (quickRange === "custom") ? "inline-flex" : "none";
+    }
+}
+
+// Event Listeners for Filters
+document.getElementById("searchInput").addEventListener("input", updateDashboard);
+document.getElementById("categoryFilter").addEventListener("change", updateDashboard);
+document.getElementById("dateFilter").addEventListener("change", updateDashboard);
+document.getElementById("sortFilter").addEventListener("change", updateDashboard);
+document.getElementById("quickDateFilter").addEventListener("change", () => {
+    toggleCustomDate();
+    updateDashboard();
+});
+document.getElementById("fromDateInput").addEventListener("change", updateDashboard);
+document.getElementById("toDateInput").addEventListener("change", updateDashboard);
+
+document.getElementById("exportPDF").addEventListener("click", () => {
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF("p", "pt", "a4");
+
+    // ===============================
+    // Blue Header
+    // ===============================
+
+    doc.setFillColor(37,99,235);
+    doc.rect(0,0,595,80,"F");
+
+    doc.setTextColor(255,255,255);
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(24);
+    doc.text("Expense Tracker Pro",40,35);
+
+    doc.setFontSize(13);
+    doc.setFont("helvetica","normal");
+    doc.text("Professional Transaction Report",40,60);
+
+    doc.setTextColor(0,0,0);
+
+    // ==========================
+    // Date & Time
+    // ==========================
+
+    const today = new Date();
+
+    doc.setFontSize(10);
+
+    doc.text(
+        "Generated : " + today.toLocaleString(),
+        40,
+        105
+    );
+
+    // ==========================
+    // Table Data
+    // ==========================
+
+    let rows = [];
+
+    let totalExpense = 0;
+
+    document.querySelectorAll(".transaction-table tbody tr").forEach(row=>{
+
+        let cols = row.querySelectorAll("td");
+
+        if(cols.length >=5){
+
+            let amount = parseFloat(
+                cols[4].innerText
+                .replace("₹", "")
+                .replace(/,/g, "")
+
+            );
+            totalExpense += amount;
+
+            rows.push([
+
+                cols[0].innerText,
+                cols[1].innerText,
+                cols[2].innerText,
+                cols[3].innerText,
+                "Rs. " + amount.toFixed(2)
+
+            ]);
+
+        }
+
+    });
+
+    // ===============================
+    // Summary Box
+    // ===============================
+
+    doc.setDrawColor(37,99,235);
+
+    doc.roundedRect(40,120,220,45,5,5);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica","bold");
+
+    doc.text("Total Transactions : " + rows.length,50,138);
+
+    doc.text(
+        "Total Expense : Rs. " +
+        totalExpense.toLocaleString("en-IN",{
+        minimumFractionDigits:2
+        }),
+        50,
+        155
+    );
+
+    // ==========================
+    // Auto Table
+    // ==========================
+
+    doc.autoTable({
+
+        head:[[
+            "S.No",
+            "Date",
+            "Category",
+            "Subcategory",
+            "Amount"
+        ]],
+
+        body:rows,
+
+        startY:180,
+
+        theme:"grid",
+
+        headStyles:{
+            fillColor:[37,99,235]
+        }
+
+    });
+
+    let y = doc.lastAutoTable.finalY + 30;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica","italic");
+
+    doc.text(
+        "Generated by Expense Tracker Pro",
+        40,
+        y + 30
+    );
+
+    // ==========================
+    // Footer
+    // ==========================
+
+    doc.setFontSize(10);
+
+    doc.setFont("helvetica","italic");
+
+    // ==========================
+
+    doc.save("Expense_Report.pdf");
+
+});
+
+function deleteExpense(event, element){
+
+    event.preventDefault();
+
+    if(!confirm("Delete this expense?")){
+        return false;
+    }
+
+    const row = element.closest(".transaction-row");
+
+    row.classList.add("removing");
+
+    setTimeout(() => {
+        window.location.href = element.href;
+    }, 350);
+
+    return false;
+}
+
+</script>
+
+{% endblock %}

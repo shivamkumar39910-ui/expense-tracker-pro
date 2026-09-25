@@ -3,7 +3,7 @@ services:
     name: expense-tracker-pro
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app_web:app
+    startCommand: gunicorn app:app
     envVars:
       - key: SECRET_KEY
         generateValue: true

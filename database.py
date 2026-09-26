@@ -1,21 +1,26 @@
 import sqlite3
 from datetime import datetime, date
+import db_engine
 
 DATABASE_NAME = "expenses.db"
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE_NAME, timeout=25.0)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.execute("PRAGMA journal_mode = WAL;")
-    return conn
+    return db_engine.get_db_connection()
 
 # ==================================================
 # Database Setup & Schema Evolution (v2.0)
 # ==================================================
 def create_database():
-    conn = sqlite3.connect(DATABASE_NAME)
+    if db_engine.is_postgres():
+        import db_migration
+        conn = db_engine.get_db_connection()
+        db_migration.create_postgres_schema(conn)
+        conn.close()
+        return
+
+    conn = db_engine._get_sqlite_connection()
     cursor = conn.cursor()
+
 
     # 1. Users Table
     cursor.execute("""
@@ -238,6 +243,8 @@ def create_database():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(user_id, transaction_type);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_budgets_user_period ON budgets(user_id, month, year);")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_overall ON budgets (user_id, month, year) WHERE category_id IS NULL;")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_cat ON budgets (user_id, category_id, month, year) WHERE category_id IS NOT NULL;")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_user ON financial_goals(user_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bills_user ON recurring_bills(user_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);")

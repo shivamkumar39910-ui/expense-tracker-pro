@@ -1,6 +1,7 @@
 import sqlite3
 import calendar
 from datetime import datetime, date
+import db_engine
 
 def get_days_in_month(year, month):
     return calendar.monthrange(year, month)[1]
@@ -27,9 +28,13 @@ def calculate_month_end_forecast(user_id, target_date=None, db_path="expenses.db
     current_day = today.day
     total_days = get_days_in_month(current_year, current_month)
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    if db_path == "expenses.db":
+        conn = db_engine.get_db_connection()
+    else:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+
 
     # 1. Month-to-Date (MTD) Actual Expense Spend (EXCLUDING TRANSFERS & INCOMES)
     month_pattern = f"{current_year:04d}-{current_month:02d}%"
@@ -165,8 +170,11 @@ def detect_spending_anomalies(user_id, db_path="expenses.db"):
     Detects statistical anomalies across categories using standard deviation (mean + 2*sigma).
     Returns alerts for categories exceeding normal spending behavior.
     """
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    if db_path == "expenses.db":
+        conn = db_engine.get_db_connection()
+    else:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     # Get average and std dev per category over transactions

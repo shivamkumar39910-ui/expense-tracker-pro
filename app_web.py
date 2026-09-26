@@ -115,9 +115,9 @@ def login_required():
     return True
 
 def get_connection():
-    conn = sqlite3.connect("expenses.db")
-    conn.execute("PRAGMA foreign_keys = ON;")
-    return conn
+    import db_engine
+    return db_engine.get_db_connection()
+
 
 # Import database initializer to run safe index migrations on start
 from database import create_database

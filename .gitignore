@@ -9,3 +9,6 @@ scratch/
 .vscode/
 templates/mobile_app.backup.html
 *.db.bak
+expenses_backup_pre_postgres.db
+scratch_db_audit.json
+

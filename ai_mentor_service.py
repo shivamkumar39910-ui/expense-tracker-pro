@@ -4,6 +4,7 @@ import calendar
 from datetime import datetime, date
 import forecasting_engine
 import database
+import db_engine
 
 def get_mom_analysis(user_id, target_date=None, db_path="expenses.db"):
     """
@@ -30,8 +31,11 @@ def get_mom_analysis(user_id, target_date=None, db_path="expenses.db"):
     cur_pattern = f"{cur_year:04d}-{cur_month:02d}%"
     prev_pattern = f"{prev_year:04d}-{prev_month:02d}%"
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    if db_path == "expenses.db":
+        conn = db_engine.get_db_connection()
+    else:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     # Current Month Total
@@ -125,8 +129,11 @@ def get_six_month_trends(user_id, db_path="expenses.db"):
     """
     Returns last 6 months of historical Incomes vs Expenses.
     """
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    if db_path == "expenses.db":
+        conn = db_engine.get_db_connection()
+    else:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     today = date.today()

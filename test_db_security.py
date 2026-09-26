@@ -148,11 +148,11 @@ def run_security_suite():
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT count(*), amount FROM budgets WHERE user_id = ? AND month = 9 AND year = 2026 AND category_id IS NULL", (user_a_id,))
+    cur.execute("SELECT amount FROM budgets WHERE user_id = ? AND month = 9 AND year = 2026 AND category_id IS NULL", (user_a_id,))
     b_rows = cur.fetchall()
     conn.close()
-    assert b_rows[0][0] == 1, f"DUPLICATE BUDGET ERROR: Found {b_rows[0][0]} budgets instead of exactly 1!"
-    assert b_rows[0][1] == 65000.0, "Budget amount was not properly updated!"
+    assert len(b_rows) == 1, f"DUPLICATE BUDGET ERROR: Found {len(b_rows)} budgets instead of exactly 1!"
+    assert float(b_rows[0][0]) == 65000.0, "Budget amount was not properly updated!"
     print("TEST 4 PASSED: Duplicate budget prevention verified (exactly 1 budget preserved).")
 
     # --- 5. Atomic Rollback on Transaction Error ---

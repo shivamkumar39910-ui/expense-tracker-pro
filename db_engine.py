@@ -52,7 +52,7 @@ class PostgresRowWrapper(Mapping):
             return default
 
     def keys(self):
-        return self._raw.keys()
+        return list(self._raw.keys())
 
     def values(self):
         return [self[k] for k in self.keys()]
@@ -61,10 +61,11 @@ class PostgresRowWrapper(Mapping):
         return [(k, self[k]) for k in self.keys()]
 
     def __iter__(self):
-        return iter(self._raw.keys())
+        return iter(self.keys())
 
     def __len__(self):
-        return len(self._raw.keys())
+        return len(self.keys())
+
 
     def __contains__(self, key):
         return key in self._raw
@@ -233,6 +234,8 @@ def get_db_connection():
             raw_conn = psycopg2.connect(DATABASE_URL)
             return PostgresConnectionWrapper(raw_conn)
         except Exception as e:
+            if os.environ.get("FLASK_ENV") == "production" or os.environ.get("STRICT_DATABASE") == "1":
+                raise RuntimeError(f"[DB ENGINE CRITICAL ERROR] PostgreSQL connection failed in production: {e}")
             print(f"[DB ENGINE WARNING] PostgreSQL connection failed: {e}. Falling back to SQLite.")
             return _get_sqlite_connection()
     else:

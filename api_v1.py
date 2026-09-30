@@ -280,7 +280,38 @@ def login_verify_otp():
 def get_current_user_profile():
     return jsonify({"success": True, "user": request.user}), 200
 
+@api_v1.route('/auth/profile', methods=['GET', 'PUT', 'POST'])
+@token_required
+def update_user_profile():
+    user_id = request.user["id"]
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method in ['PUT', 'POST']:
+        data = request.get_json() or {}
+        name = (data.get("name") or "").strip()
+        phone = (data.get("phone") or "").strip()
+
+        if not name:
+            conn.close()
+            return jsonify({"success": False, "error": "Full Name is required"}), 400
+
+        cursor.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?", (name, phone or None, user_id))
+        conn.commit()
+
+    cursor.execute("SELECT id, name, email, phone, currency_symbol, currency_code FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    user_data = dict(row) if row else {"id": user_id, "name": request.user.get("name")}
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Profile updated successfully" if request.method in ['PUT', 'POST'] else "Profile retrieved successfully",
+        "user": user_data
+    }), 200
+
 # ==================================================
+
 # 2. Multi-Account & Wallets Endpoints
 # ==================================================
 

@@ -985,8 +985,8 @@
         
         <!-- Header -->
         <div class="app-header">
-          <div class="user-greeting">
-            <div class="user-avatar" id="homeUserAvatar">R</div>
+          <div class="user-greeting" onclick="switchTab('tab-profile')" style="cursor:pointer;" title="View Profile & Settings">
+            <div class="user-avatar" id="homeUserAvatar" style="cursor:pointer;">R</div>
             <div>
               <div class="user-title">Welcome back,</div>
               <div class="user-name" id="homeUserName">Rahul Verma</div>
@@ -1010,11 +1010,11 @@
               <span class="material-icons-round" style="font-size: 20px;">notifications</span>
               <span id="notifBadge" style="position:absolute; top:-2px; right:-2px; background:var(--color-ruby); color:#fff; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; border:2px solid #0B0F19;">0</span>
             </div>
-            <div class="btn-icon-header" onclick="refreshDashboardData()">
+            <div class="btn-icon-header" onclick="refreshDashboardData()" title="Sync / Refresh">
               <span class="material-icons-round" style="font-size: 20px;">sync</span>
             </div>
-            <div class="btn-icon-header" onclick="switchTab('tab-profile')">
-              <span class="material-icons-round" style="font-size: 20px;">shield</span>
+            <div class="btn-icon-header" onclick="switchTab('tab-profile')" title="Profile & Settings">
+              <span class="material-icons-round" style="font-size: 22px;">account_circle</span>
             </div>
           </div>
         </div>
@@ -1501,11 +1501,11 @@
           <div class="btn-icon-header" onclick="goBack()" title="Back">
             <span class="material-icons-round">arrow_back</span>
           </div>
-          <div class="user-name" style="font-size:18px; font-weight:800; flex:1;">More & Tools</div>
+          <div class="user-name" style="font-size:18px; font-weight:800; flex:1;">Profile & Settings</div>
         </div>
 
         <!-- User Profile Card -->
-        <div class="card-net-worth" style="background:#131B2E; display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+        <div class="card-net-worth" style="background:#131B2E; display:flex; align-items:center; gap:16px; margin-bottom:18px; cursor:pointer;" onclick="openEditProfileModal()" title="Tap to Edit Profile Details">
           <div class="user-avatar" style="width:52px; height:52px; font-size:20px;" id="profileAvatarBig">R</div>
           <div style="flex:1;">
             <div class="user-name" style="font-size:17px;" id="profileNameBig">Rahul Verma</div>
@@ -1513,6 +1513,9 @@
             <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:2px 8px; border-radius:12px; font-size:10px; font-weight:800; margin-top:4px;">
               <span class="material-icons-round" style="font-size:12px;">verified_user</span> 2FA ACTIVE
             </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:10px; color:var(--color-sapphire); display:flex; align-items:center; gap:4px; font-size:12px; font-weight:700;">
+            <span class="material-icons-round" style="font-size:16px;">edit</span> Edit
           </div>
         </div>
 
@@ -1693,10 +1696,10 @@
         <span style="position:absolute; top:2px; right:8px; width:7px; height:7px; background:#8B5CF6; border-radius:50%; box-shadow:0 0 8px #8B5CF6;"></span>
       </div>
 
-      <!-- Hub: Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
-      <div class="nav-tab" id="nav-tab-profile" onclick="switchTab('tab-profile')">
-        <span class="material-icons-round">grid_view</span>
-        <span>More</span>
+      <!-- Hub: Profile, Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
+      <div class="nav-tab" id="nav-tab-profile" onclick="switchTab('tab-profile')" title="Profile & Settings">
+        <span class="material-icons-round">account_circle</span>
+        <span>Profile</span>
       </div>
     </div>
 
@@ -1986,6 +1989,39 @@
       <input type="password" maxlength="4" class="form-input-pill" placeholder="Confirm 4-Digit PIN" id="confirmPinInput" style="font-size:24px; letter-spacing:8px; text-align:center;">
 
       <button class="btn-submit-sheet" onclick="saveNewAppPin()">Activate PIN Security</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- EDIT PROFILE DETAILS MODAL                     -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="editProfileBackdrop" onclick="closeEditProfileModal()"></div>
+    <div class="bottom-sheet" id="editProfileSheet">
+      <div class="sheet-handle"></div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="tx-title" style="font-size:18px;">👤 Edit Profile Details</div>
+        <div class="btn-icon-header" onclick="closeEditProfileModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+      <div class="tx-meta" style="margin-bottom:16px;">Update your personal profile information below:</div>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Full Name</label>
+        <input type="text" class="form-input-pill" id="editProfileNameInput" placeholder="Full Name" style="text-align:left;">
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Email Address (Read-only)</label>
+        <input type="email" class="form-input-pill" id="editProfileEmailInput" placeholder="Email Address" disabled style="opacity:0.6; text-align:left; cursor:not-allowed;">
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Phone Number</label>
+        <input type="tel" class="form-input-pill" id="editProfilePhoneInput" placeholder="+91 9876543210" style="text-align:left;">
+      </div>
+
+      <button class="btn-submit-sheet" id="btnSaveProfile" onclick="saveUserProfileDetails()">Save Profile Changes</button>
     </div>
 
     <!-- ============================================== -->
@@ -2398,11 +2434,22 @@
         activeScreen.scrollTop = 0;
       }
 
+      const vp = document.getElementById('screenViewport');
+      if (vp) vp.scrollTop = 0;
+
       const navTab = document.getElementById(`nav-${tabId}`);
       if (navTab) navTab.classList.add('active');
 
       if (pushHistory && window.history) {
         window.history.pushState({ tab: tabId }, '');
+      }
+
+      // When switching to Profile tab, refresh user UI and accounts
+      if (tabId === 'tab-profile') {
+        updateUserUI();
+        if (typeof renderProfileAccounts === 'function') {
+          renderProfileAccounts();
+        }
       }
 
       // When switching to AI Predict tab, immediately render predictions
@@ -2437,6 +2484,7 @@
       closeNewGoalModal();
       closeGoalContributeModal();
       closeSetPinModal();
+      closeEditProfileModal();
     }
 
     function renderAiPredictionHero() {
@@ -3893,7 +3941,73 @@
       document.getElementById('homeUserName').innerText = APP_STATE.user.name;
       document.getElementById('profileAvatarBig').innerText = initial;
       document.getElementById('profileNameBig').innerText = APP_STATE.user.name;
-      document.getElementById('profileEmailBig').innerText = APP_STATE.user.email || APP_STATE.user.phone;
+      document.getElementById('profileEmailBig').innerText = APP_STATE.user.email || APP_STATE.user.phone || '';
+    }
+
+    function openEditProfileModal() {
+      triggerHaptic('light');
+      if (APP_STATE.user) {
+        const nameInput = document.getElementById('editProfileNameInput');
+        const emailInput = document.getElementById('editProfileEmailInput');
+        const phoneInput = document.getElementById('editProfilePhoneInput');
+        if (nameInput) nameInput.value = APP_STATE.user.name || '';
+        if (emailInput) emailInput.value = APP_STATE.user.email || '';
+        if (phoneInput) phoneInput.value = APP_STATE.user.phone || '';
+      }
+      const backdrop = document.getElementById('editProfileBackdrop');
+      const sheet = document.getElementById('editProfileSheet');
+      if (backdrop) backdrop.classList.add('active');
+      if (sheet) sheet.classList.add('active');
+    }
+
+    function closeEditProfileModal() {
+      const backdrop = document.getElementById('editProfileBackdrop');
+      const sheet = document.getElementById('editProfileSheet');
+      if (backdrop) backdrop.classList.remove('active');
+      if (sheet) sheet.classList.remove('active');
+    }
+
+    async function saveUserProfileDetails() {
+      const nameInp = document.getElementById('editProfileNameInput');
+      const phoneInp = document.getElementById('editProfilePhoneInput');
+      const name = (nameInp ? nameInp.value : '').trim();
+      const phone = (phoneInp ? phoneInp.value : '').trim();
+
+      if (!name) {
+        alert('Please enter your full name.');
+        return;
+      }
+
+      const btn = document.getElementById('btnSaveProfile');
+      const origText = btn ? btn.innerText : 'Save Profile Changes';
+      if (btn) {
+        btn.innerText = 'Saving...';
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await apiRequest('/auth/profile', 'PUT', { name, phone });
+        if (res && res.success) {
+          if (res.user) {
+            APP_STATE.user = { ...APP_STATE.user, ...res.user };
+            localStorage.setItem('user_profile', JSON.stringify(APP_STATE.user));
+          }
+          updateUserUI();
+          closeEditProfileModal();
+          triggerHaptic('medium');
+          alert('Profile updated successfully!');
+        } else {
+          alert(res?.error || 'Failed to update profile.');
+        }
+      } catch (err) {
+        console.error('Error updating profile:', err);
+        alert('Failed to save profile changes. Please try again.');
+      } finally {
+        if (btn) {
+          btn.innerText = origText;
+          btn.disabled = false;
+        }
+      }
     }
 
     function renderProfileAccounts() {

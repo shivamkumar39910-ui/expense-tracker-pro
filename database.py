@@ -254,7 +254,77 @@ def create_database():
             budget_100 INTEGER DEFAULT 1,
             bill_due INTEGER DEFAULT 1,
             security_alerts INTEGER DEFAULT 1,
+            forecast INTEGER DEFAULT 1,
+            goals INTEGER DEFAULT 1,
+            weekly_summary INTEGER DEFAULT 1,
+            unusual_spending INTEGER DEFAULT 1,
+            all_off INTEGER DEFAULT 0,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("PRAGMA table_info(notification_preferences)")
+    pref_cols = [row[1] for row in cursor.fetchall()]
+    for col in ['forecast', 'goals', 'weekly_summary', 'unusual_spending']:
+        if col not in pref_cols:
+            cursor.execute(f"ALTER TABLE notification_preferences ADD COLUMN {col} INTEGER DEFAULT 1")
+    if 'all_off' not in pref_cols:
+        cursor.execute("ALTER TABLE notification_preferences ADD COLUMN all_off INTEGER DEFAULT 0")
+
+    # 10c. Automation & Real-World Intelligence Tables (Phase 6)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transaction_parse_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            source_type TEXT NOT NULL,
+            raw_text TEXT,
+            parsed_data_json TEXT,
+            confidence TEXT,
+            status TEXT DEFAULT 'PENDING',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subscription_candidates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            amount REAL NOT NULL,
+            frequency TEXT DEFAULT 'MONTHLY',
+            last_charged_date TEXT,
+            confidence TEXT,
+            status TEXT DEFAULT 'PENDING',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS financial_alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            alert_type TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            supporting_metric TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notification_delivery_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            endpoint TEXT,
+            payload_json TEXT,
+            status TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
@@ -272,6 +342,10 @@ def create_database():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_goals_user ON financial_goals(user_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bills_user ON recurring_bills(user_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_alerts_user ON financial_alerts(user_id, is_read);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_cand_user ON subscription_candidates(user_id, status);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_parse_user ON transaction_parse_events(user_id);")
+
 
     conn.commit()
     conn.close()
@@ -1345,29 +1419,69 @@ def get_user_notification_preferences(user_id):
     cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     if not row:
-        cursor.execute("INSERT INTO notification_preferences (user_id, budget_80, budget_100, bill_due, security_alerts) VALUES (?, 1, 1, 1, 1)", (user_id,))
-        conn.commit()
+        try:
+            cursor.execute("""
+                INSERT INTO notification_preferences 
+                (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off) 
+                VALUES (?, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+            """, (user_id,))
+            conn.commit()
+        except Exception:
+            pass
         cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
     conn.close()
-    return dict(row) if row else {"budget_80": 1, "budget_100": 1, "bill_due": 1, "security_alerts": 1}
+    d = dict(row) if row else {}
+    defaults = {
+        "budget_80": 1, "budget_100": 1, "bill_due": 1, "security_alerts": 1,
+        "forecast": 1, "goals": 1, "weekly_summary": 1, "unusual_spending": 1, "all_off": 0
+    }
+    for k, v in defaults.items():
+        if k not in d or d[k] is None:
+            d[k] = v
+    return d
 
-def update_user_notification_preferences(user_id, budget_80=1, budget_100=1, bill_due=1, security_alerts=1):
+def update_user_notification_preferences(user_id, budget_80=None, budget_100=None, bill_due=None, security_alerts=None, **kwargs):
+    curr = get_user_notification_preferences(user_id)
+    if budget_80 is not None: curr["budget_80"] = budget_80
+    if budget_100 is not None: curr["budget_100"] = budget_100
+    if bill_due is not None: curr["bill_due"] = bill_due
+    if security_alerts is not None: curr["security_alerts"] = security_alerts
+    curr.update(kwargs)
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO notification_preferences (user_id, budget_80, budget_100, bill_due, security_alerts, updated_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO notification_preferences 
+        (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
             budget_80 = excluded.budget_80,
             budget_100 = excluded.budget_100,
             bill_due = excluded.bill_due,
             security_alerts = excluded.security_alerts,
+            forecast = excluded.forecast,
+            goals = excluded.goals,
+            weekly_summary = excluded.weekly_summary,
+            unusual_spending = excluded.unusual_spending,
+            all_off = excluded.all_off,
             updated_at = CURRENT_TIMESTAMP
-    """, (user_id, int(budget_80), int(budget_100), int(bill_due), int(security_alerts)))
+    """, (
+        user_id,
+        int(curr.get("budget_80", 1)),
+        int(curr.get("budget_100", 1)),
+        int(curr.get("bill_due", 1)),
+        int(curr.get("security_alerts", 1)),
+        int(curr.get("forecast", 1)),
+        int(curr.get("goals", 1)),
+        int(curr.get("weekly_summary", 1)),
+        int(curr.get("unusual_spending", 1)),
+        int(curr.get("all_off", 0))
+    ))
     conn.commit()
     conn.close()
     return True
+
 
 def get_active_push_subscriptions(user_id):
     conn = get_db_connection()

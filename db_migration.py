@@ -162,6 +162,75 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 11. Push Subscriptions & Notification Preferences
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT,
+    auth TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    budget_80 INTEGER DEFAULT 1,
+    budget_100 INTEGER DEFAULT 1,
+    bill_due INTEGER DEFAULT 1,
+    security_alerts INTEGER DEFAULT 1,
+    forecast INTEGER DEFAULT 1,
+    goals INTEGER DEFAULT 1,
+    weekly_summary INTEGER DEFAULT 1,
+    unusual_spending INTEGER DEFAULT 1,
+    all_off INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Automation & Real-World Intelligence Tables (Phase 6)
+CREATE TABLE IF NOT EXISTS transaction_parse_events (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    source_type TEXT NOT NULL,
+    raw_text TEXT,
+    parsed_data_json TEXT,
+    confidence TEXT,
+    status TEXT DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS subscription_candidates (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    amount NUMERIC(14, 2) NOT NULL,
+    frequency TEXT DEFAULT 'MONTHLY',
+    last_charged_date VARCHAR(10),
+    confidence TEXT,
+    status TEXT DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS financial_alerts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    alert_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    supporting_metric TEXT,
+    is_read INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS notification_delivery_log (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT,
+    payload_json TEXT,
+    status TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance and data isolation
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);
@@ -176,6 +245,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_cat ON budgets (user_id, ca
 CREATE INDEX IF NOT EXISTS idx_goals_user ON financial_goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_bills_user ON recurring_bills(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_alerts_user ON financial_alerts(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_sub_cand_user ON subscription_candidates(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_parse_user ON transaction_parse_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, date);
 """
 

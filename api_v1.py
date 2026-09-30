@@ -13,8 +13,14 @@ import database
 import forecasting_engine
 import ai_mentor_service
 import forecast_metrics
+import sms_parser_service
+import subscription_service
+import cashflow_calendar_service
+import alerts_engine
+import push_delivery_service
 
 api_v1 = Blueprint('api_v1', __name__)
+
 
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "expense_tracker_pro_v2_jwt_secret_2026_super_secure")
 JWT_ALGORITHM = "HS256"
@@ -1296,9 +1302,20 @@ def notification_preferences_endpoint():
     b100 = data.get("budget_100", 1)
     bill_due = data.get("bill_due", 1)
     sec = data.get("security_alerts", 1)
-    database.update_user_notification_preferences(user_id, b80, b100, bill_due, sec)
+    forecast = data.get("forecast", 1)
+    goals = data.get("goals", 1)
+    weekly_summary = data.get("weekly_summary", 1)
+    unusual_spending = data.get("unusual_spending", 1)
+    all_off = data.get("all_off", 0)
+
+    database.update_user_notification_preferences(
+        user_id, b80, b100, bill_due, sec,
+        forecast=forecast, goals=goals, weekly_summary=weekly_summary,
+        unusual_spending=unusual_spending, all_off=all_off
+    )
     prefs = database.get_user_notification_preferences(user_id)
     return jsonify({"success": True, "preferences": prefs, "message": "Notification preferences updated"}), 200
+
 
 # ==================================================
 # 10. Visual Charts & Trend Visualizations (Phase 11)
@@ -1765,3 +1782,283 @@ def scan_receipt_endpoint():
         },
         "message": f"Parsed receipt from {r['merchant']} (₹{r['amount']:.2f}). Please review and confirm."
     }), 200
+
+# ==================================================
+# 16. Automation & Real-World Intelligence Endpoints (Phase 6)
+# ==================================================
+
+@api_v1.route('/parser/parse-sms', methods=['POST'])
+@token_required
+def parse_sms_endpoint():
+    """
+    Parses SMS/UPI/Bank notification text, checks duplicate transaction risk,
+    and returns a structured transaction proposal for user confirmation.
+    """
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    sms_text = (data.get("text") or "").strip()
+
+    if not sms_text:
+        return jsonify({"success": False, "error": "No text provided to parse."}), 400
+
+    parsed = sms_parser_service.parse_sms_text(sms_text)
+    if not parsed.get("success"):
+        return jsonify(parsed), 422
+
+    # Check for potential duplicates in ledger
+    dup = sms_parser_service.detect_duplicate_transaction(
+        user_id=user_id,
+        amount=parsed["amount"],
+        tx_date=parsed["date"],
+        ref_number=parsed.get("ref_number")
+    )
+
+    # Match category in user's category list
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name FROM categories 
+        WHERE (user_id = ? OR user_id IS NULL) AND LOWER(name) = LOWER(?)
+        LIMIT 1
+    """, (user_id, parsed["category_inferred"]))
+    cat_row = cursor.fetchone()
+    cat_id = cat_row["id"] if cat_row else 1
+    cat_name = cat_row["name"] if cat_row else parsed["category_inferred"]
+
+    # Select default account if not provided
+    cursor.execute("SELECT id, name FROM accounts WHERE user_id = ? ORDER BY id ASC LIMIT 1", (user_id,))
+    acc_row = cursor.fetchone()
+    acc_id = acc_row["id"] if acc_row else 1
+    acc_name = acc_row["name"] if acc_row else "Primary"
+
+    # Log to transaction_parse_events table
+    import json
+    parse_event_id = None
+    try:
+        cursor.execute("""
+            INSERT INTO transaction_parse_events (user_id, source_type, raw_text, parsed_data_json, confidence, status)
+            VALUES (?, 'SMS', ?, ?, ?, 'PENDING')
+        """, (user_id, sms_text, json.dumps(parsed), parsed["confidence"]))
+        parse_event_id = cursor.lastrowid
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+    return jsonify({
+        "success": True,
+        "parse_event_id": parse_event_id,
+        "transaction": {
+            "amount": parsed["amount"],
+            "transaction_type": parsed["transaction_type"],
+            "merchant": parsed["merchant"],
+            "merchant_clean": parsed["merchant_clean"],
+            "date": parsed["date"],
+            "bank_name": parsed["bank_name"],
+            "account_last4": parsed["account_last4"],
+            "ref_number": parsed["ref_number"],
+            "confidence": parsed["confidence"],
+            "category_id": cat_id,
+            "category_name": cat_name,
+            "account_id": acc_id,
+            "account_name": acc_name,
+            "note": f"{parsed['merchant_clean']} ({parsed['bank_name']})" if parsed['bank_name'] else parsed['merchant_clean'],
+            "requires_user_confirmation": True
+        },
+        "duplicate_warning": dup,
+        "message": "Transaction parsed successfully. Please review and confirm before saving."
+    }), 200
+
+
+@api_v1.route('/parser/confirm-transaction', methods=['POST'])
+@token_required
+def confirm_parsed_transaction_endpoint():
+    """
+    Saves a user-confirmed parsed transaction into the official ledger.
+    Guarantees user control: no transaction is saved without explicit review.
+    """
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+
+    amount = data.get("amount")
+    if amount is None:
+        return jsonify({"success": False, "error": "Amount is required."}), 400
+
+    account_id = data.get("account_id")
+    if not account_id:
+        conn = database.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM accounts WHERE user_id = ? ORDER BY id ASC LIMIT 1", (user_id,))
+        acc = cursor.fetchone()
+        conn.close()
+        account_id = acc["id"] if acc else 1
+
+    tx_type = data.get("transaction_type", "EXPENSE").upper()
+    tx_date = data.get("date", date.today().strftime("%Y-%m-%d"))
+    category_id = data.get("category_id")
+    note = data.get("note", "").strip()
+    tag = data.get("tag", "SMS-Import")
+    parse_event_id = data.get("parse_event_id")
+
+    try:
+        tx_id = database.record_transaction(
+            user_id=user_id,
+            account_id=account_id,
+            transaction_type=tx_type,
+            amount=amount,
+            date=tx_date,
+            category_id=category_id,
+            note=note,
+            tag=tag
+        )
+
+        if parse_event_id:
+            try:
+                conn = database.get_db_connection()
+                conn.execute("""
+                    UPDATE transaction_parse_events
+                    SET status = 'CONFIRMED'
+                    WHERE id = ? AND user_id = ?
+                """, (parse_event_id, user_id))
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
+
+        return jsonify({
+            "success": True,
+            "message": "Transaction verified and saved to ledger successfully.",
+            "transaction_id": tx_id
+        }), 201
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to record transaction: {str(e)}"}), 500
+
+
+@api_v1.route('/subscriptions/overview', methods=['GET'])
+@token_required
+def subscriptions_overview_endpoint():
+    """
+    Returns monthly/yearly recurring totals, breakdown, upcoming dues, and duplicate warnings.
+    """
+    user_id = request.user["id"]
+    summary = subscription_service.get_subscription_summary(user_id)
+    return jsonify({
+        "success": True,
+        "subscriptions": summary
+    }), 200
+
+
+@api_v1.route('/subscriptions/candidates', methods=['GET'])
+@token_required
+def subscriptions_candidates_endpoint():
+    """
+    Scans historical transactions to detect recurring charges not yet tracked as recurring bills.
+    """
+    user_id = request.user["id"]
+    candidates = subscription_service.discover_subscription_candidates(user_id)
+    return jsonify({
+        "success": True,
+        "candidates": candidates
+    }), 200
+
+
+@api_v1.route('/subscriptions/convert-candidate', methods=['POST'])
+@token_required
+def convert_subscription_candidate_endpoint():
+    """
+    Converts a discovered recurring subscription candidate into an official recurring bill.
+    """
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    title = (data.get("title") or "").strip()
+    amount = data.get("amount")
+
+    if not title or amount is None:
+        return jsonify({"success": False, "error": "Title and amount are required."}), 400
+
+    frequency = data.get("frequency", "MONTHLY").upper()
+    due_date = data.get("due_date", date.today().strftime("%Y-%m-%d"))
+    category_id = data.get("category_id")
+
+    bill_id = subscription_service.convert_candidate_to_recurring(
+        user_id=user_id,
+        title=title,
+        amount=amount,
+        frequency=frequency,
+        due_date=due_date,
+        category_id=category_id
+    )
+
+    return jsonify({
+        "success": True,
+        "message": f"'{title}' converted to recurring bill successfully.",
+        "bill_id": bill_id
+    }), 201
+
+
+@api_v1.route('/cashflow/calendar', methods=['GET'])
+@token_required
+def cashflow_calendar_endpoint():
+    """
+    Returns day-by-day cashflow timeline with actual, committed, and projected balances.
+    """
+    user_id = request.user["id"]
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
+    calendar_data = cashflow_calendar_service.get_cashflow_calendar(
+        user_id=user_id,
+        start_date=start_date,
+        end_date=end_date
+    )
+    return jsonify({
+        "success": True,
+        "cashflow": calendar_data
+    }), 200
+
+
+@api_v1.route('/goals/intelligence', methods=['GET'])
+@token_required
+def goals_intelligence_endpoint():
+    """
+    Returns pacing, required monthly savings, and projected completion date for goals.
+    """
+    user_id = request.user["id"]
+    goals_data = alerts_engine.get_goal_intelligence(user_id)
+    return jsonify({
+        "success": True,
+        "goals": goals_data
+    }), 200
+
+
+@api_v1.route('/alerts', methods=['GET'])
+@token_required
+def get_alerts_endpoint():
+    """
+    Evaluates current financial health and returns active alerts with 24h deduplication.
+    """
+    user_id = request.user["id"]
+    alerts_engine.evaluate_and_generate_alerts(user_id)
+    active_alerts = alerts_engine.get_active_alerts(user_id)
+    return jsonify({
+        "success": True,
+        "alerts": active_alerts
+    }), 200
+
+
+@api_v1.route('/alerts/<int:alert_id>/dismiss', methods=['POST'])
+@token_required
+def dismiss_alert_endpoint(alert_id):
+    """
+    Dismisses / marks an alert as read.
+    """
+    user_id = request.user["id"]
+    dismissed = alerts_engine.dismiss_alert(user_id, alert_id)
+    if dismissed:
+        return jsonify({"success": True, "message": "Alert dismissed."}), 200
+    else:
+        return jsonify({"success": False, "error": "Alert not found or already dismissed."}), 404
+

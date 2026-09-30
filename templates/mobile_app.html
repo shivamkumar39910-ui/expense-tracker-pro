@@ -2176,6 +2176,50 @@
       <button type="button" class="btn-submit-sheet" style="background:#1F293D; color:#FFF; border:1px solid #334155; padding:10px;" onclick="scanRawReceiptText()">
         ⚡ Parse Text & Auto-Fill
       </button>
+
+      <!-- Receipt Review & Confirmation Card (Phase 1) -->
+      <div id="receiptReviewCard" style="display:none; background:#1C263B; border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:16px; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:800; color:var(--color-emerald);">🧾 Review & Confirm Receipt</div>
+          <span id="ocrConfidenceBadge" style="font-size:11px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 8px; border-radius:6px; font-weight:700;">Confidence: 90%</span>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Merchant Name</label>
+          <input type="text" id="reviewMerchantInput" class="form-input-pill" style="text-align:left; font-size:13px; padding:8px 12px;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Total Amount (₹)</label>
+            <input type="number" step="0.01" id="reviewAmountInput" class="form-input-pill" style="text-align:left; font-size:14px; font-weight:800; color:var(--color-emerald); padding:8px 12px;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Date</label>
+            <input type="date" id="reviewDateInput" class="form-input-pill" style="text-align:left; font-size:13px; padding:8px 12px;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Category</label>
+            <select id="reviewCategorySelect" class="form-input-pill" style="text-align:left; font-size:12px; padding:8px 12px;"></select>
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Pay From Account</label>
+            <select id="reviewAccountSelect" class="form-input-pill" style="text-align:left; font-size:12px; padding:8px 12px;"></select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 2fr; gap:8px;">
+          <button type="button" class="segment-btn" onclick="cancelReceiptReview()" style="padding:10px; font-size:12px;">
+            ✕ Cancel
+          </button>
+          <button type="button" class="btn-submit-sheet" id="btnConfirmReceiptTx" onclick="confirmAndSaveReceiptTx()" style="padding:10px; font-size:13px;">
+            ✅ Confirm & Save
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- ============================================== -->
@@ -4760,35 +4804,108 @@
     function applyScannedReceipt(res) {
       hideScannerLoading();
       if (!res || !res.success || !res.receipt) {
-        alert("Could not recognize receipt data.");
+        alert(res?.message || res?.error || "Could not recognize receipt data.");
         return;
       }
       triggerHaptic('heavy');
       const r = res.receipt;
-      closeReceiptScannerModal();
 
-      // Open quick entry bottom sheet
-      openQuickEntrySheet('EXPENSE');
-      
-      // Auto fill amount
-      APP_STATE.sheetAmount = r.amount > 0 ? r.amount.toString() : '0';
-      updateKeypadDisplay();
+      const card = document.getElementById('receiptReviewCard');
+      if (card) {
+        document.getElementById('reviewMerchantInput').value = r.merchant || '';
+        document.getElementById('reviewAmountInput').value = r.amount > 0 ? r.amount.toFixed(2) : '';
+        document.getElementById('reviewDateInput').value = r.date || new Date().toISOString().split('T')[0];
+        
+        // Populate Categories dropdown
+        const catSelect = document.getElementById('reviewCategorySelect');
+        catSelect.innerHTML = '';
+        (APP_STATE.categories || []).filter(c => c.type === 'EXPENSE').forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.innerText = c.name;
+          if (c.id === r.category_id || c.name.toLowerCase() === (r.category_name || '').toLowerCase()) {
+            opt.selected = true;
+          }
+          catSelect.appendChild(opt);
+        });
 
-      // Auto fill note with merchant
-      const noteInput = document.getElementById('sheetNoteInput');
-      if (noteInput) noteInput.value = r.merchant || r.note;
+        // Populate Accounts dropdown
+        const accSelect = document.getElementById('reviewAccountSelect');
+        accSelect.innerHTML = '';
+        (APP_STATE.accounts || []).forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.innerText = `${a.name} (₹${a.current_balance.toLocaleString('en-IN')})`;
+          accSelect.appendChild(opt);
+        });
 
-      // Auto fill tag
-      const tagInput = document.getElementById('sheetTagInput');
-      if (tagInput) tagInput.value = '#scanned';
+        const badge = document.getElementById('ocrConfidenceBadge');
+        if (badge) {
+          const conf = Math.round((r.confidence || 0.8) * 100);
+          badge.innerText = `Confidence: ${conf}%`;
+        }
 
-      // Auto select category
-      if (r.category_id) {
-        APP_STATE.sheetCategoryId = r.category_id;
-        populateSheetCategories();
+        card.style.display = 'block';
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function cancelReceiptReview() {
+      const card = document.getElementById('receiptReviewCard');
+      if (card) card.style.display = 'none';
+    }
+
+    async function confirmAndSaveReceiptTx() {
+      const merchant = document.getElementById('reviewMerchantInput').value.trim();
+      const amount = parseFloat(document.getElementById('reviewAmountInput').value || '0');
+      const date = document.getElementById('reviewDateInput').value;
+      const categoryId = parseInt(document.getElementById('reviewCategorySelect').value);
+      const accountId = parseInt(document.getElementById('reviewAccountSelect').value);
+
+      if (!amount || amount <= 0) {
+        alert("Please enter a valid positive amount.");
+        return;
+      }
+      if (!accountId) {
+        alert("Please select a valid payment account.");
+        return;
       }
 
-      alert(`✨ Receipt Parsed Successfully!\n\nMerchant: ${r.merchant}\nAmount: ₹${r.amount.toFixed(2)}\nCategory: ${r.category_name}\n\nReview and tap 'Record Transaction'.`);
+      const btn = document.getElementById('btnConfirmReceiptTx');
+      const origText = btn ? btn.innerText : 'Confirm & Save';
+      if (btn) {
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await apiRequest('/transactions', 'POST', {
+          account_id: accountId,
+          category_id: categoryId,
+          transaction_type: 'EXPENSE',
+          amount: amount,
+          date: date || new Date().toISOString().split('T')[0],
+          note: merchant ? `Receipt: ${merchant}` : 'Receipt Expense',
+          tag: '#scanned'
+        });
+
+        if (res && res.success) {
+          triggerHaptic('heavy');
+          alert(`✅ Transaction Confirmed & Recorded!\n₹${amount.toFixed(2)} recorded to ledger.`);
+          closeReceiptScannerModal();
+          cancelReceiptReview();
+          await refreshDashboardData();
+        } else {
+          alert(res?.error || 'Failed to record transaction.');
+        }
+      } catch (e) {
+        alert("Error saving transaction: " + (e.message || e));
+      } finally {
+        if (btn) {
+          btn.innerText = origText;
+          btn.disabled = false;
+        }
+      }
     }
 
     function logoutUser() {

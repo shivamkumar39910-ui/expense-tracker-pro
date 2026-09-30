@@ -235,6 +235,30 @@ def create_database():
         )
     """)
 
+    # 10b. Push Subscriptions & Notification Preferences (Phase 3 Web Push)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            endpoint TEXT NOT NULL UNIQUE,
+            p256dh TEXT,
+            auth TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notification_preferences (
+            user_id INTEGER PRIMARY KEY,
+            budget_80 INTEGER DEFAULT 1,
+            budget_100 INTEGER DEFAULT 1,
+            bill_due INTEGER DEFAULT 1,
+            security_alerts INTEGER DEFAULT 1,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
     # 11. Performance Indexes
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);")
@@ -608,7 +632,7 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
        TRANSFERS DO NOT COUNT AS EXPENSES.
     4. Client UUID ensures idempotent offline-first sync.
     """
-    amount = float(amount)
+    amount = round(float(amount), 2)
     if amount <= 0:
         raise ValueError("Transaction amount must be positive.")
 
@@ -635,7 +659,7 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
 
         # 2. Update Account Balances
         if transaction_type == 'EXPENSE':
-            cursor.execute("UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND user_id = ?",
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
             # Keep legacy expenses table updated in sync for backwards compatibility
             cursor.execute("SELECT name FROM categories WHERE id = ?", (category_id,))
@@ -645,15 +669,15 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
                            (user_id, date, cat_name, note or "", amount))
 
         elif transaction_type == 'INCOME':
-            cursor.execute("UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND user_id = ?",
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
 
         elif transaction_type == 'TRANSFER':
             if not target_account_id or target_account_id == account_id:
                 raise ValueError("Valid distinct destination account required for transfer.")
-            cursor.execute("UPDATE accounts SET current_balance = current_balance - ? WHERE id = ? AND user_id = ?",
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
-            cursor.execute("UPDATE accounts SET current_balance = current_balance + ? WHERE id = ? AND user_id = ?",
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, target_account_id, user_id))
 
         conn.commit()
@@ -682,13 +706,13 @@ def delete_user_transaction(user_id, transaction_id):
 
         # Reverse balance change
         if t_type == 'EXPENSE':
-            cursor.execute("UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ?", (amount, acc_id))
         elif t_type == 'INCOME':
-            cursor.execute("UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ?", (amount, acc_id))
         elif t_type == 'TRANSFER':
-            cursor.execute("UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ?", (amount, acc_id))
             if target_id:
-                cursor.execute("UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?", (amount, target_id))
+                cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ?", (amount, target_id))
 
         cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         conn.commit()
@@ -1284,6 +1308,71 @@ def get_transactions_for_export(user_id, start_date=None, end_date=None, account
 
     query += " ORDER BY t.date DESC, t.id DESC"
     cursor.execute(query, params)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+# ==================================================
+# Phase 3: Push Subscriptions & Preferences Management
+# ==================================================
+
+def save_push_subscription(user_id, endpoint, p256dh=None, auth=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+    existing = cursor.fetchone()
+    if existing:
+        cursor.execute("UPDATE push_subscriptions SET user_id = ?, p256dh = ?, auth = ? WHERE endpoint = ?",
+                       (user_id, p256dh, auth, endpoint))
+    else:
+        cursor.execute("INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) VALUES (?, ?, ?, ?)",
+                       (user_id, endpoint, p256dh, auth))
+    conn.commit()
+    conn.close()
+    return True
+
+def delete_push_subscription(user_id, endpoint):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?", (user_id, endpoint))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_user_notification_preferences(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    if not row:
+        cursor.execute("INSERT INTO notification_preferences (user_id, budget_80, budget_100, bill_due, security_alerts) VALUES (?, 1, 1, 1, 1)", (user_id,))
+        conn.commit()
+        cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else {"budget_80": 1, "budget_100": 1, "bill_due": 1, "security_alerts": 1}
+
+def update_user_notification_preferences(user_id, budget_80=1, budget_100=1, bill_due=1, security_alerts=1):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO notification_preferences (user_id, budget_80, budget_100, bill_due, security_alerts, updated_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+            budget_80 = excluded.budget_80,
+            budget_100 = excluded.budget_100,
+            bill_due = excluded.bill_due,
+            security_alerts = excluded.security_alerts,
+            updated_at = CURRENT_TIMESTAMP
+    """, (user_id, int(budget_80), int(budget_100), int(bill_due), int(security_alerts)))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_active_push_subscriptions(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?", (user_id,))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return rows

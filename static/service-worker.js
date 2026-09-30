@@ -72,3 +72,52 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// ==============================================
+// Phase 3: Web Push Notification Listeners
+// ==============================================
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'Expense Tracker Pro', body: 'New financial alert received.', url: '/mobile' };
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (e) {
+    if (event.data) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/static/icons/icon.svg',
+    badge: '/static/icons/icon.svg',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/mobile'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Expense Tracker Pro', options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/mobile';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('/mobile') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

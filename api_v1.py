@@ -69,6 +69,26 @@ def generate_otp():
     """Generates a secure 6-digit numeric OTP."""
     return f"{secrets.randbelow(900000) + 100000}"
 
+# In-memory security rate-limiter for brute force mitigation (Phase 0B)
+FAILED_SECURITY_ATTEMPTS = {}
+
+def check_security_rate_limit(action_key: str, max_attempts: int = 5, window_seconds: int = 900) -> bool:
+    """Returns True if rate limited (locked out), False if allowed."""
+    now = datetime.utcnow().timestamp()
+    attempts = FAILED_SECURITY_ATTEMPTS.get(action_key, [])
+    recent = [t for t in attempts if now - t < window_seconds]
+    FAILED_SECURITY_ATTEMPTS[action_key] = recent
+    return len(recent) >= max_attempts
+
+def record_security_failed_attempt(action_key: str):
+    now = datetime.utcnow().timestamp()
+    attempts = FAILED_SECURITY_ATTEMPTS.get(action_key, [])
+    attempts.append(now)
+    FAILED_SECURITY_ATTEMPTS[action_key] = attempts
+
+def clear_security_failed_attempts(action_key: str):
+    FAILED_SECURITY_ATTEMPTS.pop(action_key, None)
+
 # ==================================================
 # 1. Authentication & 2FA OTP Endpoints
 # ==================================================
@@ -151,9 +171,29 @@ def verify_registration_otp():
         conn.close()
         return jsonify({"success": False, "error": "User not found"}), 404
 
+    user = dict(user)
+
+    if check_security_rate_limit(f"otp_reg:{user['id']}", max_attempts=5, window_seconds=900):
+        conn.close()
+        return jsonify({"success": False, "error": "Too many failed attempts. Security lockout active for 15 minutes."}), 429
+
+    # Check OTP expiry
+    if user.get("otp_expires_at"):
+        try:
+            exp_str = str(user["otp_expires_at"])[:19]
+            exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
+            if datetime.utcnow() > exp_dt:
+                conn.close()
+                return jsonify({"success": False, "error": "Verification OTP has expired. Please request a new code."}), 400
+        except Exception:
+            pass
+
     if user["otp_code"] != otp:
+        record_security_failed_attempt(f"otp_reg:{user['id']}")
         conn.close()
         return jsonify({"success": False, "error": "Invalid OTP code. Please check and re-enter."}), 400
+
+    clear_security_failed_attempts(f"otp_reg:{user['id']}")
 
     # Mark verified and clear OTP
     cursor.execute("""
@@ -250,9 +290,29 @@ def login_verify_otp():
         conn.close()
         return jsonify({"success": False, "error": "User not found"}), 404
 
+    user = dict(user)
+
+    if check_security_rate_limit(f"otp_login:{user['id']}", max_attempts=5, window_seconds=900):
+        conn.close()
+        return jsonify({"success": False, "error": "Too many failed login attempts. Security lockout active for 15 minutes."}), 429
+
+    # Check Login OTP expiry
+    if user.get("login_otp_expires_at"):
+        try:
+            exp_str = str(user["login_otp_expires_at"])[:19]
+            exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
+            if datetime.utcnow() > exp_dt:
+                conn.close()
+                return jsonify({"success": False, "error": "Login 2FA OTP has expired. Please log in again."}), 400
+        except Exception:
+            pass
+
     if user["login_otp_code"] != otp:
+        record_security_failed_attempt(f"otp_login:{user['id']}")
         conn.close()
         return jsonify({"success": False, "error": "Invalid 2FA OTP code"}), 400
+
+    clear_security_failed_attempts(f"otp_login:{user['id']}")
 
     # Clear login OTP upon successful validation
     cursor.execute("UPDATE users SET login_otp_code = NULL, login_otp_expires_at = NULL WHERE id = ?", (user["id"],))
@@ -329,7 +389,7 @@ def create_account():
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
     account_type = data.get("account_type", "BANK").upper()
-    initial_balance = float(data.get("initial_balance", 0.0))
+    initial_balance = round(float(data.get("initial_balance", 0.0)), 2)
     color_hex = data.get("color_hex", "#4F46E5")
     icon = data.get("icon", "account_balance")
 
@@ -343,7 +403,7 @@ def create_account():
         name=name,
         account_type=account_type,
         initial_balance=initial_balance,
-        credit_limit=float(data.get("credit_limit", 0.0)),
+        credit_limit=round(float(data.get("credit_limit", 0.0)), 2),
         color_hex=color_hex,
         icon=icon
     )
@@ -721,8 +781,35 @@ def set_budget():
 
     return jsonify({"success": True, "message": "Budget set successfully"}), 200
 
+def calculate_next_recurrence_date(current_date_str: str, frequency: str = "MONTHLY", due_day: int = 1) -> str:
+    """Calculates next recurrence date advancing weekly, monthly, or yearly."""
+    try:
+        curr_dt = datetime.strptime(str(current_date_str)[:10], "%Y-%m-%d").date()
+    except Exception:
+        curr_dt = date.today()
+
+    freq = (frequency or "MONTHLY").upper()
+    if freq == 'WEEKLY':
+        new_date = curr_dt + timedelta(days=7)
+    elif freq == 'YEARLY':
+        try:
+            new_date = curr_dt.replace(year=curr_dt.year + 1)
+        except ValueError:
+            new_date = curr_dt.replace(year=curr_dt.year + 1, day=28)
+    else:  # Default MONTHLY
+        month = curr_dt.month + 1
+        year = curr_dt.year
+        if month > 12:
+            month = 1
+            year += 1
+        max_days = calendar.monthrange(year, month)[1]
+        target_day = min(due_day if due_day > 0 else curr_dt.day, max_days)
+        new_date = date(year, month, target_day)
+
+    return new_date.strftime("%Y-%m-%d")
+
 # ==================================================
-# 5b. Recurring Bills & Subscriptions Endpoints (Phase 7)
+# 5b. Recurring Bills & Subscriptions Endpoints (Phase 2 Tracker)
 # ==================================================
 
 @api_v1.route('/recurring', methods=['GET'])
@@ -730,32 +817,48 @@ def set_budget():
 def get_recurring_bills():
     user_id = request.user["id"]
     today = date.today()
-    current_day = today.day
+    include_inactive = request.args.get("include_inactive", "false").lower() == "true"
 
     conn = database.get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    query = """
         SELECT r.*, a.name as account_name, a.color_hex as account_color,
                c.name as category_name, c.icon as category_icon, c.color_hex as category_color
         FROM recurring_bills r
         LEFT JOIN accounts a ON r.account_id = a.id
         LEFT JOIN categories c ON r.category_id = c.id
-        WHERE r.user_id = ? AND r.is_active = 1
-        ORDER BY r.due_day ASC
-    """, (user_id,))
+        WHERE r.user_id = ?
+    """
+    params = [user_id]
+    if not include_inactive:
+        query += " AND r.is_active = 1"
+    query += " ORDER BY r.next_due_date ASC, r.due_day ASC"
+
+    cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
 
     bills = []
     for r in rows:
         b = dict(r)
-        due_day = b["due_day"]
-        if due_day >= current_day:
-            days_until = due_day - current_day
-            status = "DUE_SOON" if days_until <= 3 else "UPCOMING"
+        due_str = b.get("next_due_date")
+        if due_str:
+            try:
+                due_date_obj = datetime.strptime(str(due_str)[:10], "%Y-%m-%d").date()
+                days_until = (due_date_obj - today).days
+            except Exception:
+                days_until = 0
         else:
-            days_until = (calendar.monthrange(today.year, today.month)[1] - current_day) + due_day
-            status = "PAID_OR_OVERDUE"
+            days_until = 0
+
+        if b.get("is_active") == 0:
+            status = "PAUSED"
+        elif days_until < 0:
+            status = "OVERDUE"
+        elif days_until <= 3:
+            status = "DUE_SOON"
+        else:
+            status = "UPCOMING"
 
         b["days_until_due"] = days_until
         b["status"] = status
@@ -769,16 +872,24 @@ def create_recurring_bill():
     user_id = request.user["id"]
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
-    amount = float(data.get("amount", 0.0))
+    amount = round(float(data.get("amount", 0.0)), 2)
     frequency = data.get("frequency", "MONTHLY").upper()
-    due_day = int(data.get("due_day", 1))
     account_id = data.get("account_id")
     category_id = data.get("category_id")
 
     if not title or amount <= 0:
         return jsonify({"success": False, "error": "Title and positive amount required"}), 400
 
-    next_date = date.today().replace(day=min(due_day, 28)).strftime("%Y-%m-%d")
+    specified_date = data.get("next_due_date")
+    if specified_date:
+        next_date = str(specified_date)[:10]
+        try:
+            due_day = datetime.strptime(next_date, "%Y-%m-%d").day
+        except Exception:
+            due_day = int(data.get("due_day", date.today().day))
+    else:
+        due_day = int(data.get("due_day", date.today().day))
+        next_date = date.today().replace(day=min(due_day, 28)).strftime("%Y-%m-%d")
 
     conn = database.get_db_connection()
     cursor = conn.cursor()
@@ -790,43 +901,92 @@ def create_recurring_bill():
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True, "message": "Recurring bill tracked", "bill_id": bill_id}), 201
+    return jsonify({
+        "success": True,
+        "message": f"Recurring bill '{title}' tracked",
+        "bill_id": bill_id,
+        "next_due_date": next_date
+    }), 201
+
+@api_v1.route('/recurring/<int:bill_id>', methods=['PUT'])
+@token_required
+def update_recurring_bill(bill_id):
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
+    bill = cursor.fetchone()
+    if not bill:
+        conn.close()
+        return jsonify({"success": False, "error": "Recurring bill not found"}), 404
+
+    b = dict(bill)
+    title = data.get("title", b["title"]).strip()
+    amount = round(float(data.get("amount", b["amount"])), 2)
+    frequency = data.get("frequency", b["frequency"]).upper()
+    next_due_date = data.get("next_due_date", b["next_due_date"])
+    account_id = data.get("account_id", b["account_id"])
+    category_id = data.get("category_id", b["category_id"])
+    is_active = int(data.get("is_active", b["is_active"]))
+
+    cursor.execute("""
+        UPDATE recurring_bills
+        SET title = ?, amount = ?, frequency = ?, next_due_date = ?, account_id = ?, category_id = ?, is_active = ?
+        WHERE id = ? AND user_id = ?
+    """, (title, amount, frequency, next_due_date, account_id, category_id, is_active, bill_id, user_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "message": "Recurring bill updated"}), 200
 
 @api_v1.route('/recurring/<int:bill_id>/pay', methods=['POST'])
 @token_required
 def pay_recurring_bill(bill_id):
-    """Marks a recurring bill as paid by generating an EXPENSE transaction."""
+    """
+    Marks a recurring bill as paid:
+    1. Generates an EXPENSE transaction in the ledger.
+    2. Advances next_due_date to the next cycle (Weekly, Monthly, Yearly).
+    """
     user_id = request.user["id"]
     conn = database.get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
     bill = cursor.fetchone()
-    conn.close()
 
     if not bill:
+        conn.close()
         return jsonify({"success": False, "error": "Recurring bill not found"}), 404
 
-    # Determine payment account (use linked account or default Cash/Bank)
-    acc_id = bill["account_id"]
+    b = dict(bill)
+    acc_id = b["account_id"]
     if not acc_id:
         accs = database.get_user_accounts(user_id)
         acc_id = accs[0]["id"] if accs else 1
 
+    # Record the expense transaction
     tx_id = database.record_transaction(
         user_id=user_id,
         account_id=acc_id,
         transaction_type='EXPENSE',
-        amount=bill["amount"],
+        amount=b["amount"],
         date=date.today().strftime("%Y-%m-%d"),
-        category_id=bill["category_id"],
-        note=f"Recurring Bill: {bill['title']}",
+        category_id=b["category_id"],
+        note=f"Recurring Bill: {b['title']}",
         tag="#recurring"
     )
 
+    # Advance next_due_date to next cycle
+    new_due_date = calculate_next_recurrence_date(b["next_due_date"], b["frequency"], b["due_day"])
+    cursor.execute("UPDATE recurring_bills SET next_due_date = ?, auto_paid = 1 WHERE id = ?", (new_due_date, bill_id))
+    conn.commit()
+    conn.close()
+
     return jsonify({
         "success": True,
-        "message": f"Paid ₹{bill['amount']} for {bill['title']}",
-        "transaction_id": tx_id
+        "message": f"Paid ₹{b['amount']:.2f} for {b['title']}. Next due date advanced to {new_due_date}.",
+        "transaction_id": tx_id,
+        "next_due_date": new_due_date
     }), 200
 
 @api_v1.route('/recurring/<int:bill_id>', methods=['DELETE'])
@@ -1036,6 +1196,64 @@ def read_all_notifications():
     return jsonify({"success": True, "message": "All notifications marked as read"}), 200
 
 # ==================================================
+# 9b. Web Push Notifications & Preferences (Phase 3)
+# ==================================================
+
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BN9z-placeholder-public-vapid-key-for-webpush-2026")
+
+@api_v1.route('/notifications/push/public-key', methods=['GET'])
+@token_required
+def get_push_public_key():
+    return jsonify({
+        "success": True,
+        "public_key": VAPID_PUBLIC_KEY,
+        "is_configured": bool(os.environ.get("VAPID_PRIVATE_KEY"))
+    }), 200
+
+@api_v1.route('/notifications/push/subscribe', methods=['POST'])
+@token_required
+def subscribe_push():
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    endpoint = data.get("endpoint")
+    keys = data.get("keys", {})
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+
+    if not endpoint:
+        return jsonify({"success": False, "error": "Endpoint is required"}), 400
+
+    database.save_push_subscription(user_id, endpoint, p256dh, auth)
+    return jsonify({"success": True, "message": "Push notifications subscribed successfully"}), 201
+
+@api_v1.route('/notifications/push/unsubscribe', methods=['POST'])
+@token_required
+def unsubscribe_push():
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    endpoint = data.get("endpoint")
+    if endpoint:
+        database.delete_push_subscription(user_id, endpoint)
+    return jsonify({"success": True, "message": "Push notifications unsubscribed"}), 200
+
+@api_v1.route('/notifications/preferences', methods=['GET', 'POST'])
+@token_required
+def notification_preferences_endpoint():
+    user_id = request.user["id"]
+    if request.method == 'GET':
+        prefs = database.get_user_notification_preferences(user_id)
+        return jsonify({"success": True, "preferences": prefs}), 200
+
+    data = request.get_json() or {}
+    b80 = data.get("budget_80", 1)
+    b100 = data.get("budget_100", 1)
+    bill_due = data.get("bill_due", 1)
+    sec = data.get("security_alerts", 1)
+    database.update_user_notification_preferences(user_id, b80, b100, bill_due, sec)
+    prefs = database.get_user_notification_preferences(user_id)
+    return jsonify({"success": True, "preferences": prefs, "message": "Notification preferences updated"}), 200
+
+# ==================================================
 # 10. Visual Charts & Trend Visualizations (Phase 11)
 # ==================================================
 
@@ -1195,10 +1413,19 @@ def verify_app_pin():
     data = request.get_json() or {}
     pin = str(data.get("pin", "")).strip()
 
+    if check_security_rate_limit(f"pin:{user_id}", max_attempts=5, window_seconds=900):
+        return jsonify({
+            "success": False,
+            "valid": False,
+            "error": "Too many incorrect PIN attempts. Security lockout active for 15 minutes."
+        }), 429
+
     is_valid = database.verify_user_app_pin(user_id, pin)
     if not is_valid:
+        record_security_failed_attempt(f"pin:{user_id}")
         return jsonify({"success": False, "valid": False, "error": "Incorrect PIN"}), 401
 
+    clear_security_failed_attempts(f"pin:{user_id}")
     return jsonify({"success": True, "valid": True, "message": "PIN verified successfully"}), 200
 
 # ==================================================
@@ -1323,19 +1550,11 @@ def get_reports_summary():
 @api_v1.route('/currencies', methods=['GET'])
 def get_supported_currencies():
     """
-    Returns list of supported international currencies with exchange rates to INR.
+    Returns list of supported international currencies with live exchange rates,
+    last updated timestamp, and user-facing display pairs (e.g. 1 USD = ₹86.50).
     """
-    currencies = [
-        {"code": "INR", "symbol": "₹", "name": "Indian Rupee", "rate_to_inr": 1.0, "flag": "🇮🇳"},
-        {"code": "USD", "symbol": "$", "name": "US Dollar", "rate_to_inr": 86.50, "flag": "🇺🇸"},
-        {"code": "EUR", "symbol": "€", "name": "Euro", "rate_to_inr": 92.20, "flag": "🇪🇺"},
-        {"code": "GBP", "symbol": "£", "name": "British Pound", "rate_to_inr": 109.80, "flag": "🇬🇧"},
-        {"code": "JPY", "symbol": "¥", "name": "Japanese Yen", "rate_to_inr": 0.58, "flag": "🇯🇵"},
-        {"code": "AED", "symbol": "د.إ", "name": "UAE Dirham", "rate_to_inr": 23.55, "flag": "🇦🇪"},
-        {"code": "CAD", "symbol": "C$", "name": "Canadian Dollar", "rate_to_inr": 63.40, "flag": "🇨🇦"},
-        {"code": "AUD", "symbol": "A$", "name": "Australian Dollar", "rate_to_inr": 56.10, "flag": "🇦🇺"},
-        {"code": "SGD", "symbol": "S$", "name": "Singapore Dollar", "rate_to_inr": 65.10, "flag": "🇸🇬"},
-    ]
+    import fx_service
+    currencies = fx_service.get_currencies_with_live_rates()
     return jsonify({"success": True, "currencies": currencies}), 200
 
 @api_v1.route('/user/currency', methods=['GET'])
@@ -1425,16 +1644,12 @@ SAMPLE_RECEIPTS = {
 def scan_receipt_endpoint():
     """
     Parses an uploaded receipt image, raw OCR text, or simulation preset.
-    Extracts:
-    - Merchant name
-    - Total Amount
-    - Date
-    - Auto-assigned Category and Subcategory
-    - Confidence score
+    Uses ocr_service with honest error reporting if no OCR engine is configured.
+    Enforces user confirmation before saving any transaction.
     """
+    import ocr_service
     user_id = request.user["id"]
     
-    # Check if request has JSON or multipart form
     data = {}
     if request.is_json:
         data = request.get_json() or {}
@@ -1444,125 +1659,62 @@ def scan_receipt_endpoint():
     raw_text = data.get("raw_text", "").strip()
     sample_key = data.get("sample_type", "").strip().lower()
 
-    # If simulation sample chosen
     if sample_key in SAMPLE_RECEIPTS:
-        sample = SAMPLE_RECEIPTS[sample_key]
-        raw_text = sample["text"]
+        raw_text = SAMPLE_RECEIPTS[sample_key]["text"]
 
     # If an image file was uploaded
     if 'receipt_image' in request.files:
         file = request.files['receipt_image']
-        filename = file.filename.lower()
-        # In a mobile browser environment without tesseract, we read text if it's text/invoice
-        # or use heuristic filename + smart vision fallback
-        if not raw_text:
-            raw_text = f"Uploaded Receipt: {file.filename}\nScanned at {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-            for k in SAMPLE_RECEIPTS:
-                if k in filename:
-                    raw_text = SAMPLE_RECEIPTS[k]["text"]
-                    break
+        if file and file.filename:
+            image_bytes = file.read()
+            if not raw_text:
+                extracted_text, err = ocr_service.extract_text_from_image(image_bytes, file.filename)
+                if err or not extracted_text:
+                    return jsonify({
+                        "success": False,
+                        "ocr_available": ocr_service.is_ocr_engine_configured(),
+                        "error": err or "Could not extract text from receipt image.",
+                        "message": "Real-time image OCR requires Tesseract OCR or OCR_API_KEY environment variable. You can still paste receipt/SMS text directly or fill manually."
+                    }), 422
+                raw_text = extracted_text
 
     if not raw_text:
-        # Default fallback to starbucks demo if totally empty
-        raw_text = SAMPLE_RECEIPTS["starbucks"]["text"]
+        return jsonify({
+            "success": False,
+            "error": "No receipt text or image provided to scan.",
+            "message": "Please provide an image, sample preset, or paste bill/SMS text."
+        }), 400
 
-    # 1. Extract Amount
-    # Matches patterns like: Total: Rs. 651.00, Net Amount: 1,450.50, Rs. 2969.70, etc.
-    amount = 0.0
-    amount_patterns = [
-        r'(?i)(?:total\s*(?:amount|bill|payable|value)?|net\s*(?:amount|payable)?|amount\s*due|grand\s*total)[\s:=₹Rs\.$€£]*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)',
-        r'(?i)(?:₹|Rs\.?|INR|\$|€|£)\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{2}))',
-        r'([0-9]+(?:,[0-9]{3})*(?:\.[0-9]{2}))\s*(?:INR|Rs|₹|\$|€|£)'
-    ]
-    for pattern in amount_patterns:
-        matches = re.findall(pattern, raw_text)
-        if matches:
-            # Pick the largest number from the matches (typically the grand total)
-            candidates = []
-            for m in matches:
-                try:
-                    candidates.append(float(m.replace(',', '')))
-                except ValueError:
-                    pass
-            if candidates:
-                amount = max(candidates)
-                break
+    parsed = ocr_service.parse_receipt_entities(raw_text)
+    if not parsed.get("success"):
+        return jsonify(parsed), 400
 
-    # 2. Extract Merchant Name
-    merchant = "Scanned Merchant"
-    if sample_key in SAMPLE_RECEIPTS and "merchant" in SAMPLE_RECEIPTS[sample_key]:
-        merchant = SAMPLE_RECEIPTS[sample_key]["merchant"]
-    else:
-        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-        if lines:
-            first_line = lines[0]
-            # Clean common prefixes
-            merchant = re.sub(r'^(tax invoice|retail invoice|bill of supply|receipt|order\s*#?)\s*[-:]?\s*', '', first_line, flags=re.IGNORECASE).strip()
-            if not merchant and len(lines) > 1:
-                merchant = lines[1]
-        if merchant.isupper():
-            merchant = merchant.title()
-        if len(merchant) > 40:
-            merchant = merchant[:40]
+    r = parsed["receipt"]
 
-    # 3. Categorization heuristic
-    detected_category = "Shopping"
-    detected_subcategory = "General"
-    confidence = 0.70
-
-    for regex, cat_name, subcat_name in MERCHANT_CATEGORY_RULES:
-        if re.search(regex, raw_text):
-            detected_category = cat_name
-            detected_subcategory = subcat_name
-            confidence = 0.94
-            break
-
-    # 4. Extract Date
-    date_str = date.today().strftime("%Y-%m-%d")
-    date_patterns = [
-        r'(\d{4}-\d{2}-\d{2})',
-        r'(\d{2}/\d{2}/\d{4})',
-        r'(\d{2}-\d{2}-\d{4})'
-    ]
-    for dp in date_patterns:
-        dm = re.search(dp, raw_text)
-        if dm:
-            raw_d = dm.group(1)
-            try:
-                if '-' in raw_d and len(raw_d.split('-')[0]) == 4:
-                    date_str = raw_d
-                elif '/' in raw_d:
-                    parts = raw_d.split('/')
-                    date_str = f"{parts[2]}-{parts[1]}-{parts[0]}"
-                elif '-' in raw_d:
-                    parts = raw_d.split('-')
-                    date_str = f"{parts[2]}-{parts[1]}-{parts[0]}"
-                break
-            except Exception:
-                pass
-
-    # 5. Find matching category_id in user's category list
+    # Match category in user's categories
     conn = database.get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM categories WHERE (user_id = ? OR user_id IS NULL) AND LOWER(name) = LOWER(?) LIMIT 1",
-                   (user_id, detected_category))
+                   (user_id, r["category_name"]))
     cat_row = cursor.fetchone()
-    category_id = cat_row["id"] if cat_row else 1
-    category_name = cat_row["name"] if cat_row else detected_category
+    cat_id = cat_row["id"] if cat_row else 1
+    cat_name = cat_row["name"] if cat_row else r["category_name"]
     conn.close()
 
     return jsonify({
         "success": True,
         "receipt": {
-            "merchant": merchant,
-            "amount": round(amount, 2),
-            "date": date_str,
-            "category_id": category_id,
-            "category_name": category_name,
-            "subcategory": detected_subcategory,
-            "note": f"Receipt from {merchant}",
-            "confidence": confidence,
-            "raw_snippet": raw_text[:200]
+            "merchant": r["merchant"],
+            "amount": r["amount"],
+            "date": r["date"],
+            "date_inferred": r["date_inferred"],
+            "category_id": cat_id,
+            "category_name": cat_name,
+            "subcategory": r["subcategory_name"],
+            "note": f"Receipt from {r['merchant']}",
+            "confidence": r["confidence_score"],
+            "raw_snippet": raw_text[:200],
+            "requires_user_confirmation": True
         },
-        "message": f"Successfully parsed receipt from {merchant} (₹{amount:.2f})"
+        "message": f"Parsed receipt from {r['merchant']} (₹{r['amount']:.2f}). Please review and confirm."
     }), 200

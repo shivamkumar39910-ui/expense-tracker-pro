@@ -1271,31 +1271,34 @@
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div style="font-size:11px; font-weight:800; color:#A78BFA; letter-spacing:0.5px;">PROJECTED MONTH-END EXPENDITURE</div>
-            <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge">SAFE</div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <div class="forecast-risk-pill" id="forecastConfidenceBadge" style="background:rgba(139,92,246,0.2); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px;">CONFIDENCE: HIGH</div>
+              <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge">SAFE</div>
+            </div>
           </div>
 
-          <div style="font-size:32px; font-weight:800; color:#FFF; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹1,500.00</div>
+          <div style="font-size:32px; font-weight:800; color:#FFF; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
           
           <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
             <span class="material-icons-round" style="font-size:16px;">trending_down</span>
-            <span>Projected Month Savings: +₹23,500.00 (94% under ₹25k budget)</span>
+            <span>Calculating live trajectory...</span>
           </div>
 
           <!-- Velocity & Safe Cap Grid -->
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
             <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
               <div class="cf-label" style="color:var(--text-muted); font-size:10px;">DAILY SPEND VELOCITY</div>
-              <div style="font-size:16px; font-weight:800; color:#38BDF8;" id="fcMtdSpend">₹50.00/day</div>
+              <div style="font-size:16px; font-weight:800; color:#38BDF8;" id="fcMtdSpend">₹0.00/day</div>
             </div>
             <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
               <div class="cf-label" style="color:var(--text-muted); font-size:10px;">SAFE DAILY CAP</div>
-              <div style="font-size:16px; font-weight:800; color:#10B981;" id="fcSafeDailyCap">₹780.00/day</div>
+              <div style="font-size:16px; font-weight:800; color:#10B981;" id="fcSafeDailyCap">₹0.00/day</div>
             </div>
           </div>
 
           <!-- Explanation Narrative -->
           <p class="forecast-text" id="fcExplanationText" style="font-size:12px; color:var(--text-secondary); line-height:1.45; margin:0;">
-            At your current velocity of ₹50.00/day, you will comfortably finish the month using only 6.0% of your total budget ceiling.
+            Calculating data-driven forecast based on your multi-month patterns and current-month pace.
           </p>
         </div>
 
@@ -1310,76 +1313,60 @@
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
-              <div style="font-size:10px; color:var(--text-muted);">Estimated Baseline (Weighted 50:30:20)</div>
-              <div style="font-size:22px; font-weight:800; color:#FFF;" id="fcWmaBaseline">₹18,450.00</div>
+              <div style="font-size:10px; color:var(--text-muted);">Historical Weighted Baseline</div>
+              <div style="font-size:22px; font-weight:800; color:#FFF;" id="fcWmaBaseline">₹0.00</div>
             </div>
             <div style="font-size:11px; color:#10B981; font-weight:700; text-align:right;">
-              <div>🟢 12% lower than</div>
-              <div>historical average</div>
+              <div>🟢 3-6 Month Baseline</div>
+              <div>Multi-Factor Weighted</div>
             </div>
           </div>
         </div>
 
-        <!-- 3. Smart AI "Next Action" Suggestions -->
+        <!-- Top Category Drivers (Phase 5 Forecast Engine 2.0) -->
+        <div class="section-header-row" style="margin-bottom:8px;" id="fcCategoryDriversHeader">
+          <div class="section-title">📊 Top Forecast Drivers by Category</div>
+        </div>
+        <div id="fcCategoryDriversContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Upcoming Committed Bills (Phase 5 Forecast Engine 2.0) -->
+        <div class="section-header-row" style="margin-bottom:8px;" id="fcUpcomingBillsHeader">
+          <div class="section-title">📅 Upcoming Committed Obligations</div>
+        </div>
+        <div id="fcUpcomingBillsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- 3. Smart AI Explainable Recommendations -->
         <div class="section-header-row" style="margin-bottom:8px;">
-          <div class="section-title">💡 Smart AI Next Suggestions</div>
+          <div class="section-title">💡 Actionable AI Recommendations</div>
         </div>
-
-        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
-          <!-- Suggestion 1: Safe Daily Cap -->
-          <div class="tx-item" style="background:#141F36; border:1px solid #233354; padding:12px 14px; border-radius:16px; cursor:pointer;" onclick="switchTab('tab-budgets')">
-            <div class="tx-left">
-              <div class="tx-icon-box" style="background:var(--color-emerald);"><span class="material-icons-round">security</span></div>
-              <div>
-                <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">Safe Daily Cap: ₹780 / Day</div>
-                <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Keep spending below this cap to retain over ₹23,500 in month savings.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Suggestion 2: Dining Out Pacing -->
-          <div class="tx-item" style="background:#141F36; border:1px solid #233354; padding:12px 14px; border-radius:16px; cursor:pointer;" onclick="switchTab('tab-transactions')">
-            <div class="tx-left">
-              <div class="tx-icon-box" style="background:var(--color-amber);"><span class="material-icons-round">restaurant</span></div>
-              <div>
-                <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">Food & Dining Pacing</div>
-                <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Dining represents 74% of your discretionary spending. Limiting delivery saves ~₹1,800.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Suggestion 3: Goal Allocation Opportunity -->
-          <div class="tx-item" style="background:#141F36; border:1px solid #233354; padding:12px 14px; border-radius:16px; cursor:pointer;" onclick="switchTab('tab-budgets')">
-            <div class="tx-left">
-              <div class="tx-icon-box" style="background:var(--color-purple);"><span class="material-icons-round">savings</span></div>
-              <div>
-                <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">Surplus Goal Acceleration</div>
-                <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Your projected surplus allows contributing ₹5,000 directly to your Emergency Goal!</div>
-              </div>
-            </div>
-          </div>
+        <div id="fcRecommendationsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+          <!-- Dynamically populated with explainable recommendations -->
         </div>
 
         <!-- 4. Visual Forecast Trajectory Chart -->
         <div style="background:#0F172A; border:1px solid var(--border-card); border-radius:18px; padding:16px; margin-bottom:18px;">
           <div style="font-size:11px; color:var(--text-muted); font-weight:800; margin-bottom:8px; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
-          <svg viewBox="0 0 300 100" style="width:100%; height:100px; overflow:visible;">
+          <svg viewBox="0 0 300 100" style="width:100%; height:100px; overflow:visible;" id="fcTrajectorySvg">
             <!-- Target Budget Line -->
-            <line x1="0" y1="20" x2="300" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4"/>
-            <text x="5" y="16" fill="#EF4444" font-size="9" font-weight="700">Budget Limit (₹25,000)</text>
+            <line id="fcSvgBudgetLine" x1="0" y1="20" x2="300" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4"/>
+            <text id="fcSvgBudgetText" x="5" y="16" fill="#EF4444" font-size="9" font-weight="700">Budget Limit</text>
             
             <!-- Actual MTD Line (Solid Cyan) -->
-            <path d="M 0 90 L 80 88 L 160 85 L 240 82" fill="none" stroke="#06B6D4" stroke-width="3" stroke-linecap="round"/>
+            <path id="fcSvgActualPath" d="M 5 90 L 150 85" fill="none" stroke="#06B6D4" stroke-width="3" stroke-linecap="round"/>
             
             <!-- Forecasted Velocity Trajectory (Dashed Emerald) -->
-            <path d="M 240 82 L 300 78" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="5" stroke-linecap="round"/>
-            <circle cx="240" cy="82" r="4" fill="#06B6D4"/>
-            <circle cx="300" cy="78" r="5" fill="#10B981"/>
+            <path id="fcSvgProjPath" d="M 150 85 L 295 80" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="5" stroke-linecap="round"/>
+            <circle id="fcSvgTodayDot" cx="150" cy="85" r="4" fill="#06B6D4"/>
+            <circle id="fcSvgProjDot" cx="295" cy="80" r="5" fill="#10B981"/>
           </svg>
           <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-weight:700; margin-top:4px;">
             <span>Day 1</span>
-            <span>Today (Day 24)</span>
-            <span>Month-End (Day 30)</span>
+            <span id="fcSvgTodayLabel">Today</span>
+            <span id="fcSvgMonthEndLabel">Month-End</span>
           </div>
         </div>
 
@@ -2723,24 +2710,236 @@
       if (!f) return;
       document.getElementById('forecastProjectedVal').innerText = `₹${f.projected_month_end_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
       document.getElementById('forecastSpeedVal').innerText = `₹${f.daily_spending_velocity.toFixed(1)} / day pace`;
-      document.getElementById('forecastAdviceText').innerText = f.warning_message;
+      document.getElementById('forecastAdviceText').innerText = f.warning_message || f.risk_reason || '';
 
       const badge = document.getElementById('forecastRiskBadge');
-      badge.innerText = f.risk_status;
-      badge.className = `forecast-risk-pill ${f.risk_status === 'SAFE' ? 'risk-safe' : f.risk_status === 'WARNING' ? 'risk-warning' : 'risk-danger'}`;
-
-      // Tab 4 Deep Dive
-      document.getElementById('fcMtdSpend').innerText = `₹${f.mtd_actual_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('fcWmaBaseline').innerText = `₹${f.baseline_wma_history.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('fcExplanationText').innerText = f.warning_message;
-      const deepBadge = document.getElementById('forecastDeepRiskBadge');
-      if (deepBadge) {
-        deepBadge.innerText = f.risk_status;
-        deepBadge.className = badge.className;
+      if (badge) {
+        badge.innerText = f.risk_status;
+        badge.className = `forecast-risk-pill ${f.risk_status === 'SAFE' ? 'risk-safe' : f.risk_status === 'WARNING' ? 'risk-warning' : 'risk-danger'}`;
       }
 
-      // Refresh Deep Dive and AI Mentor Data
-      refreshForecastData();
+      // Tab 4 Deep Dive
+      renderForecastDetails(f);
+    }
+
+    function renderForecastDetails(f) {
+      if (!f) return;
+      const projEl = document.getElementById('fcMonthEndProjectedDisplay');
+      if (projEl) projEl.innerText = `₹${f.projected_month_end_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      const surplusEl = document.getElementById('fcSurplusDisplay');
+      if (surplusEl) {
+        if (f.monthly_budget > 0) {
+          if (f.projected_month_end_spend <= f.monthly_budget) {
+            const surplus = f.monthly_budget - f.projected_month_end_spend;
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#10B981;">trending_down</span><span style="color:#10B981;">Projected Savings: +₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${f.projected_budget_utilization_pct}% of ₹${f.monthly_budget.toLocaleString('en-IN')} budget)</span>`;
+          } else {
+            const overrun = f.projected_month_end_spend - f.monthly_budget;
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${f.projected_budget_utilization_pct}% of ₹${f.monthly_budget.toLocaleString('en-IN')} budget)</span>`;
+          }
+        } else {
+          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#38BDF8;">info</span><span style="color:#38BDF8;">No monthly budget ceiling configured</span>`;
+        }
+      }
+
+      const mtdEl = document.getElementById('fcMtdSpend');
+      if (mtdEl) mtdEl.innerText = `₹${f.daily_spending_velocity.toFixed(1)}/day`;
+
+      const capEl = document.getElementById('fcSafeDailyCap');
+      if (capEl) capEl.innerText = `₹${(f.safe_daily_spend !== undefined ? f.safe_daily_spend : 0).toFixed(1)}/day`;
+
+      const deepBadge = document.getElementById('forecastDeepRiskBadge');
+      if (deepBadge) {
+        const r = f.risk_level || f.risk_status;
+        deepBadge.innerText = r;
+        deepBadge.className = `forecast-risk-pill ${r === 'CRITICAL' || r === 'HIGH' || r === 'DANGER' ? 'risk-danger' : r === 'MODERATE' || r === 'WARNING' ? 'risk-warning' : 'risk-safe'}`;
+      }
+
+      const confBadge = document.getElementById('forecastConfidenceBadge');
+      if (confBadge && f.confidence) {
+        confBadge.innerText = `CONFIDENCE: ${f.confidence}`;
+        confBadge.style.color = f.confidence === 'HIGH' ? '#10B981' : f.confidence === 'MEDIUM' ? '#F59E0B' : '#94A3B8';
+        confBadge.style.borderColor = f.confidence === 'HIGH' ? 'rgba(16,185,129,0.4)' : f.confidence === 'MEDIUM' ? 'rgba(245,158,11,0.4)' : 'rgba(148,163,184,0.4)';
+        confBadge.title = f.confidence_reason || '';
+      }
+
+      const expEl = document.getElementById('fcExplanationText');
+      if (expEl) {
+        let text = f.risk_reason || f.warning_message || '';
+        if (f.confidence_reason) text += ` • ${f.confidence_reason}`;
+        expEl.innerText = text;
+      }
+
+      const baseEl = document.getElementById('fcWmaBaseline');
+      if (baseEl) baseEl.innerText = `₹${f.baseline_wma_history.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      renderCategoryDrivers(f.category_forecasts);
+      renderUpcomingBills(f.upcoming_recurring);
+      renderRecommendations(f.recommendations);
+      renderTrajectoryChart(f);
+    }
+
+    function renderCategoryDrivers(cats) {
+      const container = document.getElementById('fcCategoryDriversContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!cats || cats.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:12px;">No category spending recorded yet.</div>';
+        return;
+      }
+      cats.slice(0, 4).forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'tx-item';
+        div.style.background = '#141F36';
+        div.style.border = '1px solid #233354';
+        div.style.padding = '10px 14px';
+        div.style.borderRadius = '14px';
+        div.innerHTML = `
+          <div class="tx-left">
+            <div class="tx-icon-box" style="background:#3B82F6; width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">category</span></div>
+            <div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">${c.category}</div>
+              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">MTD: ₹${c.mtd_spend.toLocaleString('en-IN')} ➔ Projected: ₹${c.projected_month_end.toLocaleString('en-IN')} (${c.pct_of_projected_total}%)</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:10px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:6px; color:#A78BFA; font-weight:700;">${c.confidence}</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderUpcomingBills(bills) {
+      const container = document.getElementById('fcUpcomingBillsContainer');
+      const header = document.getElementById('fcUpcomingBillsHeader');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!bills || bills.length === 0) {
+        if (header) header.style.display = 'none';
+        container.style.display = 'none';
+        return;
+      }
+      if (header) header.style.display = 'flex';
+      container.style.display = 'flex';
+      bills.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'tx-item';
+        div.style.background = '#141F36';
+        div.style.border = '1px solid #233354';
+        div.style.padding = '10px 14px';
+        div.style.borderRadius = '14px';
+        div.innerHTML = `
+          <div class="tx-left">
+            <div class="tx-icon-box" style="background:var(--color-amber); width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">event</span></div>
+            <div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">${b.title}</div>
+              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Due: ${b.due_date || 'Upcoming'}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px; font-weight:800; color:#FFF;">₹${b.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            <span style="font-size:9px; color:var(--color-amber); font-weight:700;">COMMITTED</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderRecommendations(recs) {
+      const container = document.getElementById('fcRecommendationsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!recs || recs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:12px;">No priority actions required at this time.</div>';
+        return;
+      }
+      recs.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'tx-item';
+        div.style.background = '#141F36';
+        div.style.border = '1px solid #233354';
+        div.style.padding = '12px 14px';
+        div.style.borderRadius = '16px';
+        div.style.cursor = 'pointer';
+        div.onclick = () => switchTab('tab-budgets');
+
+        let icon = 'lightbulb';
+        let iconBg = 'var(--color-purple)';
+        if (r.severity === 'CRITICAL' || r.severity === 'WARNING') {
+          icon = 'warning';
+          iconBg = r.severity === 'CRITICAL' ? 'var(--color-ruby)' : 'var(--color-amber)';
+        } else if (r.severity === 'SUCCESS') {
+          icon = 'check_circle';
+          iconBg = 'var(--color-emerald)';
+        }
+
+        div.innerHTML = `
+          <div class="tx-left" style="align-items:flex-start;">
+            <div class="tx-icon-box" style="background:${iconBg}; margin-top:2px;"><span class="material-icons-round">${icon}</span></div>
+            <div style="flex:1;">
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF; margin-bottom:2px;">${r.title}</div>
+              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.4;">${r.explanation}</div>
+              <div style="font-size:11px; color:#38BDF8; font-weight:700;">💡 Action: ${r.suggested_action}</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderTrajectoryChart(f) {
+      const budget = f.monthly_budget || 0;
+      const mtd = f.mtd_actual_spend || 0;
+      const proj = f.projected_month_end_spend || 0;
+      const day = f.days_elapsed || 1;
+      const totalDays = f.total_days_in_month || 30;
+
+      const maxVal = Math.max(budget * 1.15, proj * 1.15, mtd * 1.15, 1000);
+      const getY = val => Math.max(10, Math.min(90, 90 - (val / maxVal * 80)));
+      const getX = d => Math.max(5, Math.min(295, (d / totalDays) * 290 + 5));
+
+      const budgetY = budget > 0 ? getY(budget) : 20;
+      const todayX = getX(day);
+      const mtdY = getY(mtd);
+      const projY = getY(proj);
+
+      const budgetLine = document.getElementById('fcSvgBudgetLine');
+      const budgetText = document.getElementById('fcSvgBudgetText');
+      if (budgetLine) {
+        budgetLine.setAttribute('y1', budgetY);
+        budgetLine.setAttribute('y2', budgetY);
+        if (budget <= 0) budgetLine.style.display = 'none';
+        else budgetLine.style.display = 'block';
+      }
+      if (budgetText) {
+        budgetText.setAttribute('y', Math.max(12, budgetY - 4));
+        budgetText.textContent = budget > 0 ? `Budget Limit (₹${budget.toLocaleString('en-IN')})` : '';
+      }
+
+      const actualPath = document.getElementById('fcSvgActualPath');
+      if (actualPath) actualPath.setAttribute('d', `M 5 90 L ${todayX} ${mtdY}`);
+
+      const projPath = document.getElementById('fcSvgProjPath');
+      if (projPath) projPath.setAttribute('d', `M ${todayX} ${mtdY} L 295 ${projY}`);
+
+      const todayDot = document.getElementById('fcSvgTodayDot');
+      if (todayDot) {
+        todayDot.setAttribute('cx', todayX);
+        todayDot.setAttribute('cy', mtdY);
+      }
+
+      const projDot = document.getElementById('fcSvgProjDot');
+      if (projDot) {
+        projDot.setAttribute('cx', 295);
+        projDot.setAttribute('cy', projY);
+      }
+
+      const todayLabel = document.getElementById('fcSvgTodayLabel');
+      if (todayLabel) todayLabel.textContent = `Today (Day ${day})`;
+
+      const monthEndLabel = document.getElementById('fcSvgMonthEndLabel');
+      if (monthEndLabel) monthEndLabel.textContent = `Month-End (Day ${totalDays})`;
     }
 
     // ----------------------------------------------------
@@ -2751,14 +2950,8 @@
       const fcRes = await apiRequest('/forecast/month-end');
       if (fcRes && fcRes.success) {
         const f = fcRes.forecast;
-        document.getElementById('fcMtdSpend').innerText = `₹${f.mtd_actual_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        document.getElementById('fcWmaBaseline').innerText = `₹${f.baseline_wma_history.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        document.getElementById('fcExplanationText').innerText = f.warning_message;
-        const deepBadge = document.getElementById('forecastDeepRiskBadge');
-        if (deepBadge) {
-          deepBadge.innerText = f.risk_status;
-          deepBadge.className = `forecast-risk-pill ${f.risk_status === 'SAFE' ? 'risk-safe' : f.risk_status === 'WARNING' ? 'risk-warning' : 'risk-danger'}`;
-        }
+        APP_STATE.forecast = f;
+        renderForecastDetails(f);
       }
 
       // 2. Fetch MoM Comparison (Phase 8)

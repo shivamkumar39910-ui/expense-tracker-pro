@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import database
 import forecasting_engine
 import ai_mentor_service
+import forecast_metrics
 
 api_v1 = Blueprint('api_v1', __name__)
 
@@ -1011,6 +1012,52 @@ def get_month_end_forecast():
     target_date = request.args.get("date")
     result = forecasting_engine.calculate_month_end_forecast(user_id, target_date=target_date)
     return jsonify({"success": True, "forecast": result}), 200
+
+@api_v1.route('/forecast', methods=['GET'])
+@token_required
+def get_forecast_v2():
+    user_id = request.user["id"]
+    target_date = request.args.get("date")
+    fc = forecasting_engine.calculate_month_end_forecast(user_id, target_date=target_date)
+    return jsonify({
+        "success": True,
+        "current_spend": fc["mtd_actual_spend"],
+        "budget": fc["budget"],
+        "remaining_budget": fc["remaining_budget"],
+        "projected_month_end": fc["projected_month_end_spend"],
+        "safe_daily_spend": fc["safe_daily_spend"],
+        "days_elapsed": fc["days_elapsed"],
+        "days_remaining": fc["days_remaining"],
+        "velocity": fc["daily_spending_velocity"],
+        "budget_usage_percentage": fc["projected_budget_utilization_pct"],
+        "risk_level": fc["risk_level"],
+        "risk_reason": fc["risk_reason"],
+        "confidence": fc["confidence"],
+        "confidence_score": fc["confidence_score"],
+        "confidence_reason": fc["confidence_reason"],
+        "historical_baseline": fc["historical_baseline"],
+        "category_forecasts": fc["category_forecasts"],
+        "upcoming_recurring": fc["upcoming_recurring"],
+        "recommendations": fc["recommendations"],
+        "forecast": fc
+    }), 200
+
+@api_v1.route('/forecast/backtest', methods=['GET'])
+@token_required
+def get_forecast_backtest():
+    user_id = request.user["id"]
+    today = date.today()
+    test_months = []
+    y, m = today.year, today.month
+    for _ in range(3):
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+        test_months.append((y, m))
+    results = forecast_metrics.run_backtest_simulation(user_id, test_months)
+    return jsonify({"success": True, "backtest": results}), 200
+
 
 # ==================================================
 # 7. Insights, Cashflow & Command Center Aggregator

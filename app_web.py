@@ -18,6 +18,11 @@ from api_v1 import api_v1
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(api_v1, url_prefix='/api/v1')
+
+@app.route('/api/forecast', methods=['GET'])
+def api_forecast_alias():
+    from api_v1 import get_forecast_v2
+    return get_forecast_v2()
 app.secret_key = os.environ.get("SECRET_KEY", "expense_tracker_secure_production_secret_key_2026")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

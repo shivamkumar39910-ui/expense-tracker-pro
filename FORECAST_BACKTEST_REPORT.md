@@ -1,5 +1,5 @@
 # FORECAST ENGINE 2.0 — BACKTESTING ACCURACY REPORT
-**Generated:** 2026-09-30 16:16:16
+**Generated:** 2026-09-30 17:44:01
 **Evaluated Cutoff Periods:** 9
 
 ## 1. Summary Performance Metrics

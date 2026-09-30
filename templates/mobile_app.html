@@ -2726,39 +2726,40 @@
 
     // Tab Navigation & Native Browser / Phone Back Button Support
     function switchTab(tabId, pushHistory = true) {
-      triggerHaptic('light');
-      document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      try {
+        triggerHaptic('light');
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
-      const activeScreen = document.getElementById(tabId);
-      if (activeScreen) {
-        activeScreen.classList.add('active');
-        activeScreen.scrollTop = 0;
-      }
-
-      const vp = document.getElementById('screenViewport');
-      if (vp) vp.scrollTop = 0;
-
-      const navTab = document.getElementById(`nav-${tabId}`);
-      if (navTab) navTab.classList.add('active');
-
-      if (pushHistory && window.history) {
-        window.history.pushState({ tab: tabId }, '');
-      }
-
-      // When switching to Profile tab, refresh user UI and accounts
-      if (tabId === 'tab-profile') {
-        updateUserUI();
-        if (typeof renderProfileAccounts === 'function') {
-          renderProfileAccounts();
+        const activeScreen = document.getElementById(tabId);
+        if (activeScreen) {
+          activeScreen.classList.add('active');
+          activeScreen.scrollTop = 0;
         }
-      }
 
-      // When switching to AI Predict tab, immediately render predictions
-      if (tabId === 'tab-forecast') {
-        renderAiPredictionHero();
+        const vp = document.getElementById('screenViewport');
+        if (vp) vp.scrollTop = 0;
+
+        const navTab = document.getElementById(`nav-${tabId}`);
+        if (navTab) navTab.classList.add('active');
+
+        if (pushHistory && window.history) {
+          window.history.pushState({ tab: tabId }, '');
+        }
+
+        // Tab specific hooks wrapped safely in try/catch
+        if (tabId === 'tab-profile') {
+          try { updateUserUI(); } catch (e) { console.error('updateUserUI error:', e); }
+          try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
+        }
+        if (tabId === 'tab-forecast') {
+          try { renderAiPredictionHero(); } catch (e) { console.error('renderAiPredictionHero error:', e); }
+        }
+      } catch (err) {
+        console.error('switchTab error:', err);
       }
     }
+    window.switchTab = switchTab;
 
     // Hardware / Native Phone Back Button Listener
     window.addEventListener('popstate', (event) => {
@@ -4445,14 +4446,30 @@
     }
 
     function updateUserUI() {
-      if (!APP_STATE.user) return;
-      const initial = (APP_STATE.user.name || 'U').charAt(0).toUpperCase();
-      document.getElementById('homeUserAvatar').innerText = initial;
-      document.getElementById('homeUserName').innerText = APP_STATE.user.name;
-      document.getElementById('profileAvatarBig').innerText = initial;
-      document.getElementById('profileNameBig').innerText = APP_STATE.user.name;
-      document.getElementById('profileEmailBig').innerText = APP_STATE.user.email || APP_STATE.user.phone || '';
+      try {
+        if (!APP_STATE.user) {
+          const stored = localStorage.getItem('user_profile');
+          if (stored) {
+            try { APP_STATE.user = JSON.parse(stored); } catch (e) {}
+          }
+        }
+        const user = APP_STATE.user || {};
+        const initial = (user.name || 'U').charAt(0).toUpperCase();
+        const homeAvatar = document.getElementById('homeUserAvatar');
+        if (homeAvatar) homeAvatar.innerText = initial;
+        const homeName = document.getElementById('homeUserName');
+        if (homeName) homeName.innerText = user.name || 'User';
+        const profileAvatar = document.getElementById('profileAvatarBig');
+        if (profileAvatar) profileAvatar.innerText = initial;
+        const profileName = document.getElementById('profileNameBig');
+        if (profileName) profileName.innerText = user.name || 'User';
+        const profileEmail = document.getElementById('profileEmailBig');
+        if (profileEmail) profileEmail.innerText = user.email || user.phone || 'Verified Account';
+      } catch (e) {
+        console.warn('updateUserUI warning:', e);
+      }
     }
+    window.updateUserUI = updateUserUI;
 
     function openEditProfileModal() {
       triggerHaptic('light');
@@ -4521,29 +4538,40 @@
     }
 
     function renderProfileAccounts() {
-      const container = document.getElementById('profileAccountsList');
-      if (!container) return;
-      container.innerHTML = '';
-      APP_STATE.accounts.forEach(acc => {
-        const div = document.createElement('div');
-        div.className = 'tx-item';
-        div.innerHTML = `
-          <div class="tx-left">
-            <div class="tx-icon-box" style="background:${acc.color_hex};">
-              <span class="material-icons-round">${acc.icon}</span>
+      try {
+        const container = document.getElementById('profileAccountsList');
+        if (!container) return;
+        container.innerHTML = '';
+        const accounts = (APP_STATE && Array.isArray(APP_STATE.accounts)) ? APP_STATE.accounts : [];
+        if (accounts.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px; background:rgba(255,255,255,0.02); border-radius:10px; text-align:center;">No accounts registered. Tap + Add Account to create one.</div>';
+          return;
+        }
+        accounts.forEach(acc => {
+          const div = document.createElement('div');
+          div.className = 'tx-item';
+          const bal = (acc.current_balance !== undefined && acc.current_balance !== null) ? Number(acc.current_balance) : 0;
+          div.innerHTML = `
+            <div class="tx-left">
+              <div class="tx-icon-box" style="background:${acc.color_hex || '#4F46E5'};">
+                <span class="material-icons-round">${acc.icon || 'account_balance_wallet'}</span>
+              </div>
+              <div>
+                <div class="tx-title">${acc.name || 'Account'}</div>
+                <div class="tx-meta">${acc.account_type || 'BANK'}</div>
+              </div>
             </div>
-            <div>
-              <div class="tx-title">${acc.name}</div>
-              <div class="tx-meta">${acc.account_type}</div>
+            <div class="tx-right">
+              <div class="tx-amount" style="color:#FFF;">₹${bal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
             </div>
-          </div>
-          <div class="tx-right">
-            <div class="tx-amount" style="color:#FFF;">₹${acc.current_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+          `;
+          container.appendChild(div);
+        });
+      } catch (e) {
+        console.warn('renderProfileAccounts warning:', e);
+      }
     }
+    window.renderProfileAccounts = renderProfileAccounts;
 
     async function promptAddAccount() {
       const name = prompt('Enter Account Name (e.g. HDFC Salary, Cash, SBI Savings):');

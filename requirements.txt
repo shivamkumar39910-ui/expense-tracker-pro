@@ -5,4 +5,5 @@ PyJWT>=2.8.0
 gunicorn>=22.0.0
 python-dotenv>=1.0.0
 psycopg2-binary>=2.9.9
+pywebpush>=1.14.0
 

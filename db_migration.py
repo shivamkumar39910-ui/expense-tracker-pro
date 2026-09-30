@@ -21,7 +21,13 @@ MIGRATION_TABLES = [
     "budgets",
     "recurring_bills",
     "financial_goals",
-    "notifications"
+    "notifications",
+    "push_subscriptions",
+    "notification_preferences",
+    "transaction_parse_events",
+    "subscription_candidates",
+    "financial_alerts",
+    "notification_delivery_log"
 ]
 
 POSTGRES_DDL = """
@@ -295,9 +301,10 @@ def migrate_table(sqlite_conn, pg_conn, table_name: str):
     pg_cur.executemany(insert_sql, cleaned_rows)
     pg_conn.commit()
 
-    # Reset sequence so next auto-generated ID is max(id) + 1
-    pg_cur.execute(f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE((SELECT MAX(id) FROM \"{table_name}\"), 1));")
-    pg_conn.commit()
+    # Reset sequence so next auto-generated ID is max(id) + 1 (if table has an id serial column)
+    if "id" in cols:
+        pg_cur.execute(f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE((SELECT MAX(id) FROM \"{table_name}\"), 1));")
+        pg_conn.commit()
     pg_cur.close()
 
     print(f"[MIGRATION] Table '{table_name}': Migrated {len(cleaned_rows)} rows. Sequence reset.")

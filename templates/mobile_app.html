@@ -23,17 +23,17 @@
   
   <style>
     :root {
-      --bg-app: #0B0F19;
-      --bg-card: #151D2E;
-      --bg-card-subtle: #1C263B;
-      --bg-input: #232F46;
-      --border-card: #28354D;
+      --bg-app: #0B1120;
+      --bg-card: #151F32;
+      --bg-card-subtle: #1E293B;
+      --bg-input: #1E293B;
+      --border-card: rgba(255, 255, 255, 0.08);
       --text-primary: #F8FAFC;
       --text-secondary: #94A3B8;
       --text-muted: #64748B;
       --color-emerald: #10B981;
       --color-emerald-glow: rgba(16, 185, 129, 0.18);
-      --color-sapphire: #3B82F6;
+      --color-sapphire: #38BDF8;
       --color-ruby: #EF4444;
       --color-amber: #F59E0B;
       --color-purple: #8B5CF6;
@@ -44,7 +44,21 @@
       --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Phase 18: Pure OLED Dark Theme */
+    /* Midnight Slate Fintech Theme (Default High-End Aesthetic) */
+    body.theme-midnight, body:not(.theme-light):not(.theme-oled) {
+      background: radial-gradient(circle at 50% 0%, #1E293B 0%, #0F172A 50%, #0B1120 100%) fixed !important;
+      color: #F8FAFC !important;
+    }
+    body.theme-midnight .device-wrapper, body:not(.theme-light):not(.theme-oled) .device-wrapper {
+      --bg-app: #0B1120 !important;
+      --bg-card: #151F32 !important;
+      --bg-card-subtle: #1E293B !important;
+      --bg-input: #1E293B !important;
+      --border-card: rgba(255, 255, 255, 0.09) !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B !important;
+    }
+
+    /* Phase 18: Pure OLED Dark Theme (Optional toggle) */
     body.theme-oled {
       background-color: #000000 !important;
     }
@@ -329,13 +343,14 @@
 
     body {
       font-family: var(--font);
-      background-color: #030712;
+      background: radial-gradient(circle at 50% 0%, #1E293B 0%, #0F172A 50%, #0B1120 100%) fixed;
       color: var(--text-primary);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* Desktop Viewport Shell Frame */
@@ -346,7 +361,7 @@
       height: 900px;
       max-height: 100vh;
       background: var(--bg-app);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 10px #1e293b, 0 0 0 12px #334155;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B;
       border-radius: 44px;
       overflow: hidden;
       display: flex;
@@ -754,15 +769,15 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 74px;
-      background: rgba(15, 23, 42, 0.95);
+      height: 72px;
+      background: rgba(15, 23, 42, 0.96);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border-card);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-around;
-      padding: 0 10px;
+      padding: 0 8px;
       z-index: 60;
     }
     .nav-tab {
@@ -771,19 +786,26 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      color: var(--text-muted);
-      font-size: 10px;
+      color: #94A3B8;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      transition: color 0.15s ease;
+      transition: all 0.2s ease;
       flex: 1;
       height: 100%;
     }
-    .nav-tab.active {
-      color: var(--color-emerald);
-    }
     .nav-tab .material-icons-round {
       font-size: 22px;
+      color: #94A3B8;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .nav-tab.active {
+      color: var(--color-sapphire);
+      font-weight: 700;
+    }
+    .nav-tab.active .material-icons-round {
+      color: var(--color-sapphire);
+      transform: scale(1.1);
     }
 
     /* Elevated Center FAB (+) */
@@ -1027,71 +1049,125 @@
       box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
     }
 
-    /* 2FA AUTH MODAL */
+    /* MODERN AUTH MODAL & TAB SYSTEM */
     .auth-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(11, 15, 25, 0.98);
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       z-index: 200;
       padding: 30px 24px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      overflow-y: auto;
     }
-    .auth-overlay.hidden { display: none; }
+    .auth-overlay.hidden { display: none !important; }
     .auth-brand {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 22px;
     }
     .auth-shield-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 20px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      width: 64px;
+      height: 64px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(16, 185, 129, 0.2));
+      border: 1px solid rgba(56, 189, 248, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 12px auto;
-      color: var(--color-emerald);
+      color: var(--color-sapphire);
       font-size: 32px;
     }
     .auth-title {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
       color: #FFF;
       letter-spacing: -0.5px;
     }
     .auth-subtitle {
       font-size: 13px;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-top: 4px;
     }
+
+    /* Modern Pill Auth Switcher (Log In vs Sign Up) */
+    .auth-tab-bar {
+      display: flex;
+      background: #1E293B;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+    .auth-tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: transparent;
+      color: #94A3B8;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .auth-tab-btn:hover {
+      color: #F8FAFC;
+    }
+    .auth-tab-btn.active {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+    }
+
+    body.theme-light .auth-tab-bar {
+      background: #E2E8F0 !important;
+      border-color: #CBD5E1 !important;
+    }
+    body.theme-light .auth-tab-btn {
+      color: #64748B !important;
+    }
+    body.theme-light .auth-tab-btn.active {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+
     .otp-boxes-row {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin: 20px 0;
+      gap: 8px;
+      margin: 18px 0;
     }
     .otp-digit-input {
       width: 44px;
       height: 52px;
       border-radius: 12px;
-      background: #1F293D;
-      border: 1px solid #334155;
+      background: #1E293B;
+      border: 1.5px solid #334155;
       text-align: center;
       font-size: 22px;
       font-weight: 800;
       color: #FFF;
       outline: none;
+      transition: all 0.2s ease;
     }
     .otp-digit-input:focus {
-      border-color: var(--color-emerald);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+      border-color: var(--color-sapphire);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
     }
     .auto-fill-chip {
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
       color: var(--color-sapphire);
       border-radius: 20px;
       padding: 6px 14px;
@@ -1099,6 +1175,9 @@
       font-weight: 700;
       text-align: center;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       margin-bottom: 20px;
     }
   </style>
@@ -1148,24 +1227,18 @@
             <div class="btn-icon-header" id="btnPwaInstall" style="display:none; color:var(--color-emerald); background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.3);" onclick="installPwaApp()" title="Install App to Home Screen">
               <span class="material-icons-round" style="font-size: 19px;">install_mobile</span>
             </div>
-            <!-- Phase 16: Currency Switcher Badge -->
-            <div class="btn-icon-header" onclick="openCurrencyModal()" title="Select Currency" style="font-size:11px; font-weight:800; padding:0 8px; width:auto; border-radius:12px; gap:3px;">
-              <span id="activeCurrencyBadge">₹ INR</span>
+            <!-- Theme Toggle (Midnight Navy / Light Mode) -->
+            <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (Midnight / Light)">
+              <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">light_mode</span>
             </div>
-            <!-- Phase 18: Theme Toggle (OLED / Light) -->
-            <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (OLED / Light)">
-              <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">dark_mode</span>
-            </div>
-            <!-- Notifications -->
+            <!-- Predictive Alerts & Notifications -->
             <div class="btn-icon-header" style="position:relative;" onclick="openNotificationsSheet()" title="Predictive Alerts & Notifications">
               <span class="material-icons-round" style="font-size: 20px;">notifications</span>
-              <span id="notifBadge" style="position:absolute; top:-2px; right:-2px; background:var(--color-ruby); color:#fff; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; border:2px solid #0B0F19;">0</span>
+              <span id="notifBadge" style="position:absolute; top:-2px; right:-2px; background:var(--color-ruby); color:#fff; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; border:2px solid var(--bg-app);">0</span>
             </div>
-            <div class="btn-icon-header" onclick="refreshDashboardData()" title="Sync / Refresh">
+            <!-- Quick Refresh -->
+            <div class="btn-icon-header" onclick="refreshDashboardData()" title="Sync / Refresh Data">
               <span class="material-icons-round" style="font-size: 20px;">sync</span>
-            </div>
-            <div class="btn-icon-header" onclick="switchTab('tab-profile')" title="Profile & Settings">
-              <span class="material-icons-round" style="font-size: 22px;">account_circle</span>
             </div>
           </div>
         </div>
@@ -1886,11 +1959,10 @@
         <span class="material-icons-round" style="font-size:32px;">add</span>
       </div>
 
-      <!-- AI Assistant Tab -->
-      <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" style="position:relative;">
-        <span class="material-icons-round" style="color:var(--color-purple); font-size:24px;">auto_awesome</span>
-        <span style="font-weight:700; color:var(--color-purple);">AI Assistant</span>
-        <span style="position:absolute; top:4px; right:10px; width:6px; height:6px; background:#8B5CF6; border-radius:50%; box-shadow:0 0 8px #8B5CF6;"></span>
+      <!-- AI Advisor Tab -->
+      <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="AI Advisor & Forecast">
+        <span class="material-icons-round">auto_awesome</span>
+        <span>AI Advisor</span>
       </div>
 
       <!-- Hub: Profile, Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
@@ -2689,71 +2761,105 @@
     <!-- ============================================== -->
     <div class="auth-overlay hidden" id="authOverlay">
       <div class="auth-brand" style="margin-bottom:20px;">
-        <div class="auth-shield-icon" style="background:linear-gradient(135deg, rgba(37,99,235,0.2), rgba(16,185,129,0.2)); border-color:rgba(37,99,235,0.35); color:var(--color-sapphire); width:64px; height:64px; border-radius:22px;">
-          <span class="material-icons-round" style="font-size:34px;">account_balance_wallet</span>
+        <div class="auth-shield-icon">
+          <span class="material-icons-round" style="font-size:32px;">account_balance_wallet</span>
         </div>
-        <div class="auth-title" id="authModalTitle" style="font-size:24px; font-weight:800; letter-spacing:-0.5px;">Welcome Back</div>
-        <div class="auth-subtitle" id="authModalSubtitle" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Manage your daily finances smartly & easily</div>
+        <div class="auth-title" id="authModalTitle">Welcome Back</div>
+        <div class="auth-subtitle" id="authModalSubtitle">Log in with your Mobile/Email and Password</div>
       </div>
 
       <!-- Segmented Tab: Log In vs Sign Up -->
       <div id="authCredentialsView">
-        <div class="segmented-control" style="margin-bottom:18px; padding:4px; border-radius:14px; background:#1E293B;">
-          <button class="segment-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')" style="font-weight:700; border-radius:10px;">Log In</button>
-          <button class="segment-btn" id="authTabSignup" onclick="switchAuthTab('SIGNUP')" style="font-weight:700; border-radius:10px; color:var(--text-muted);">Sign Up</button>
+        <div class="auth-tab-bar">
+          <button type="button" class="auth-tab-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')">
+            <span class="material-icons-round" style="font-size:18px;">login</span>
+            <span>Log In</span>
+          </button>
+          <button type="button" class="auth-tab-btn" id="authTabSignup" onclick="switchAuthTab('SIGNUP')">
+            <span class="material-icons-round" style="font-size:18px;">person_add</span>
+            <span>Sign Up</span>
+          </button>
         </div>
 
         <!-- Full Name (Only for Signup) -->
         <div id="authNameField" style="display:none; margin-bottom:14px;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Full Name</label>
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Full Name</label>
           <input type="text" class="form-input-pill" placeholder="e.g. Rahul Sharma" id="authInputName" style="margin-bottom:0;">
         </div>
 
         <!-- Email or Mobile -->
         <div style="margin-bottom:14px;">
-          <label id="authIdentifierLabel" style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Mobile Number or Email</label>
-          <input type="text" class="form-input-pill" placeholder="Enter Mobile No or Email" id="authInputIdentifier" style="margin-bottom:0;">
+          <label id="authIdentifierLabel" style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Mobile Number or Email</label>
+          <input type="text" class="form-input-pill" placeholder="Enter Mobile No (+91...) or Email" id="authInputIdentifier" style="margin-bottom:0;">
         </div>
 
         <!-- Password -->
-        <div style="margin-bottom:22px; position:relative;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Password</label>
+        <div style="margin-bottom:20px; position:relative;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Password</label>
           <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="margin-bottom:0; padding-right:42px;">
-          <span class="material-icons-round" onclick="togglePasswordVisibility()" id="pwdToggleIcon" style="position:absolute; right:14px; top:31px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+          <span class="material-icons-round" onclick="togglePasswordVisibility()" id="pwdToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
         </div>
 
-        <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn" style="height:48px; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
           <span>Log In</span>
           <span class="material-icons-round" style="font-size:20px;">arrow_forward</span>
         </button>
+
+        <!-- Quick Demo One-Tap Fill Pill -->
+        <div id="demoAccountPill" style="text-align:center;">
+          <div onclick="fillDemoCredentials()" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:var(--color-sapphire); font-size:11px; font-weight:700; cursor:pointer;" title="Tap to auto-fill demo account credentials">
+            <span class="material-icons-round" style="font-size:15px;">flash_on</span>
+            <span>Quick Demo: rahul@expensetracker.pro</span>
+          </div>
+        </div>
       </div>
 
       <!-- OTP Verification View (For Initial Signup Only) -->
       <div id="authOtpView" style="display:none; text-align:center;">
-        <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:14px 16px; margin-bottom:22px;">
-          <span class="material-icons-round" style="color:var(--color-emerald); font-size:28px; margin-bottom:4px;">mark_email_read</span>
-          <p style="font-size:13px; color:var(--text-primary); margin:4px 0 0 0; font-weight:600;">
-            Enter the 6-digit verification code sent to your contact:
-          </p>
-          <div id="otpRecipientDisplay" style="font-size:13px; font-weight:800; color:var(--color-emerald); margin-top:4px;"></div>
+        <div style="background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
+          <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.18); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
+            <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
+          </div>
+          <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Sent</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+            We dispatched a 6-digit verification code to:
+          </div>
+          <div id="otpRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
         </div>
 
-        <div class="otp-boxes-row" style="margin-bottom:24px;">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_1" oninput="focusNextOtp(1, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_2" oninput="focusNextOtp(2, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_3" oninput="focusNextOtp(3, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_4" oninput="focusNextOtp(4, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_5" oninput="focusNextOtp(5, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_6" oninput="focusNextOtp(6, event)">
+        <!-- Prominent Verification Code Display with 1-Tap Fill -->
+        <div style="background:rgba(16,185,129,0.08); border:1.5px dashed rgba(16,185,129,0.45); border-radius:16px; padding:14px 16px; margin-bottom:20px;">
+          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--color-emerald); letter-spacing:0.5px;">Your Verification Code</div>
+          <div id="dispatchedOtpCode" style="font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:800; letter-spacing:6px; color:var(--color-emerald); margin:8px 0;">------</div>
+          <button type="button" class="auto-fill-chip" onclick="autoFillSimulatedOtp()" style="margin:0 auto; background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.35); color:var(--color-emerald);">
+            <span class="material-icons-round" style="font-size:16px;">bolt</span>
+            <span>1-Tap Auto-Fill Code</span>
+          </button>
         </div>
 
-        <button class="btn-submit-sheet" onclick="verifyOtpCode()" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px;">
-          Verify & Get Started
+        <div class="otp-boxes-row" style="margin-bottom:20px;">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_1" oninput="focusNextOtp(1, event)" onkeydown="handleOtpKeydown(1, event)" onpaste="handleOtpPaste(event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_2" oninput="focusNextOtp(2, event)" onkeydown="handleOtpKeydown(2, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_3" oninput="focusNextOtp(3, event)" onkeydown="handleOtpKeydown(3, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_4" oninput="focusNextOtp(4, event)" onkeydown="handleOtpKeydown(4, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_5" oninput="focusNextOtp(5, event)" onkeydown="handleOtpKeydown(5, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_6" oninput="focusNextOtp(6, event)" onkeydown="handleOtpKeydown(6, event)">
+        </div>
+
+        <button class="btn-submit-sheet" onclick="verifyOtpCode()" id="btnVerifyOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span class="material-icons-round" style="font-size:20px;">verified_user</span>
+          <span>Verify & Activate Account</span>
         </button>
 
-        <button type="button" class="segment-btn" onclick="switchAuthTab('LOGIN')" style="background:transparent; border:none; color:var(--text-muted); font-size:13px; text-decoration:underline; cursor:pointer;">
-          ← Back to Login
-        </button>
+        <div style="display:flex; justify-content:center; gap:16px; align-items:center;">
+          <button type="button" onclick="switchAuthTab('SIGNUP')" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+            ← Edit Details
+          </button>
+          <span style="color:var(--text-muted); font-size:12px;">•</span>
+          <button type="button" onclick="switchAuthTab('LOGIN')" style="background:transparent; border:none; color:var(--color-sapphire); font-size:12px; font-weight:700; cursor:pointer;">
+            Back to Login
+          </button>
+        </div>
       </div>
 
     </div>
@@ -2790,7 +2896,7 @@
       activeCurrency: 'INR',
       currencySymbol: '₹',
       currencies: [],
-      appTheme: localStorage.getItem('app_theme') || 'theme-oled'
+      appTheme: (localStorage.getItem('app_theme') && localStorage.getItem('app_theme') !== 'theme-oled') ? localStorage.getItem('app_theme') : 'theme-midnight'
     };
 
     const API_BASE = '/api/v1';
@@ -2862,20 +2968,20 @@
       if (banner) banner.style.display = 'none';
     }
 
-    // Phase 18: Theme Engine & Haptics
+    // Phase 18: Theme Engine & Haptics (Midnight Slate vs Clean Light)
     function toggleAppTheme() {
       triggerHaptic('light');
-      APP_STATE.appTheme = (APP_STATE.appTheme === 'theme-oled') ? 'theme-light' : 'theme-oled';
+      APP_STATE.appTheme = (APP_STATE.appTheme === 'theme-light') ? 'theme-midnight' : 'theme-light';
       localStorage.setItem('app_theme', APP_STATE.appTheme);
       applyAppTheme();
     }
 
     function applyAppTheme() {
-      document.body.classList.remove('theme-oled', 'theme-light');
+      document.body.classList.remove('theme-oled', 'theme-midnight', 'theme-light');
       document.body.classList.add(APP_STATE.appTheme);
       const icon = document.getElementById('themeToggleIcon');
       if (icon) {
-        icon.innerText = (APP_STATE.appTheme === 'theme-oled') ? 'light_mode' : 'dark_mode';
+        icon.innerText = (APP_STATE.appTheme === 'theme-light') ? 'dark_mode' : 'light_mode';
       }
     }
 
@@ -4555,20 +4661,26 @@
       const tabLog = document.getElementById('authTabLogin');
       const tabSign = document.getElementById('authTabSignup');
       if (tabLog && tabSign) {
-        tabLog.classList.toggle('active', isLogin);
-        tabSign.classList.toggle('active', !isLogin);
-        tabLog.style.color = isLogin ? '#FFF' : 'var(--text-muted)';
-        tabSign.style.color = !isLogin ? '#FFF' : 'var(--text-muted)';
+        if (isLogin) {
+          tabLog.className = 'auth-tab-btn active';
+          tabSign.className = 'auth-tab-btn';
+        } else {
+          tabLog.className = 'auth-tab-btn';
+          tabSign.className = 'auth-tab-btn active';
+        }
       }
 
       const nameField = document.getElementById('authNameField');
       if (nameField) nameField.style.display = isLogin ? 'none' : 'block';
 
+      const demoPill = document.getElementById('demoAccountPill');
+      if (demoPill) demoPill.style.display = isLogin ? 'block' : 'none';
+
       const submitBtn = document.getElementById('authSubmitBtn');
       if (submitBtn) {
         submitBtn.innerHTML = isLogin 
           ? `<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`
-          : `<span>Create Account</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`;
+          : `<span>Create Account & Verify</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`;
       }
 
       const title = document.getElementById('authModalTitle');
@@ -4578,17 +4690,25 @@
       if (subtitle) {
         subtitle.innerText = isLogin 
           ? 'Log in with your Mobile/Email and Password' 
-          : 'Sign up in seconds to start tracking your wealth';
+          : 'First-time sign-up requires quick OTP verification';
       }
 
       const identLabel = document.getElementById('authIdentifierLabel');
       if (identLabel) {
-        identLabel.innerText = isLogin ? 'Mobile Number or Email' : 'Email or Mobile (+91...)';
+        identLabel.innerText = isLogin ? 'Mobile Number or Email' : 'Mobile Number or Email';
       }
 
       document.getElementById('authCredentialsView').style.display = 'block';
       document.getElementById('authOtpView').style.display = 'none';
     }
+
+    function fillDemoCredentials() {
+      const idInput = document.getElementById('authInputIdentifier');
+      const pwdInput = document.getElementById('authInputPassword');
+      if (idInput) idInput.value = 'rahul@expensetracker.pro';
+      if (pwdInput) pwdInput.value = 'password123';
+    }
+    window.fillDemoCredentials = fillDemoCredentials;
 
     async function handleAuthSubmit() {
       const identifier = document.getElementById('authInputIdentifier').value.trim();
@@ -4652,6 +4772,9 @@
       const rcpt = document.getElementById('otpRecipientDisplay');
       if (rcpt) rcpt.innerText = APP_STATE.pendingIdentifier || '';
 
+      const codeDisplay = document.getElementById('dispatchedOtpCode');
+      if (codeDisplay) codeDisplay.innerText = APP_STATE.simulatedOtp || '123456';
+
       for (let i = 1; i <= 6; i++) {
         const inp = document.getElementById(`otp_${i}`);
         if (inp) inp.value = '';
@@ -4668,12 +4791,36 @@
       }
     }
 
+    function handleOtpKeydown(idx, e) {
+      if (e.key === 'Backspace' && !e.target.value && idx > 1) {
+        const prev = document.getElementById(`otp_${idx - 1}`);
+        if (prev) {
+          prev.focus();
+          prev.value = '';
+        }
+      }
+    }
+
+    function handleOtpPaste(e) {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (/^\d{6}$/.test(pasted)) {
+        for (let i = 0; i < 6; i++) {
+          const inp = document.getElementById(`otp_${i + 1}`);
+          if (inp) inp.value = pasted[i];
+        }
+        document.getElementById('otp_6').focus();
+      }
+    }
+
     function autoFillSimulatedOtp() {
       const code = APP_STATE.simulatedOtp || '123456';
       for (let i = 0; i < 6; i++) {
         const inp = document.getElementById(`otp_${i + 1}`);
         if (inp) inp.value = code[i] || '';
       }
+      const last = document.getElementById('otp_6');
+      if (last) last.focus();
     }
 
     async function verifyOtpCode() {

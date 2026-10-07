@@ -120,15 +120,56 @@ def register():
 
     # Check existing user
     if email:
-        cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return jsonify({"success": False, "error": "User with this email already exists"}), 400
+        cursor.execute("SELECT id, is_verified FROM users WHERE LOWER(email) = ?", (email,))
+        existing = cursor.fetchone()
+        if existing:
+            if existing["is_verified"] == 1:
+                conn.close()
+                return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+            else:
+                user_id = existing["id"]
+                otp = generate_otp()
+                otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+                hashed_pwd = generate_password_hash(password)
+                cursor.execute("""
+                    UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
+                    WHERE id = ?
+                """, (name, hashed_pwd, otp, otp_expiry, user_id))
+                conn.commit()
+                conn.close()
+                print(f"[SECURITY 2FA] Re-sent Verification OTP for user {email}: {otp}")
+                return jsonify({
+                    "success": True,
+                    "message": "Registration updated. Verification OTP sent.",
+                    "identifier": email,
+                    "otp_code": otp
+                }), 200
+
     if phone:
-        cursor.execute("SELECT id FROM users WHERE phone = ?", (phone,))
-        if cursor.fetchone():
-            conn.close()
-            return jsonify({"success": False, "error": "User with this phone number already exists"}), 400
+        cursor.execute("SELECT id, is_verified FROM users WHERE phone = ?", (phone,))
+        existing = cursor.fetchone()
+        if existing:
+            if existing["is_verified"] == 1:
+                conn.close()
+                return jsonify({"success": False, "error": "An account with this phone number already exists. Please Log In."}), 400
+            else:
+                user_id = existing["id"]
+                otp = generate_otp()
+                otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+                hashed_pwd = generate_password_hash(password)
+                cursor.execute("""
+                    UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
+                    WHERE id = ?
+                """, (name, hashed_pwd, otp, otp_expiry, user_id))
+                conn.commit()
+                conn.close()
+                print(f"[SECURITY 2FA] Re-sent Verification OTP for user {phone}: {otp}")
+                return jsonify({
+                    "success": True,
+                    "message": "Registration updated. Verification OTP sent.",
+                    "identifier": phone,
+                    "otp_code": otp
+                }), 200
 
     otp = generate_otp()
     otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")

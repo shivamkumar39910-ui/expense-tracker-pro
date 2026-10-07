@@ -22,12 +22,16 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   
   <style>
+    /* ======================================================== */
+    /* DESIGN SYSTEM: EXECUTIVE FINTECH THEME PALETTES          */
+    /* ======================================================== */
     :root {
-      --bg-app: #0B1120;
-      --bg-card: #151F32;
-      --bg-card-subtle: #1E293B;
-      --bg-input: #1E293B;
+      --bg-app: #0B0F19;
+      --bg-card: #131B2E;
+      --bg-card-subtle: #1C263D;
+      --bg-input: #1C263D;
       --border-card: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.05);
       --text-primary: #F8FAFC;
       --text-secondary: #94A3B8;
       --text-muted: #64748B;
@@ -44,38 +48,37 @@
       --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Midnight Slate Fintech Theme (Default High-End Aesthetic) */
-    body.theme-midnight, body:not(.theme-light):not(.theme-oled) {
-      background: radial-gradient(circle at 50% 0%, #1E293B 0%, #0F172A 50%, #0B1120 100%) fixed !important;
+    /* THEME 1: MODERN MIDNIGHT FINTECH (Default Dark Canvas) */
+    body:not(.theme-light) {
+      background: #0B0F19 !important;
       color: #F8FAFC !important;
     }
-    body.theme-midnight .device-wrapper, body:not(.theme-light):not(.theme-oled) .device-wrapper {
-      --bg-app: #0B1120 !important;
-      --bg-card: #151F32 !important;
-      --bg-card-subtle: #1E293B !important;
-      --bg-input: #1E293B !important;
-      --border-card: rgba(255, 255, 255, 0.09) !important;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B !important;
+    body:not(.theme-light) .device-wrapper {
+      --bg-app: #0B0F19 !important;
+      --bg-card: #131B2E !important;
+      --bg-card-subtle: #1C263D !important;
+      --bg-input: #1C263D !important;
+      --border-card: rgba(255, 255, 255, 0.08) !important;
+      --border-subtle: rgba(255, 255, 255, 0.05) !important;
+      --text-primary: #F8FAFC !important;
+      --text-secondary: #94A3B8 !important;
+      --text-muted: #64748B !important;
+      background: #0B0F19 !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B !important;
     }
 
-    /* Phase 18: Pure OLED Dark Theme (Optional toggle) */
-    body.theme-oled {
-      background-color: #000000 !important;
-    }
-    body.theme-oled .device-wrapper {
-      --bg-app: #05070B !important;
-      --bg-card: #0D1117 !important;
-      --bg-card-subtle: #161B22 !important;
-      --bg-input: #1C2128 !important;
-      --border-card: #21262D !important;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 0 10px #0b0f17, 0 0 0 12px #161b22;
-    }
-
-    /* ======================================================== */
-    /* ULTRA-CLEAN HIGH-CONTRAST LIGHT THEME (Zero Hidden Text)  */
-    /* ======================================================== */
+    /* THEME 2: CRISP HIGH-CONTRAST LIGHT (Zero Hidden Text) */
     body.theme-light {
-      background-color: #E2E8F0 !important;
+      --bg-app: #F8FAFC !important;
+      --bg-card: #FFFFFF !important;
+      --bg-card-subtle: #F1F5F9 !important;
+      --bg-input: #FFFFFF !important;
+      --border-card: #E2E8F0 !important;
+      --border-subtle: #CBD5E1 !important;
+      --text-primary: #0F172A !important;
+      --text-secondary: #475569 !important;
+      --text-muted: #64748B !important;
+      background: #F8FAFC !important;
       color: #0F172A !important;
     }
     body.theme-light .device-wrapper {
@@ -84,51 +87,942 @@
       --bg-card-subtle: #F1F5F9 !important;
       --bg-input: #FFFFFF !important;
       --border-card: #E2E8F0 !important;
+      --border-subtle: #CBD5E1 !important;
       --text-primary: #0F172A !important;
       --text-secondary: #475569 !important;
       --text-muted: #64748B !important;
-      background-color: #F8FAFC !important;
+      background: #F8FAFC !important;
       color: #0F172A !important;
-      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.3), 0 0 0 10px #e2e8f0, 0 0 0 12px #cbd5e1 !important;
+      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.25), 0 0 0 1px #E2E8F0 !important;
     }
 
-    /* All Cards, Boxes and Surfaces in Light Mode */
-    body.theme-light .card-net-worth {
-      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-      border: 1px solid #1E40AF !important;
-      color: #FFFFFF !important;
-      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3) !important;
+    /* BASE RESET & MOBILE FRAME */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
-    body.theme-light .card-net-worth .net-worth-amount,
-    body.theme-light .card-net-worth .net-worth-label {
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Desktop Viewport Shell Frame */
+    .device-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      height: 900px;
+      max-height: 100vh;
+      background: var(--bg-app);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B;
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: var(--bg-app) !important;
+        overflow: hidden !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+      }
+      body .device-wrapper,
+      body.theme-light .device-wrapper {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: var(--bg-app) !important;
+      }
+      .mobile-status-bar {
+        display: none !important;
+      }
+      .app-screen {
+        padding: 14px 16px 30px 16px !important;
+      }
+      .mobile-bottom-nav {
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
+        height: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      .app-screen-viewport {
+        padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
+
+    /* Mobile Status Bar (Dynamic Island & Clock) */
+    .mobile-status-bar {
+      height: 48px;
+      padding: 10px 24px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      z-index: 50;
+      background: var(--bg-app);
+    }
+    .dynamic-island {
+      width: 100px;
+      height: 24px;
+      background: #000;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .island-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #1e293b;
+    }
+
+    /* Viewport & Screen Transitions */
+    .app-screen-viewport {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      padding-bottom: 90px;
+      scroll-behavior: smooth;
+    }
+    .app-screen-viewport::-webkit-scrollbar {
+      display: none;
+    }
+    .app-screen {
+      display: none;
+      padding: 16px 20px;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .app-screen.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* App Header */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .user-greeting {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6, #10B981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
       color: #FFFFFF !important;
+    }
+    .user-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .user-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-icon-header {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    /* ======================================================== */
+    /* UNIVERSAL FINTECH CARDS & SURFACES                       */
+    /* ======================================================== */
+    .fintech-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 18px 20px;
+      position: relative;
+      margin-bottom: 18px;
+      color: var(--text-primary);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Hero Net Worth Card (Dedicated to Top Hero) */
+    .card-net-worth {
+      background: linear-gradient(135deg, #182542 0%, #0F172A 100%);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: var(--radius-xl);
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+      box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.4);
+    }
+    .card-net-worth::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .net-worth-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.8) !important;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .net-worth-amount {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #FFFFFF !important;
+      margin-bottom: 16px;
+    }
+    .accounts-pill-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .accounts-pill-row::-webkit-scrollbar { display: none; }
+    .acc-pill {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      color: #FFFFFF !important;
+    }
+    .acc-pill-icon {
+      font-size: 18px;
+      color: var(--color-emerald);
+    }
+    .acc-pill-name {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85) !important;
+      font-weight: 600;
+    }
+    .acc-pill-balance {
+      font-size: 13px;
+      font-weight: 700;
+      color: #FFFFFF !important;
+    }
+
+    /* Cashflow Metrics Grid */
+    .cashflow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .cashflow-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .cf-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+    .cf-label.income { color: var(--color-emerald); }
+    .cf-label.expense { color: var(--color-ruby); }
+    .cf-amount {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* AI Spending Forecast Banner */
+    .forecast-banner {
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      border-radius: var(--radius-xl);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      color: var(--text-primary);
+    }
+    .forecast-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .forecast-title {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-sapphire);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .forecast-risk-pill {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+    .risk-safe {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .risk-warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--color-amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .risk-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-ruby);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .forecast-numbers-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .forecast-big-val {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .forecast-speed {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .forecast-text {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text-secondary);
+    }
+
+    /* Section Headers */
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .section-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-sapphire);
+      cursor: pointer;
+    }
+
+    /* Transaction Item Rows */
+    .tx-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      color: var(--text-primary);
+    }
+    .tx-item:active {
+      transform: scale(0.98);
+      background: var(--bg-card-subtle);
+    }
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .tx-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF !important;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .tx-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .tx-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .tx-right {
+      text-align: right;
+    }
+    .tx-amount {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .tx-amount.expense { color: var(--text-primary); }
+    .tx-amount.income { color: var(--color-emerald); }
+    .tx-amount.transfer { color: var(--color-sapphire); }
+    .tx-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+    .tx-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 12px 0;
+      margin-bottom: 8px;
+    }
+    .tx-filter-bar::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .filter-chip.active {
+      background: var(--color-sapphire);
+      color: #0F172A !important;
+      border-color: var(--color-sapphire);
+    }
+
+    /* ======================================================== */
+    /* 5-DESTINATION BOTTOM NAVIGATION BAR                      */
+    /* ======================================================== */
+    .mobile-bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background: rgba(11, 15, 25, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+      z-index: 60;
+    }
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: #94A3B8;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+      height: 100%;
+    }
+    .nav-tab .material-icons-round {
+      font-size: 22px;
+      color: #94A3B8;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .nav-tab.active {
+      color: var(--color-sapphire);
+      font-weight: 700;
+    }
+    .nav-tab.active .material-icons-round {
+      color: var(--color-sapphire);
+      transform: scale(1.1);
+    }
+
+    /* Elevated Center FAB (+) */
+    .fab-center {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF !important;
+      border: 3px solid var(--bg-app);
+      cursor: pointer;
+      margin-bottom: 24px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .fab-center:active {
+      transform: scale(0.92);
+    }
+
+    /* ======================================================== */
+    /* BOTTOM SHEETS, KEYPAD & FORM INPUTS                      */
+    /* ======================================================== */
+    .sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .sheet-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-card);
+      border-radius: 28px 28px 0 0;
+      padding: 16px 20px 24px 20px;
+      z-index: 110;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 92vh;
+      overflow-y: auto;
+      color: var(--text-primary);
+    }
+    .bottom-sheet.active {
+      transform: translateY(0);
+    }
+    .sheet-handle {
+      width: 40px;
+      height: 5px;
+      background: var(--text-muted);
+      opacity: 0.35;
+      border-radius: 3px;
+      margin: 0 auto 14px auto;
+    }
+
+    /* 3-Way Segmented Control */
+    .segmented-control {
+      background: var(--bg-card-subtle);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      display: flex;
+      margin-bottom: 14px;
+    }
+    .segment-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+    }
+    .segment-btn.active.expense {
+      background: var(--color-ruby) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    .segment-btn.active.income {
+      background: var(--color-emerald) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .segment-btn.active.transfer {
+      background: var(--color-sapphire) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Keypad Display & Numeric Grid */
+    .keypad-display {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      text-align: right;
+      margin-bottom: 14px;
+    }
+    .display-currency {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-emerald);
+      margin-right: 4px;
+    }
+    .display-val {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+    }
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .key-btn {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      color: var(--text-primary);
+      font-size: 19px;
+      font-weight: 700;
+      border-radius: 12px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .key-btn:active {
+      background: var(--border-card);
+    }
+
+    /* Category Ribbon */
+    .category-scroll-grid {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 2px 8px 2px;
+      margin-bottom: 10px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .category-scroll-grid::-webkit-scrollbar { display: none; }
+    .cat-select-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 10px;
+      min-width: 66px;
+      flex-shrink: 0;
+      border-radius: 12px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .cat-select-card.selected {
+      border-color: var(--color-emerald);
+      background: rgba(16, 185, 129, 0.18);
+    }
+    .cat-select-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF !important;
+      font-size: 17px;
+    }
+    .cat-select-name {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      line-height: 1.1;
+      white-space: nowrap;
+      max-width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cat-select-card.selected .cat-select-name {
+      color: var(--text-primary);
+      font-weight: 800;
+    }
+
+    /* Universal Form Inputs */
+    .form-input-pill,
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    select {
+      width: 100%;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: var(--font);
+      outline: none;
+      margin-bottom: 14px;
+    }
+    .form-input-pill::placeholder,
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn-submit-sheet {
+      width: 100%;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF !important;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+      transition: opacity 0.2s ease, transform 0.1s ease;
+    }
+    .btn-submit-sheet:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* ======================================================== */
+    /* MODERN AUTH MODAL & TAB SYSTEM                           */
+    /* ======================================================== */
+    .auth-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11, 15, 25, 0.98);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      z-index: 200;
+      padding: 30px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow-y: auto;
+      color: var(--text-primary);
+    }
+    .auth-overlay.hidden { display: none !important; }
+    .auth-brand {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .auth-shield-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(16, 185, 129, 0.2));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px auto;
+      color: var(--color-sapphire);
+      font-size: 32px;
+    }
+    .auth-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .auth-tab-bar {
+      display: flex;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+    .auth-tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .auth-tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .auth-tab-btn.active {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+    }
+    .otp-boxes-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 18px 0;
+    }
+    .otp-digit-input {
+      width: 44px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--bg-card-subtle);
+      border: 1.5px solid var(--border-card);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .otp-digit-input:focus {
+      border-color: var(--color-sapphire);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+    }
+    .auto-fill-chip {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--color-sapphire);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+
+    /* ======================================================== */
+    /* COMPREHENSIVE LIGHT THEME RULES (No Hidden Text)         */
+    /* ======================================================== */
+    body.theme-light .fintech-card {
+      background: #FFFFFF !important;
+      border-color: #E2E8F0 !important;
+      color: #0F172A !important;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .card-net-worth {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+      border: 1px solid #1E40AF !important;
+      box-shadow: 0 12px 25px -5px rgba(37, 99, 235, 0.35) !important;
+    }
+    body.theme-light .card-net-worth,
+    body.theme-light .card-net-worth * {
+      color: #FFFFFF !important;
+    }
+    body.theme-light .card-net-worth .net-worth-label {
+      color: rgba(255, 255, 255, 0.85) !important;
     }
     body.theme-light .card-net-worth .acc-pill {
       background: rgba(255, 255, 255, 0.18) !important;
-      border-color: rgba(255, 255, 255, 0.25) !important;
-      color: #FFFFFF !important;
-    }
-    body.theme-light .card-net-worth .acc-pill-balance,
-    body.theme-light .card-net-worth .acc-pill-name {
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
       color: #FFFFFF !important;
     }
 
     body.theme-light .cashflow-box,
     body.theme-light .tx-item,
-    body.theme-light .bottom-sheet,
-    body.theme-light .auth-card,
-    body.theme-light .quick-action-btn,
     body.theme-light .stat-card,
     body.theme-light .ai-card,
-    body.theme-light .modal-content-card,
-    body.theme-light .tx-filter-bar {
+    body.theme-light .modal-content-card {
       background: #FFFFFF !important;
       border-color: #E2E8F0 !important;
       color: #0F172A !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .tx-item:active {
+      background: #F8FAFC !important;
     }
 
-    /* Crisp Typography in Light Mode */
     body.theme-light .user-name,
     body.theme-light .section-title,
     body.theme-light .tx-title,
@@ -150,44 +1044,10 @@
     body.theme-light .forecast-text,
     body.theme-light .forecast-speed,
     body.theme-light .auth-subtitle,
-    body.theme-light .section-link,
-    body.theme-light .acc-pill-name,
-    body.theme-light .acc-pill-balance {
+    body.theme-light .section-link {
       color: #475569 !important;
     }
 
-    /* Universal Guarantee: Force high-contrast dark text on any inline white style */
-    body.theme-light *[style*="color:#FFF"],
-    body.theme-light *[style*="color: #FFF"],
-    body.theme-light *[style*="color:#fff"],
-    body.theme-light *[style*="color: #fff"],
-    body.theme-light *[style*="color:white"],
-    body.theme-light *[style*="color: white"] {
-      color: #0F172A !important;
-    }
-
-    /* Preserve crisp white text on colored buttons, pills and the hero net worth card */
-    body.theme-light .btn-submit-sheet,
-    body.theme-light .btn-submit-sheet *,
-    body.theme-light .fab-center,
-    body.theme-light .fab-center *,
-    body.theme-light .segment-btn.active.expense,
-    body.theme-light .segment-btn.active.income,
-    body.theme-light .segment-btn.active.transfer,
-    body.theme-light .tx-icon-box span,
-    body.theme-light .card-net-worth,
-    body.theme-light .card-net-worth * {
-      color: #FFFFFF !important;
-    }
-
-    /* Forecast Banner in Light Mode */
-    body.theme-light .forecast-banner {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.05)) !important;
-      border-color: rgba(59, 130, 246, 0.25) !important;
-      color: #0F172A !important;
-    }
-
-    /* Bottom Navigation Bar in Light Mode */
     body.theme-light .mobile-bottom-nav {
       background: #FFFFFF !important;
       border-top: 1px solid #E2E8F0 !important;
@@ -196,19 +1056,45 @@
     body.theme-light .nav-tab {
       color: #64748B !important;
     }
-    body.theme-light .nav-tab.active {
-      color: #2563EB !important;
+    body.theme-light .nav-tab .material-icons-round {
+      color: #64748B !important;
     }
-    body.theme-light .nav-tab.active span {
+    body.theme-light .nav-tab.active,
+    body.theme-light .nav-tab.active span,
+    body.theme-light .nav-tab.active .material-icons-round {
       color: #2563EB !important;
     }
 
-    /* Form Inputs and Search in Light Mode */
+    body.theme-light .bottom-sheet {
+      background: #FFFFFF !important;
+      border-top: 1px solid #E2E8F0 !important;
+      color: #0F172A !important;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12) !important;
+    }
+    body.theme-light .sheet-handle {
+      background: #CBD5E1 !important;
+    }
+
+    body.theme-light .keypad-display {
+      background: #F1F5F9 !important;
+      border: 1.5px solid #CBD5E1 !important;
+    }
+    body.theme-light .key-btn {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      color: #0F172A !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+    body.theme-light .key-btn:active {
+      background: #E2E8F0 !important;
+    }
+
     body.theme-light .form-input-pill,
     body.theme-light input[type="text"],
     body.theme-light input[type="password"],
     body.theme-light input[type="number"],
     body.theme-light input[type="tel"],
+    body.theme-light input[type="date"],
     body.theme-light select {
       background: #FFFFFF !important;
       border: 1.5px solid #CBD5E1 !important;
@@ -219,21 +1105,9 @@
       color: #94A3B8 !important;
     }
 
-    /* Keypad & Sheet Buttons in Light Mode */
-    body.theme-light .keypad-btn,
-    body.theme-light .key-btn {
-      background: #F1F5F9 !important;
-      color: #0F172A !important;
-      border-color: #E2E8F0 !important;
-    }
-    body.theme-light .key-btn:active {
-      background: #E2E8F0 !important;
-    }
-
-    /* Segmented Control in Light Mode */
     body.theme-light .segmented-control {
       background: #E2E8F0 !important;
-      border-color: #CBD5E1 !important;
+      border: 1px solid #CBD5E1 !important;
     }
     body.theme-light .segment-btn {
       color: #64748B !important;
@@ -243,8 +1117,34 @@
       color: #0F172A !important;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
     }
+    body.theme-light .segment-btn.active.expense {
+      background: #EF4444 !important;
+      color: #FFFFFF !important;
+    }
+    body.theme-light .segment-btn.active.income {
+      background: #10B981 !important;
+      color: #FFFFFF !important;
+    }
+    body.theme-light .segment-btn.active.transfer {
+      background: #2563EB !important;
+      color: #FFFFFF !important;
+    }
 
-    /* Header Action Icon Buttons in Light Mode */
+    body.theme-light .cat-select-card {
+      background: #F8FAFC !important;
+      border-color: #E2E8F0 !important;
+    }
+    body.theme-light .cat-select-name {
+      color: #64748B !important;
+    }
+    body.theme-light .cat-select-card.selected {
+      background: rgba(16, 185, 129, 0.12) !important;
+      border-color: #10B981 !important;
+    }
+    body.theme-light .cat-select-card.selected .cat-select-name {
+      color: #0F172A !important;
+    }
+
     body.theme-light .btn-icon-header {
       background: #FFFFFF !important;
       border-color: #E2E8F0 !important;
@@ -252,12 +1152,106 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
     }
 
-    /* Auth Overlay in Light Mode */
-    body.theme-light .auth-overlay {
-      background: rgba(248, 250, 252, 0.98) !important;
+    body.theme-light .filter-chip {
+      background: #F1F5F9 !important;
+      border-color: #CBD5E1 !important;
+      color: #475569 !important;
+    }
+    body.theme-light .filter-chip.active {
+      background: #2563EB !important;
+      color: #FFFFFF !important;
+      border-color: #2563EB !important;
     }
 
-    /* Phase 19: Bank-Grade Statement Print & PDF Styles */
+    body.theme-light .auth-overlay {
+      background: #F8FAFC !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .auth-tab-bar {
+      background: #E2E8F0 !important;
+      border-color: #CBD5E1 !important;
+    }
+    body.theme-light .auth-tab-btn {
+      color: #64748B !important;
+    }
+    body.theme-light .auth-tab-btn.active {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+    body.theme-light .otp-digit-input {
+      background: #FFFFFF !important;
+      border: 1.5px solid #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .auto-fill-chip {
+      background: #EFF6FF !important;
+      border-color: #BFDBFE !important;
+      color: #2563EB !important;
+    }
+
+    body.theme-light .forecast-banner {
+      background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%) !important;
+      border: 1.5px solid #BFDBFE !important;
+      color: #0F172A !important;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.08) !important;
+    }
+    body.theme-light .forecast-banner .forecast-title {
+      color: #1E40AF !important;
+    }
+    body.theme-light .forecast-banner .forecast-big-val {
+      color: #1E1B4B !important;
+    }
+
+    /* Safely map inline white text to dark text inside light cards ONLY */
+    body.theme-light .fintech-card [style*="color:#FFF"],
+    body.theme-light .fintech-card [style*="color: #FFF"],
+    body.theme-light .fintech-card [style*="color:#fff"],
+    body.theme-light .fintech-card [style*="color: #fff"],
+    body.theme-light .fintech-card [style*="color:#FFFFFF"],
+    body.theme-light .fintech-card [style*="color: #FFFFFF"],
+    body.theme-light .fintech-card [style*="color:#ffffff"],
+    body.theme-light .fintech-card [style*="color:#F8FAFC"],
+    body.theme-light .fintech-card [style*="color:#F1F5F9"],
+    body.theme-light .cashflow-box [style*="color:#FFF"],
+    body.theme-light .cashflow-box [style*="color: #FFF"],
+    body.theme-light .cashflow-box [style*="color:#fff"],
+    body.theme-light .tx-item [style*="color:#FFF"],
+    body.theme-light .tx-item [style*="color: #FFF"],
+    body.theme-light .tx-item [style*="color:#fff"],
+    body.theme-light .bottom-sheet [style*="color:#FFF"],
+    body.theme-light .bottom-sheet [style*="color: #FFF"],
+    body.theme-light .bottom-sheet [style*="color:#fff"],
+    body.theme-light .bottom-sheet [style*="color:#FFFFFF"],
+    body.theme-light .bottom-sheet [style*="color:#ffffff"] {
+      color: #0F172A !important;
+    }
+
+    /* All Solid Buttons, Center FAB & Badges MUST KEEP Crisp White Text in Both Modes */
+    .btn-submit-sheet,
+    .btn-submit-sheet *,
+    .fab-center,
+    .fab-center *,
+    .auth-tab-btn.active,
+    .auth-tab-btn.active *,
+    .card-net-worth,
+    .card-net-worth *,
+    body.theme-light .btn-submit-sheet,
+    body.theme-light .btn-submit-sheet *,
+    body.theme-light .fab-center,
+    body.theme-light .fab-center *,
+    body.theme-light .auth-tab-btn.active,
+    body.theme-light .auth-tab-btn.active *,
+    body.theme-light .card-net-worth,
+    body.theme-light .card-net-worth * {
+      color: #FFFFFF !important;
+    }
+    .tx-icon-box span,
+    body.theme-light .tx-icon-box span {
+      color: #FFFFFF !important;
+    }
+
+    /* Bank-Grade Statement Print & PDF Styles */
     @media print {
       body {
         background: #FFFFFF !important;
@@ -332,854 +1326,6 @@
         color: #2563EB !important;
       }
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-
-    body {
-      font-family: var(--font);
-      background: radial-gradient(circle at 50% 0%, #1E293B 0%, #0F172A 50%, #0B1120 100%) fixed;
-      color: var(--text-primary);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Desktop Viewport Shell Frame */
-    .device-wrapper {
-      position: relative;
-      width: 100%;
-      max-width: 440px;
-      height: 900px;
-      max-height: 100vh;
-      background: var(--bg-app);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B;
-      border-radius: 44px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background-color: var(--bg-app) !important;
-        overflow: hidden !important;
-        width: 100vw !important;
-        height: 100dvh !important;
-      }
-      body .device-wrapper,
-      body.theme-oled .device-wrapper,
-      body.theme-light .device-wrapper {
-        max-width: 100vw !important;
-        width: 100vw !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
-      }
-      .mobile-status-bar {
-        display: none !important;
-      }
-      .app-screen {
-        padding: 14px 16px 30px 16px !important;
-      }
-      .mobile-bottom-nav {
-        padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
-        height: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
-      }
-      .app-screen-viewport {
-        padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
-      }
-    }
-
-    /* Mobile Status Bar (Dynamic Island & Battery/Clock) */
-    .mobile-status-bar {
-      height: 48px;
-      padding: 10px 24px 0 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-      z-index: 50;
-      background: var(--bg-app);
-    }
-    .dynamic-island {
-      width: 100px;
-      height: 24px;
-      background: #000;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    .island-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #1e293b;
-    }
-
-    /* Screen Views Container */
-    .app-screen-viewport {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      position: relative;
-      padding-bottom: 90px;
-      scroll-behavior: smooth;
-    }
-
-    .app-screen-viewport::-webkit-scrollbar {
-      display: none;
-    }
-
-    .app-screen {
-      display: none;
-      padding: 16px 20px;
-      animation: fadeIn 0.25s ease-out;
-    }
-
-    .app-screen.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Header Bar */
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .user-greeting {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .user-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #3B82F6, #10B981);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 16px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-    }
-    .user-title {
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .user-name {
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-    .btn-icon-header {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    /* Command Center: Net Worth Card */
-    .card-net-worth {
-      background: linear-gradient(145deg, #182338, #111A2B);
-      border: 1px solid #2B3852;
-      border-radius: var(--radius-xl);
-      padding: 22px 20px;
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 18px;
-    }
-    .card-net-worth::after {
-      content: '';
-      position: absolute;
-      top: -30px;
-      right: -30px;
-      width: 140px;
-      height: 140px;
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .net-worth-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .net-worth-amount {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: #FFFFFF;
-      margin-bottom: 16px;
-    }
-    .accounts-pill-row {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-    .accounts-pill-row::-webkit-scrollbar { display: none; }
-    .acc-pill {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-md);
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .acc-pill-icon {
-      font-size: 18px;
-      color: var(--color-emerald);
-    }
-    .acc-pill-name {
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 600;
-    }
-    .acc-pill-balance {
-      font-size: 13px;
-      font-weight: 700;
-      color: #FFF;
-    }
-
-    /* Cashflow Row (Income / Expense / Savings) */
-    .cashflow-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .cashflow-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 14px 16px;
-    }
-    .cf-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 6px;
-    }
-    .cf-label.income { color: var(--color-emerald); }
-    .cf-label.expense { color: var(--color-ruby); }
-    .cf-amount {
-      font-size: 18px;
-      font-weight: 800;
-      color: #FFF;
-    }
-
-    /* Core Differentiator: PERSONAL EXPENSE FORECASTING BANNER */
-    .forecast-banner {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.08));
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      border-radius: var(--radius-xl);
-      padding: 18px;
-      margin-bottom: 22px;
-      position: relative;
-    }
-    .forecast-badge-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .forecast-title {
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--color-sapphire);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .forecast-risk-pill {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 20px;
-      text-transform: uppercase;
-    }
-    .risk-safe {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--color-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .risk-warning {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--color-amber);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-    .risk-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--color-ruby);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    .forecast-numbers-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-    .forecast-big-val {
-      font-size: 24px;
-      font-weight: 800;
-      color: #FFF;
-    }
-    .forecast-speed {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-    .forecast-text {
-      font-size: 12px;
-      line-height: 1.4;
-      color: var(--text-secondary);
-    }
-
-    /* Section Headers */
-    .section-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .section-link {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--color-sapphire);
-      cursor: pointer;
-    }
-
-    /* Transaction List Items */
-    .tx-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg);
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
-    }
-    .tx-item:active {
-      transform: scale(0.98);
-      background: var(--bg-card-subtle);
-    }
-    .tx-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .tx-icon-box {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #FFF;
-      font-size: 20px;
-    }
-    .tx-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-    .tx-meta {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .tx-right {
-      text-align: right;
-    }
-    .tx-amount {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-    }
-    .tx-amount.expense { color: #FFF; }
-    .tx-amount.income { color: var(--color-emerald); }
-    .tx-amount.transfer { color: var(--color-sapphire); }
-    .tx-badge {
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-top: 3px;
-    }
-
-    /* Bottom Navigation Bar (Money Manager 5-Tab Architecture) */
-    .mobile-bottom-nav {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 72px;
-      background: rgba(15, 23, 42, 0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0 8px;
-      z-index: 60;
-    }
-    .nav-tab {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      color: #94A3B8;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      flex: 1;
-      height: 100%;
-    }
-    .nav-tab .material-icons-round {
-      font-size: 22px;
-      color: #94A3B8;
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
-    .nav-tab.active {
-      color: var(--color-sapphire);
-      font-weight: 700;
-    }
-    .nav-tab.active .material-icons-round {
-      color: var(--color-sapphire);
-      transform: scale(1.1);
-    }
-
-    /* Elevated Center FAB (+) */
-    .fab-center {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #10B981, #059669);
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #FFF;
-      border: 3px solid var(--bg-app);
-      cursor: pointer;
-      margin-bottom: 24px;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .fab-center:active {
-      transform: scale(0.92);
-    }
-
-    /* QUICK ENTRY BOTTOM SHEET (MONEY MANAGER KEYPAD UX) */
-    .sheet-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(5px);
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    .sheet-backdrop.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .bottom-sheet {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #111827;
-      border-top: 1px solid var(--border-card);
-      border-radius: 28px 28px 0 0;
-      padding: 16px 20px 24px 20px;
-      z-index: 110;
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      max-height: 92vh;
-      overflow-y: auto;
-    }
-    .bottom-sheet.active {
-      transform: translateY(0);
-    }
-    .sheet-handle {
-      width: 40px;
-      height: 5px;
-      background: #374151;
-      border-radius: 3px;
-      margin: 0 auto 14px auto;
-    }
-    
-    /* 3-Way Segmented Control: [ Expense | Income | Transfer ] */
-    .segmented-control {
-      background: #1F2937;
-      border-radius: var(--radius-md);
-      padding: 4px;
-      display: flex;
-      margin-bottom: 14px;
-    }
-    .segment-btn {
-      flex: 1;
-      padding: 8px 0;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 700;
-      border-radius: 10px;
-      cursor: pointer;
-      color: var(--text-muted);
-      transition: all 0.2s ease;
-    }
-    .segment-btn.active.expense {
-      background: var(--color-ruby);
-      color: #FFF;
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
-    .segment-btn.active.income {
-      background: var(--color-emerald);
-      color: #FFF;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    .segment-btn.active.transfer {
-      background: var(--color-sapphire);
-      color: #FFF;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    /* Keypad Display */
-    .keypad-display {
-      background: #1A2234;
-      border: 1px solid #2B3852;
-      border-radius: var(--radius-lg);
-      padding: 14px 18px;
-      text-align: right;
-      margin-bottom: 14px;
-    }
-    .display-currency {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--color-emerald);
-      margin-right: 4px;
-    }
-    .display-val {
-      font-size: 34px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: #FFF;
-    }
-
-    /* Numeric Keypad Grid */
-    .keypad-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .key-btn {
-      background: #1F293D;
-      border: 1px solid #2A3854;
-      color: #FFF;
-      font-size: 20px;
-      font-weight: 700;
-      border-radius: 14px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.1s ease;
-    }
-    .key-btn {
-      background: #1F293D;
-      border: 1px solid #2A3854;
-      color: #FFF;
-      font-size: 19px;
-      font-weight: 700;
-      border-radius: 12px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.1s ease;
-    }
-    .key-btn:active {
-      background: #334155;
-    }
-
-    /* Category Horizontal / Compact Ribbon */
-    .category-scroll-grid {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 4px 2px 8px 2px;
-      margin-bottom: 10px;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .category-scroll-grid::-webkit-scrollbar {
-      display: none;
-    }
-    .cat-select-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      padding: 6px 10px;
-      min-width: 66px;
-      flex-shrink: 0;
-      border-radius: 12px;
-      background: var(--bg-card-subtle);
-      border: 1px solid var(--border-card);
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s ease;
-    }
-    .cat-select-card.selected {
-      border-color: var(--color-emerald);
-      background: rgba(16, 185, 129, 0.18);
-    }
-    .cat-select-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #FFF;
-      font-size: 17px;
-    }
-    .cat-select-name {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-secondary);
-      line-height: 1.1;
-      white-space: nowrap;
-      max-width: 60px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .cat-select-card.selected .cat-select-name {
-      color: #FFF;
-    }
-
-    /* Form Inputs in Sheet */
-    .form-input-pill {
-      width: 100%;
-      background: #1F293D;
-      border: 1px solid #2A3854;
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      color: #FFF;
-      font-size: 13px;
-      font-family: var(--font);
-      outline: none;
-      margin-bottom: 14px;
-    }
-
-    .btn-submit-sheet {
-      width: 100%;
-      background: linear-gradient(135deg, #10B981, #059669);
-      color: #FFF;
-      font-size: 15px;
-      font-weight: 700;
-      border: none;
-      border-radius: var(--radius-lg);
-      padding: 14px;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
-    }
-
-    /* MODERN AUTH MODAL & TAB SYSTEM */
-    .auth-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.98);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      z-index: 200;
-      padding: 30px 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      overflow-y: auto;
-    }
-    .auth-overlay.hidden { display: none !important; }
-    .auth-brand {
-      text-align: center;
-      margin-bottom: 22px;
-    }
-    .auth-shield-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(16, 185, 129, 0.2));
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px auto;
-      color: var(--color-sapphire);
-      font-size: 32px;
-    }
-    .auth-title {
-      font-size: 24px;
-      font-weight: 800;
-      color: #FFF;
-      letter-spacing: -0.5px;
-    }
-    .auth-subtitle {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    /* Modern Pill Auth Switcher (Log In vs Sign Up) */
-    .auth-tab-bar {
-      display: flex;
-      background: #1E293B;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 4px;
-      margin-bottom: 20px;
-      gap: 4px;
-    }
-    .auth-tab-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 11px 16px;
-      font-size: 14px;
-      font-weight: 700;
-      border: none;
-      outline: none;
-      border-radius: 10px;
-      cursor: pointer;
-      background: transparent;
-      color: #94A3B8;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .auth-tab-btn:hover {
-      color: #F8FAFC;
-    }
-    .auth-tab-btn.active {
-      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-      color: #FFFFFF !important;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
-    }
-
-    body.theme-light .auth-tab-bar {
-      background: #E2E8F0 !important;
-      border-color: #CBD5E1 !important;
-    }
-    body.theme-light .auth-tab-btn {
-      color: #64748B !important;
-    }
-    body.theme-light .auth-tab-btn.active {
-      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-      color: #FFFFFF !important;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
-    }
-
-    .otp-boxes-row {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 18px 0;
-    }
-    .otp-digit-input {
-      width: 44px;
-      height: 52px;
-      border-radius: 12px;
-      background: #1E293B;
-      border: 1.5px solid #334155;
-      text-align: center;
-      font-size: 22px;
-      font-weight: 800;
-      color: #FFF;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-    .otp-digit-input:focus {
-      border-color: var(--color-sapphire);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
-    }
-    .auto-fill-chip {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: var(--color-sapphire);
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 11px;
-      font-weight: 700;
-      text-align: center;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-bottom: 20px;
-    }
   </style>
 </head>
 <body>
@@ -1248,7 +1394,7 @@
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="material-icons-round" style="color:var(--color-emerald); font-size:22px; flex-shrink:0;">install_mobile</span>
             <div>
-              <div style="font-size:12px; font-weight:700; color:#FFF;">Install Expense Tracker Pro</div>
+              <div style="font-size:12px; font-weight:700; color:var(--text-primary);">Install Expense Tracker Pro</div>
               <div style="font-size:10px; color:var(--text-secondary);">Use as a standalone native app on your phone</div>
             </div>
           </div>
@@ -1262,7 +1408,7 @@
         <div id="criticalAlertBanner" style="display:none; margin-bottom:14px; padding:12px 14px; border-radius:var(--radius-md); background:linear-gradient(135deg, rgba(239, 68, 68, 0.16), rgba(245, 158, 11, 0.1)); border:1px solid rgba(239, 68, 68, 0.38); align-items:flex-start; gap:10px; position:relative;">
           <span class="material-icons-round" id="critAlertIcon" style="color:var(--color-ruby); font-size:22px; flex-shrink:0; margin-top:2px;">warning</span>
           <div style="flex:1;">
-            <div id="critAlertTitle" style="font-size:13px; font-weight:700; color:#FFF; margin-bottom:2px;">Critical Alert</div>
+            <div id="critAlertTitle" style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:2px;">Critical Alert</div>
             <div id="critAlertMsg" style="font-size:11px; color:var(--text-secondary); line-height:1.35;">Alert message details...</div>
           </div>
           <span class="material-icons-round" onclick="dismissCriticalAlert()" style="color:var(--text-muted); font-size:18px; cursor:pointer;" title="Dismiss">close</span>
@@ -1325,7 +1471,7 @@
         </div>
 
         <!-- Monthly Budget Progress Card on Home -->
-        <div class="card-net-worth" style="background:#131B2E; margin-bottom:18px; cursor:pointer;" onclick="switchTab('tab-budgets')">
+        <div class="fintech-card" style="cursor:pointer;" onclick="switchTab('tab-budgets')">
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div class="net-worth-label" style="margin-bottom:0;">Monthly Budget Progress</div>
@@ -1335,16 +1481,16 @@
             </div>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:baseline;">
-            <div class="net-worth-amount" id="homeBudgetSpentDisplay" style="font-size:22px;">₹1,200.00</div>
-            <div style="font-size:12px; color:var(--text-muted); font-weight:600;">of <span id="homeBudgetLimitDisplay" style="color:#FFF;">₹25,000.00</span></div>
+            <div class="cf-amount" id="homeBudgetSpentDisplay" style="font-size:22px; font-weight:800;">₹1,200.00</div>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:600;">of <span id="homeBudgetLimitDisplay" style="color:var(--text-primary); font-weight:700;">₹25,000.00</span></div>
           </div>
           
-          <div style="background:#1F293D; height:8px; border-radius:4px; overflow:hidden; margin: 10px 0 8px 0;">
+          <div style="background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; margin: 10px 0 8px 0;">
             <div id="homeBudgetProgressBar" style="width: 5%; height:100%; background:var(--color-emerald); transition:width 0.5s ease;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); font-weight:600;">
             <span id="homeBudgetRemainingText">Remaining: <strong style="color:var(--color-emerald);" id="homeBudgetRemainingDisplay">₹23,800.00</strong></span>
-            <span id="homeBudgetDaysRemainingText"><strong style="color:#FFF;" id="homeBudgetDaysDisplay">0</strong> days left</span>
+            <span id="homeBudgetDaysRemainingText"><strong style="color:var(--text-primary);" id="homeBudgetDaysDisplay">0</strong> days left</span>
           </div>
         </div>
 
@@ -1409,7 +1555,7 @@
           <div class="section-link" id="chartTotalDisplay" style="font-weight:700;">Total: ₹0.00</div>
         </div>
 
-        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:18px;">
+        <div class="fintech-card" style="padding:16px;">
           <div style="display:flex; justify-content:center; align-items:center; position:relative; min-height:190px;">
             <canvas id="categoryDonutCanvas" width="220" height="190" style="max-width:100%;"></canvas>
             <div id="donutCenterLabel" style="position:absolute; text-align:center; pointer-events:none;">
@@ -1431,7 +1577,7 @@
           </div>
         </div>
 
-        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:20px;">
+        <div class="fintech-card" style="padding:16px;">
           <canvas id="historyBarCanvas" width="300" height="150" style="width:100%; height:150px;"></canvas>
         </div>
 
@@ -1470,22 +1616,22 @@
         </div>
 
         <!-- Monthly Budget Gauge Card -->
-        <div class="card-net-worth" style="background:#131B2E; margin-bottom:18px;">
+        <div class="fintech-card">
           <div class="net-worth-label">Monthly Budget Overview</div>
-          <div class="net-worth-amount" id="budgetLimitDisplay">₹25,000.00</div>
+          <div class="cf-amount" id="budgetLimitDisplay" style="font-size:26px; margin-bottom:10px;">₹25,000.00</div>
           
-          <div style="background:#1F293D; height:10px; border-radius:5px; overflow:hidden; margin: 12px 0 8px 0;">
+          <div style="background:var(--bg-card-subtle); height:10px; border-radius:5px; overflow:hidden; margin: 12px 0 8px 0;">
             <div id="budgetProgressBar" style="width: 5%; height:100%; background:var(--color-emerald); transition:width 0.5s ease;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); font-weight:600;">
-            <span>Spent: <strong id="budgetSpentDisplay" style="color:#FFF;">₹1,200</strong></span>
+            <span>Spent: <strong id="budgetSpentDisplay" style="color:var(--text-primary);">₹1,200</strong></span>
             <span>Remaining: <strong id="budgetRemainingDisplay" style="color:var(--color-emerald);">₹23,800</strong></span>
           </div>
 
           <!-- Safe Daily Spending Cap (Phase 6) -->
-          <div style="margin-top:10px; padding-top:10px; border-top:1px solid #28354D; display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border-card); display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">
             <span>🛡️ Safe Daily Pace: <strong id="budgetDailyCapDisplay" style="color:var(--color-emerald);">₹0.00 / day</strong></span>
-            <span><strong id="budgetDaysLeftDisplay" style="color:#FFF;">0</strong> days left in month</span>
+            <span><strong id="budgetDaysLeftDisplay" style="color:var(--text-primary);">0</strong> days left in month</span>
           </div>
         </div>
 
@@ -1578,18 +1724,18 @@
         </div>
 
         <!-- 2. Next Month Early Forecast Card -->
-        <div style="background:#131D33; border:1px solid var(--border-card); border-radius:18px; padding:16px; margin-bottom:16px;">
+        <div class="fintech-card" style="padding:16px; margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="material-icons-round" style="color:#A78BFA; font-size:20px;">event_repeat</span>
-              <div style="font-size:13px; font-weight:800; color:#FFF;">Next Month AI Projection</div>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Next Month AI Projection</div>
             </div>
             <span style="font-size:10px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 8px; border-radius:10px; font-weight:700;">WMA Model</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:flex-end;">
             <div>
               <div style="font-size:10px; color:var(--text-muted);">Historical Weighted Baseline</div>
-              <div style="font-size:22px; font-weight:800; color:#FFF;" id="fcWmaBaseline">₹0.00</div>
+              <div style="font-size:22px; font-weight:800; color:var(--text-primary);" id="fcWmaBaseline">₹0.00</div>
             </div>
             <div style="font-size:11px; color:#10B981; font-weight:700; text-align:right;">
               <div>🟢 3-6 Month Baseline</div>
@@ -1623,7 +1769,7 @@
         </div>
 
         <!-- 4. Visual Forecast Trajectory Chart -->
-        <div style="background:#0F172A; border:1px solid var(--border-card); border-radius:18px; padding:16px; margin-bottom:18px;">
+        <div class="fintech-card" style="padding:16px; margin-bottom:18px;">
           <div style="font-size:11px; color:var(--text-muted); font-weight:800; margin-bottom:8px; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
           <svg viewBox="0 0 300 100" style="width:100%; height:100px; overflow:visible;" id="fcTrajectorySvg">
             <!-- Target Budget Line -->
@@ -1659,7 +1805,7 @@
           <div class="section-title">Statistical Anomalies (μ + 2σ)</div>
         </div>
         <div id="anomaliesContainer" style="margin-bottom:20px;">
-          <div class="tx-item" style="background:#162035; border-color:rgba(16,185,129,0.3);">
+          <div class="tx-item" style="border-color:rgba(16,185,129,0.3);">
             <div class="tx-left">
               <div class="tx-icon-box" style="background:#10B981;"><span class="material-icons-round">verified</span></div>
               <div>
@@ -1678,7 +1824,7 @@
           <div class="section-link" onclick="askAiMentor('')" style="color:var(--color-emerald);">Refresh Advice</div>
         </div>
 
-        <div class="card-net-worth" style="background:linear-gradient(145deg, #16243D, #111A2B); border-color:#2B3B5C; padding:18px; margin-bottom:24px;">
+        <div class="fintech-card" style="padding:18px; margin-bottom:24px;">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
             <div class="user-avatar" style="background:linear-gradient(135deg, #8B5CF6, #3B82F6); width:38px; height:38px;">
               <span class="material-icons-round" style="font-size:20px;">smart_toy</span>
@@ -1690,7 +1836,7 @@
           </div>
 
           <!-- AI Message Bubble -->
-          <div id="aiMentorBubble" style="background:#1C2842; border-radius:14px; padding:14px; font-size:12px; line-height:1.5; color:#F1F5F9; margin-bottom:12px; border:1px solid #2B3A59;">
+          <div id="aiMentorBubble" style="background:var(--bg-card-subtle); border-radius:14px; padding:14px; font-size:12px; line-height:1.5; color:var(--text-primary); margin-bottom:12px; border:1px solid var(--border-card);">
             Analyzing your spending velocity and forecast models... Tap below for instant advice!
           </div>
 
@@ -1737,7 +1883,7 @@
         </div>
 
         <!-- User Profile Card -->
-        <div class="card-net-worth" style="background:#131B2E; display:flex; align-items:center; gap:16px; margin-bottom:18px; cursor:pointer;" onclick="openEditProfileModal()" title="Tap to Edit Profile Details">
+        <div class="fintech-card" style="display:flex; align-items:center; gap:16px; cursor:pointer;" onclick="openEditProfileModal()" title="Tap to Edit Profile Details">
           <div class="user-avatar" style="width:52px; height:52px; font-size:20px;" id="profileAvatarBig">R</div>
           <div style="flex:1;">
             <div class="user-name" style="font-size:17px;" id="profileNameBig">Rahul Verma</div>
@@ -1746,7 +1892,7 @@
               <span class="material-icons-round" style="font-size:12px;">verified_user</span> 2FA ACTIVE
             </div>
           </div>
-          <div style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:10px; color:var(--color-sapphire); display:flex; align-items:center; gap:4px; font-size:12px; font-weight:700;">
+          <div style="background:var(--bg-card-subtle); border:1px solid var(--border-card); padding:8px 12px; border-radius:10px; color:var(--color-sapphire); display:flex; align-items:center; gap:4px; font-size:12px; font-weight:700;">
             <span class="material-icons-round" style="font-size:16px;">edit</span> Edit
           </div>
         </div>
@@ -1875,7 +2021,7 @@
               <div class="tx-meta" id="profilePinStatus">PIN Protection Inactive</div>
             </div>
           </div>
-          <button class="segment-btn" style="background:#1F293D; color:var(--color-sapphire); font-size:11px; padding:5px 12px; border-radius:8px;">
+          <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-sapphire); font-size:11px; padding:5px 12px; border-radius:8px;">
             Set PIN
           </button>
         </div>
@@ -2064,9 +2210,9 @@
       <div id="sheetAdvancedDetails" style="display:none; background:rgba(255,255,255,0.03); border:1px solid var(--border-card); border-radius:14px; padding:10px; margin-bottom:12px;">
         <!-- Quick Date Selector Pills -->
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div class="segment-btn active" id="datePillToday" style="font-size:11px; padding:6px 12px; background:#1F2937; color:#FFF;" onclick="setSheetDate('TODAY')">Today</div>
+          <div class="segment-btn active" id="datePillToday" style="font-size:11px; padding:6px 12px; background:var(--bg-card-subtle); color:var(--text-primary);" onclick="setSheetDate('TODAY')">Today</div>
           <div class="segment-btn" id="datePillYesterday" style="font-size:11px; padding:6px 12px; color:var(--text-muted);" onclick="setSheetDate('YESTERDAY')">Yesterday</div>
-          <input type="date" id="sheetCustomDate" style="background:#1F293D; border:1px solid #2A3854; border-radius:10px; color:#FFF; font-size:11px; padding:5px 8px; outline:none;" onchange="setSheetDate('CUSTOM')">
+          <input type="date" id="sheetCustomDate" style="background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:10px; color:var(--text-primary); font-size:11px; padding:5px 8px; outline:none;" onchange="setSheetDate('CUSTOM')">
         </div>
 
         <!-- Optional Note & Tags -->
@@ -2097,21 +2243,21 @@
             <div class="tx-meta" id="accModalTypeBadge">BANK ACCOUNT</div>
           </div>
         </div>
-        <button class="segment-btn" style="background:#1F293D; color:var(--color-emerald); padding:6px 12px; font-size:12px; border-radius:10px;" onclick="triggerAccountReconcile()">
+        <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-emerald); padding:6px 12px; font-size:12px; border-radius:10px;" onclick="triggerAccountReconcile()">
           ⚡ Reconcile
         </button>
       </div>
       
-      <div class="card-net-worth" style="background:#151F33; margin-bottom:14px; padding:16px;">
+      <div class="fintech-card" style="margin-bottom:14px; padding:16px;">
         <div class="net-worth-label">Current Balance</div>
         <div class="net-worth-amount" id="accModalBalance" style="font-size:26px; margin-bottom:12px;">₹0.00</div>
         
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div class="cashflow-box" style="background:#1C263B; padding:10px;">
+          <div class="cashflow-box" style="padding:10px;">
             <div class="cf-label income" style="font-size:10px;">TOTAL INFLOW</div>
             <div style="font-size:15px; font-weight:800; color:var(--color-emerald);" id="accModalInflow">₹0.00</div>
           </div>
-          <div class="cashflow-box" style="background:#1C263B; padding:10px;">
+          <div class="cashflow-box" style="padding:10px;">
             <div class="cf-label expense" style="font-size:10px;">TOTAL OUTFLOW</div>
             <div style="font-size:15px; font-weight:800; color:var(--color-ruby);" id="accModalOutflow">₹0.00</div>
           </div>
@@ -2120,7 +2266,7 @@
         <!-- Credit Card Section -->
         <div id="accModalCreditSection" style="display:none; margin-top:12px; border-top:1px solid #28354D; padding-top:10px;">
           <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
-            <span>Credit Limit: <strong id="accModalCreditLimit" style="color:#FFF;">₹0</strong></span>
+            <span>Credit Limit: <strong id="accModalCreditLimit" style="color:var(--text-primary);">₹0</strong></span>
             <span>Available: <strong id="accModalAvailableCredit" style="color:var(--color-emerald);">₹0</strong></span>
           </div>
         </div>
@@ -2155,10 +2301,10 @@
         <div class="tx-meta" id="txDetailDate">Date & Time</div>
       </div>
 
-      <div class="card-net-worth" style="background:#151F33; margin-bottom:16px; padding:14px;">
+      <div class="fintech-card" style="margin-bottom:16px; padding:14px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;">
           <span style="color:var(--text-muted);">Account / Wallet</span>
-          <strong id="txDetailAccount" style="color:#FFF;">Main Bank</strong>
+          <strong id="txDetailAccount" style="color:var(--text-primary);">Main Bank</strong>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;">
           <span style="color:var(--text-muted);">Transaction Type</span>
@@ -2166,16 +2312,16 @@
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;">
           <span style="color:var(--text-muted);">Subcategory</span>
-          <strong id="txDetailSubcategory" style="color:#FFF;">-</strong>
+          <strong id="txDetailSubcategory" style="color:var(--text-primary);">-</strong>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:13px;">
           <span style="color:var(--text-muted);">Note / Description</span>
-          <strong id="txDetailNote" style="color:#FFF;">-</strong>
+          <strong id="txDetailNote" style="color:var(--text-primary);">-</strong>
         </div>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:10px;">
-        <button class="btn-submit-sheet" style="background:#1F293D; color:var(--color-ruby); border:1px solid rgba(239,68,68,0.3);" onclick="deleteActiveTx()">
+        <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--color-ruby); border:1px solid var(--border-card);" onclick="deleteActiveTx()">
           <span class="material-icons-round" style="vertical-align:middle; font-size:18px;">delete</span> Delete
         </button>
         <button class="btn-submit-sheet" onclick="promptEditActiveTx()">
@@ -2199,7 +2345,7 @@
           <span class="material-icons-round" style="color:var(--color-amber); font-size:22px;">notifications_active</span>
           <div class="tx-title" style="font-size:16px;">Predictive Alerts</div>
         </div>
-        <button class="segment-btn" style="background:#1F293D; color:var(--text-secondary); padding:4px 10px; font-size:11px; border-radius:8px;" onclick="markAllNotificationsRead()">
+        <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-secondary); padding:4px 10px; font-size:11px; border-radius:8px;" onclick="markAllNotificationsRead()">
           Mark All Read
         </button>
       </div>
@@ -2245,7 +2391,7 @@
       <input type="number" class="form-input-pill" placeholder="Deposit Amount (₹)" id="contribGoalAmount" style="font-size:18px; font-weight:700; text-align:center;">
       
       <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">DEDUCT FROM ACCOUNT</div>
-      <select class="form-input-pill" id="contribAccountSelect" style="background:#1F293D; color:#FFF;"></select>
+      <select class="form-input-pill" id="contribAccountSelect"></select>
 
       <button class="btn-submit-sheet" onclick="submitGoalContribution()">Deposit Savings</button>
     </div>
@@ -2323,7 +2469,7 @@
       </div>
 
       <!-- Statement Printable Content -->
-      <div id="statementPrintArea" style="background:#151D2E; border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:16px; margin-bottom:14px;">
+      <div id="statementPrintArea" class="fintech-card" style="padding:16px; margin-bottom:14px;">
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #28354D; padding-bottom:10px; margin-bottom:12px;">
           <div>
             <div style="font-size:16px; font-weight:800; color:#FFF;">EXPENSE TRACKER PRO</div>
@@ -2336,15 +2482,15 @@
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
-          <div class="cashflow-box" style="background:#1C263B; padding:8px;">
+          <div class="cashflow-box" style="padding:8px;">
             <div class="cf-label income" style="font-size:9px;">INFLOW</div>
             <div style="font-size:13px; font-weight:800; color:var(--color-emerald);" id="stmtInflow">₹0.00</div>
           </div>
-          <div class="cashflow-box" style="background:#1C263B; padding:8px;">
+          <div class="cashflow-box" style="padding:8px;">
             <div class="cf-label expense" style="font-size:9px;">OUTFLOW</div>
             <div style="font-size:13px; font-weight:800; color:var(--color-ruby);" id="stmtOutflow">₹0.00</div>
           </div>
-          <div class="cashflow-box" style="background:#1C263B; padding:8px;">
+          <div class="cashflow-box" style="padding:8px;">
             <div class="cf-label" style="font-size:9px; color:var(--color-sapphire);">NET SAVINGS</div>
             <div style="font-size:13px; font-weight:800; color:#FFF;" id="stmtSavings">₹0.00</div>
           </div>
@@ -2357,7 +2503,7 @@
         <div id="stmtTopExpensesList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
-      <button class="btn-submit-sheet" style="background:#1F293D; color:var(--text-primary); border:1px solid #334155;" onclick="closeStatementModal()">Close Statement</button>
+      <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeStatementModal()">Close Statement</button>
     </div>
 
     <!-- ============================================== -->
@@ -2408,7 +2554,7 @@
       </div>
 
       <!-- Live Scan Area / Camera Trigger -->
-      <div style="background:#131B2B; border:2px dashed #2A3854; border-radius:var(--radius-lg); padding:20px; text-align:center; margin-bottom:14px; position:relative; overflow:hidden;">
+      <div class="fintech-card" style="border:2px dashed var(--border-card); padding:20px; text-align:center; margin-bottom:14px; position:relative; overflow:hidden;">
         <input type="file" id="receiptFileInput" accept="image/*" style="display:none;" onchange="handleReceiptFileUpload(event)">
         
         <div id="scannerLaser" style="display:none; position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent, #3B82F6, #10B981, transparent); box-shadow:0 0 10px #3B82F6; animation:scanLaser 1.5s infinite alternate;"></div>
@@ -2427,19 +2573,19 @@
       <!-- Quick Demo Presets -->
       <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">Instant 1-Tap Simulation Presets</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:#1C263B;" onclick="triggerSampleReceiptScan('starbucks')">
+        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('starbucks')">
           <span style="font-weight:700; color:#FFF; font-size:12px;">☕ Starbucks Coffee</span>
           <span style="font-size:10px; color:var(--color-emerald);">Rs. 651.00 • Dining</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:#1C263B;" onclick="triggerSampleReceiptScan('shell_fuel')">
+        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('shell_fuel')">
           <span style="font-weight:700; color:#FFF; font-size:12px;">⛽ Shell Petrol</span>
           <span style="font-size:10px; color:var(--color-sapphire);">Rs. 2,969.70 • Fuel</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:#1C263B;" onclick="triggerSampleReceiptScan('apollo_pharmacy')">
+        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('apollo_pharmacy')">
           <span style="font-weight:700; color:#FFF; font-size:12px;">💊 Apollo Pharmacy</span>
           <span style="font-size:10px; color:var(--color-ruby);">Rs. 635.00 • Health</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:#1C263B;" onclick="triggerSampleReceiptScan('blinkit_grocery')">
+        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('blinkit_grocery')">
           <span style="font-weight:700; color:#FFF; font-size:12px;">🛒 Blinkit Grocery</span>
           <span style="font-size:10px; color:var(--color-amber);">Rs. 488.00 • Quick</span>
         </button>
@@ -2448,12 +2594,12 @@
       <!-- Raw Text / SMS Paste Input -->
       <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">OR PASTE INVOICE / BANK SMS TEXT</div>
       <textarea id="rawReceiptTextInput" class="form-input-pill" style="height:68px; border-radius:12px; resize:none; padding:8px 12px; font-size:11px; margin-bottom:10px;" placeholder="Paste bank debit SMS or bill text here..."></textarea>
-      <button type="button" class="btn-submit-sheet" style="background:#1F293D; color:#FFF; border:1px solid #334155; padding:10px;" onclick="scanRawReceiptText()">
+      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:10px;" onclick="scanRawReceiptText()">
         ⚡ Parse Text & Auto-Fill
       </button>
 
       <!-- Receipt Review & Confirmation Card (Phase 1) -->
-      <div id="receiptReviewCard" style="display:none; background:#1C263B; border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:16px; margin-top:16px;">
+      <div id="receiptReviewCard" class="fintech-card" style="display:none; padding:16px; margin-top:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div style="font-size:14px; font-weight:800; color:var(--color-emerald);">🧾 Review & Confirm Receipt</div>
           <span id="ocrConfidenceBadge" style="font-size:11px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 8px; border-radius:6px; font-weight:700;">Confidence: 90%</span>
@@ -2550,7 +2696,7 @@
       </div>
 
       <!-- Review Card -->
-      <div id="smsReviewCard" style="display:none; background:#1C263B; border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:16px; margin-bottom:14px;">
+      <div id="smsReviewCard" class="fintech-card" style="display:none; padding:16px; margin-bottom:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div style="font-size:13px; font-weight:800; color:var(--color-emerald);">Verify Extracted Details</div>
           <span id="smsConfidenceBadge" style="font-size:10px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 8px; border-radius:6px; font-weight:700;">HIGH CONFIDENCE</span>
@@ -2621,14 +2767,14 @@
 
       <!-- Runway & Liquidity Status Cards -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
-        <div class="card-net-worth" style="background:#131B2E; padding:12px;">
+        <div class="fintech-card" style="padding:12px; margin-bottom:0;">
           <div style="font-size:10px; color:var(--text-muted); font-weight:700;">LOWEST PROJECTED</div>
           <div id="cfLowestBalDisplay" style="font-size:16px; font-weight:800; color:var(--color-emerald); margin-top:2px;">₹0.00</div>
           <div id="cfLowestDateDisplay" style="font-size:10px; color:var(--text-secondary); margin-top:2px;">Safe balance</div>
         </div>
-        <div class="card-net-worth" style="background:#131B2E; padding:12px;">
+        <div class="fintech-card" style="padding:12px; margin-bottom:0;">
           <div style="font-size:10px; color:var(--text-muted); font-weight:700;">RUNWAY RUNOUT</div>
-          <div id="cfRunwayDaysDisplay" style="font-size:16px; font-weight:800; color:#FFF; margin-top:2px;">30+ Days</div>
+          <div id="cfRunwayDaysDisplay" style="font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px;">30+ Days</div>
           <div id="cfRunwayStatusDisplay" style="font-size:10px; color:var(--color-emerald); margin-top:2px;">HEALTHY</div>
         </div>
       </div>
@@ -2662,14 +2808,14 @@
 
       <!-- Cost Summary Cards -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
-        <div class="card-net-worth" style="background:#131B2E; padding:12px;">
+        <div class="fintech-card" style="padding:12px; margin-bottom:0;">
           <div style="font-size:10px; color:var(--text-muted); font-weight:700;">MONTHLY COMMITMENT</div>
           <div id="subMonthlyTotalDisplay" style="font-size:16px; font-weight:800; color:var(--color-purple); margin-top:2px;">₹0.00</div>
           <div id="subActiveCountDisplay" style="font-size:10px; color:var(--text-secondary); margin-top:2px;">0 active services</div>
         </div>
-        <div class="card-net-worth" style="background:#131B2E; padding:12px;">
+        <div class="fintech-card" style="padding:12px; margin-bottom:0;">
           <div style="font-size:10px; color:var(--text-muted); font-weight:700;">ANNUAL OUTFLOW</div>
-          <div id="subAnnualTotalDisplay" style="font-size:16px; font-weight:800; color:#FFF; margin-top:2px;">₹0.00</div>
+          <div id="subAnnualTotalDisplay" style="font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px;">₹0.00</div>
           <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Projected 12 months</div>
         </div>
       </div>
@@ -2983,6 +3129,10 @@
       if (icon) {
         icon.innerText = (APP_STATE.appTheme === 'theme-light') ? 'dark_mode' : 'light_mode';
       }
+      try {
+        if (typeof renderCategoryChart === 'function') renderCategoryChart();
+        if (typeof renderCashflowHistoryChart === 'function') renderCashflowHistoryChart();
+      } catch (e) {}
     }
 
     function triggerHaptic(type = 'light') {
@@ -3593,7 +3743,7 @@
 
       if (!anomalies || anomalies.length === 0) {
         container.innerHTML = `
-          <div class="tx-item" style="background:#162035; border-color:rgba(16,185,129,0.3);">
+          <div class="tx-item" style="border-color:rgba(16,185,129,0.3);">
             <div class="tx-left">
               <div class="tx-icon-box" style="background:#10B981;"><span class="material-icons-round">verified</span></div>
               <div>
@@ -3858,7 +4008,7 @@
 
       if (!goals || goals.length === 0) {
         container.innerHTML = `
-          <div style="text-align:center; padding:24px 10px; color:var(--text-muted); font-size:12px; background:#151D2E; border-radius:var(--radius-lg); border:1px dashed var(--border-card);">
+          <div style="text-align:center; padding:24px 10px; color:var(--text-muted); font-size:12px; background:var(--bg-card-subtle); border-radius:var(--radius-lg); border:1px dashed var(--border-card);">
             🎯 No financial goals set yet.<br>Tap <strong>'+ New Goal'</strong> to track your savings targets!
           </div>
         `;
@@ -3897,7 +4047,7 @@
           </div>
 
           <!-- Progress Bar -->
-          <div style="width:100%; background:#1F293D; height:8px; border-radius:4px; overflow:hidden;">
+          <div style="width:100%; background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden;">
             <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${g.color_hex}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
           </div>
 
@@ -4068,7 +4218,7 @@
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.arc(centerX, centerY, innerRadius, 2 * Math.PI, 0, true);
-        ctx.fillStyle = '#1F293D';
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#E2E8F0' : '#1F293D';
         ctx.fill();
         if (legend) legend.innerHTML = '<div style="grid-column:span 2; text-align:center; color:var(--text-muted); font-size:12px;">No expenses recorded this month yet.</div>';
         return;
@@ -4097,7 +4247,7 @@
           pill.innerHTML = `
             <span style="width:10px; height:10px; border-radius:50%; background:${s.color}; flex-shrink:0;"></span>
             <div style="overflow:hidden; text-overflow:ellipsis;">
-              <div style="font-weight:700; color:#FFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
+              <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
               <div style="color:var(--text-muted); font-size:10px;">₹${s.amount.toLocaleString('en-IN')} (${s.percentage}%)</div>
             </div>
           `;
@@ -4146,7 +4296,7 @@
         ctx.fillRect(expenseX, expenseY, singleBarWidth, expenseHeight);
 
         // Month Label
-        ctx.fillStyle = '#94A3B8';
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8';
         ctx.font = '9px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(m.label, groupX + (barGroupWidth / 2), h - 6);
@@ -4403,16 +4553,16 @@
       const today = new Date();
       if (mode === 'TODAY') {
         APP_STATE.sheetDate = today.toISOString().slice(0, 10);
-        document.getElementById('datePillToday').style.background = '#1F2937';
-        document.getElementById('datePillToday').style.color = '#FFF';
+        document.getElementById('datePillToday').style.background = 'var(--bg-card-subtle)';
+        document.getElementById('datePillToday').style.color = 'var(--text-primary)';
         document.getElementById('datePillYesterday').style.background = 'transparent';
         document.getElementById('datePillYesterday').style.color = 'var(--text-muted)';
       } else if (mode === 'YESTERDAY') {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
         APP_STATE.sheetDate = y.toISOString().slice(0, 10);
-        document.getElementById('datePillYesterday').style.background = '#1F2937';
-        document.getElementById('datePillYesterday').style.color = '#FFF';
+        document.getElementById('datePillYesterday').style.background = 'var(--bg-card-subtle)';
+        document.getElementById('datePillYesterday').style.color = 'var(--text-primary)';
         document.getElementById('datePillToday').style.background = 'transparent';
         document.getElementById('datePillToday').style.color = 'var(--text-muted)';
       } else if (mode === 'CUSTOM') {
@@ -5050,7 +5200,7 @@
               <div class="tx-meta">${cb.is_exceeded ? 'Exceeded' : `₹${cb.remaining.toLocaleString('en-IN')} left`}</div>
             </div>
           </div>
-          <div style="width:100%; background:#1F293D; height:6px; border-radius:3px; overflow:hidden;">
+          <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
             <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px;"></div>
           </div>
         `;
@@ -5127,7 +5277,7 @@
               <div class="tx-amount" style="font-size:14px; color:#FFF;">₹${bill.amount.toLocaleString('en-IN')}</div>
               <div class="tx-meta">${bill.frequency}</div>
             </div>
-            <button class="segment-btn" style="background:#1F293D; color:var(--color-emerald); padding:6px 10px; font-size:11px; border-radius:8px;" onclick="payRecurringBill(${bill.id})">
+            <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-emerald); padding:6px 10px; font-size:11px; border-radius:8px;" onclick="payRecurringBill(${bill.id})">
               ⚡ Pay
             </button>
             <span class="material-icons-round" style="color:var(--text-muted); font-size:18px; cursor:pointer;" onclick="deleteRecurringBill(${bill.id})">
@@ -6132,7 +6282,7 @@
         cf.daily_timeline.slice(0, 15).forEach(day => {
           const item = document.createElement('div');
           item.className = 'tx-item';
-          item.style.background = day.is_past ? '#131B2E' : (day.is_today ? '#1F293D' : '#162035');
+          item.style.background = day.is_today ? 'var(--bg-card-subtle)' : 'var(--bg-card)';
           item.style.borderRadius = '10px';
           item.style.padding = '10px 12px';
 
@@ -6142,7 +6292,7 @@
 
           item.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:2px;">
-              <div style="font-size:12px; font-weight:700; color:#FFF; display:flex; align-items:center;">
+              <div style="font-size:12px; font-weight:700; color:var(--text-primary); display:flex; align-items:center;">
                 ${day.date} ${tag}
               </div>
               <div style="font-size:10px; color:var(--text-muted);">

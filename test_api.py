@@ -38,12 +38,23 @@ def run_tests():
     assert token is not None, "Expected JWT access token"
     headers = {"Authorization": f"Bearer {token}"}
 
-    # 3. Test 2FA Login Flow
-    login_step1 = client.post('/api/v1/auth/login', json={
+    # 3. Test Direct Password Login & 2FA Flow
+    login_direct = client.post('/api/v1/auth/login', json={
         "identifier": test_email,
         "password": "Password123"
     })
-    print("3a. Login Step 1 (Credentials & OTP trigger):", login_step1.status_code, login_step1.json.get("message"))
+    print("3a. Direct Password Login (Instant):", login_direct.status_code, login_direct.json.get("message"))
+    assert login_direct.status_code == 200
+    assert login_direct.json.get("require_otp") is False
+    assert "access_token" in login_direct.json
+
+    # 3b. Test Optional 2FA Login Flow
+    login_step1 = client.post('/api/v1/auth/login', json={
+        "identifier": test_email,
+        "password": "Password123",
+        "require_2fa": True
+    })
+    print("3b. Login Step 1 (2FA OTP trigger):", login_step1.status_code, login_step1.json.get("message"))
     assert login_step1.status_code == 200
     assert login_step1.json.get("require_otp") is True
     login_otp = login_step1.json.get("otp_code")
@@ -52,7 +63,7 @@ def run_tests():
         "identifier": test_email,
         "otp": login_otp
     })
-    print("3b. Login Step 2 (2FA OTP Verification):", login_step2.status_code, login_step2.json.get("message"))
+    print("3c. Login Step 2 (2FA OTP Verification):", login_step2.status_code, login_step2.json.get("message"))
     assert login_step2.status_code == 200
     assert "access_token" in login_step2.json
 

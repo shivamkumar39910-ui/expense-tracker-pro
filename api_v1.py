@@ -251,24 +251,49 @@ def login():
         conn.close()
         return jsonify({"success": False, "error": "Invalid email/phone or password"}), 401
 
-    # Generate Login 2FA OTP
-    otp = generate_otp()
-    otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    user_dict = dict(user)
 
-    cursor.execute("""
-        UPDATE users SET login_otp_code = ?, login_otp_expires_at = ? WHERE id = ?
-    """, (otp, otp_expiry, user["id"]))
-    conn.commit()
+    # Check if 2FA OTP is explicitly requested (default is direct fast login)
+    require_2fa = data.get("require_2fa", False)
+
+    if require_2fa:
+        # Generate Login 2FA OTP
+        otp = generate_otp()
+        otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+        cursor.execute("""
+            UPDATE users SET login_otp_code = ?, login_otp_expires_at = ? WHERE id = ?
+        """, (otp, otp_expiry, user_dict["id"]))
+        conn.commit()
+        conn.close()
+
+        print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
+
+        return jsonify({
+            "success": True,
+            "require_otp": True,
+            "message": "Login 2FA OTP sent to your registered contact.",
+            "identifier": identifier,
+            "otp_code": otp # Returned for testing / development ease
+        }), 200
+
+    # Direct Password Login (Instant, user-friendly authentication)
     conn.close()
-
-    print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
+    access_token, refresh_token = generate_tokens(user_dict["id"])
 
     return jsonify({
         "success": True,
-        "require_otp": True,
-        "message": "Login 2FA OTP sent to your registered contact.",
-        "identifier": identifier,
-        "otp_code": otp # Returned for testing / development ease
+        "require_otp": False,
+        "message": "Login successful!",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user": {
+            "id": user_dict["id"],
+            "name": user_dict["name"],
+            "email": user_dict["email"],
+            "phone": user_dict["phone"],
+            "currency_symbol": user_dict["currency_symbol"]
+        }
     }), 200
 
 @api_v1.route('/auth/login-verify-otp', methods=['POST'])

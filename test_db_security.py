@@ -49,7 +49,7 @@ def run_security_suite():
     assert res_a_ver.status_code == 200
 
     # Login User A Step 1
-    res_a_log1 = client.post('/api/v1/auth/login', json={"identifier": user_a_email, "password": "Password123"})
+    res_a_log1 = client.post('/api/v1/auth/login', json={"identifier": user_a_email, "password": "Password123", "require_2fa": True})
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT login_otp_code FROM users WHERE id = ?", (user_a_id,))
@@ -109,7 +109,7 @@ def run_security_suite():
     conn.close()
 
     client.post('/api/v1/auth/verify-otp', json={"identifier": user_b_email, "otp": otp_b})
-    client.post('/api/v1/auth/login', json={"identifier": user_b_email, "password": "Password456"})
+    client.post('/api/v1/auth/login', json={"identifier": user_b_email, "password": "Password456", "require_2fa": True})
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT login_otp_code FROM users WHERE id = ?", (user_b_id,))

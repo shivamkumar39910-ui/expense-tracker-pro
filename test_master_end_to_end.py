@@ -53,10 +53,20 @@ def run_tests():
     token_1 = ver_res.json.get("access_token")
     assert token_1 is not None
 
+    # Direct Password Login (Instant user-friendly authentication)
+    login_direct = client.post('/api/v1/auth/login', json={
+        "identifier": user_email,
+        "password": "SecurePassword#2026"
+    })
+    assert login_direct.status_code == 200
+    assert login_direct.json.get("require_otp") is False
+    assert "access_token" in login_direct.json
+
     # Step 1 2FA Login
     login_step1 = client.post('/api/v1/auth/login', json={
         "identifier": user_email,
-        "password": "SecurePassword#2026"
+        "password": "SecurePassword#2026",
+        "require_2fa": True
     })
     assert login_step1.status_code == 200
     login_otp = login_step1.json.get("otp_code")

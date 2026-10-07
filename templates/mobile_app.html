@@ -57,39 +57,190 @@
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 0 10px #0b0f17, 0 0 0 12px #161b22;
     }
 
-    /* Phase 18: Clean Light Theme */
+    /* ======================================================== */
+    /* ULTRA-CLEAN HIGH-CONTRAST LIGHT THEME (Zero Hidden Text)  */
+    /* ======================================================== */
     body.theme-light {
-      background-color: #CBD5E1 !important;
+      background-color: #E2E8F0 !important;
+      color: #0F172A !important;
     }
     body.theme-light .device-wrapper {
       --bg-app: #F8FAFC !important;
       --bg-card: #FFFFFF !important;
       --bg-card-subtle: #F1F5F9 !important;
-      --bg-input: #E2E8F0 !important;
+      --bg-input: #FFFFFF !important;
       --border-card: #E2E8F0 !important;
       --text-primary: #0F172A !important;
       --text-secondary: #475569 !important;
       --text-muted: #64748B !important;
-      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.4), 0 0 0 10px #cbd5e1, 0 0 0 12px #94a3b8;
+      background-color: #F8FAFC !important;
+      color: #0F172A !important;
+      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.3), 0 0 0 10px #e2e8f0, 0 0 0 12px #cbd5e1 !important;
     }
+
+    /* All Cards, Boxes and Surfaces in Light Mode */
     body.theme-light .card-net-worth {
-      background: linear-gradient(135deg, #4F46E5, #3730A3) !important;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      border: 1px solid #1E40AF !important;
       color: #FFFFFF !important;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3) !important;
     }
     body.theme-light .card-net-worth .net-worth-amount,
     body.theme-light .card-net-worth .net-worth-label {
       color: #FFFFFF !important;
     }
+    body.theme-light .card-net-worth .acc-pill {
+      background: rgba(255, 255, 255, 0.18) !important;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+      color: #FFFFFF !important;
+    }
+    body.theme-light .card-net-worth .acc-pill-balance,
+    body.theme-light .card-net-worth .acc-pill-name {
+      color: #FFFFFF !important;
+    }
+
+    body.theme-light .cashflow-box,
+    body.theme-light .tx-item,
     body.theme-light .bottom-sheet,
-    body.theme-light .app-nav-bar {
+    body.theme-light .auth-card,
+    body.theme-light .quick-action-btn,
+    body.theme-light .stat-card,
+    body.theme-light .ai-card,
+    body.theme-light .modal-content-card,
+    body.theme-light .tx-filter-bar {
       background: #FFFFFF !important;
       border-color: #E2E8F0 !important;
+      color: #0F172A !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
     }
+
+    /* Crisp Typography in Light Mode */
+    body.theme-light .user-name,
+    body.theme-light .section-title,
+    body.theme-light .tx-title,
+    body.theme-light .cf-amount,
+    body.theme-light .forecast-big-val,
+    body.theme-light .display-val,
+    body.theme-light .auth-title,
+    body.theme-light strong,
+    body.theme-light b,
+    body.theme-light h1,
+    body.theme-light h2,
+    body.theme-light h3,
+    body.theme-light .tx-amount.expense {
+      color: #0F172A !important;
+    }
+
+    body.theme-light .user-title,
+    body.theme-light .tx-meta,
+    body.theme-light .forecast-text,
+    body.theme-light .forecast-speed,
+    body.theme-light .auth-subtitle,
+    body.theme-light .section-link,
+    body.theme-light .acc-pill-name,
+    body.theme-light .acc-pill-balance {
+      color: #475569 !important;
+    }
+
+    /* Universal Guarantee: Force high-contrast dark text on any inline white style */
+    body.theme-light *[style*="color:#FFF"],
+    body.theme-light *[style*="color: #FFF"],
+    body.theme-light *[style*="color:#fff"],
+    body.theme-light *[style*="color: #fff"],
+    body.theme-light *[style*="color:white"],
+    body.theme-light *[style*="color: white"] {
+      color: #0F172A !important;
+    }
+
+    /* Preserve crisp white text on colored buttons, pills and the hero net worth card */
+    body.theme-light .btn-submit-sheet,
+    body.theme-light .btn-submit-sheet *,
+    body.theme-light .fab-center,
+    body.theme-light .fab-center *,
+    body.theme-light .segment-btn.active.expense,
+    body.theme-light .segment-btn.active.income,
+    body.theme-light .segment-btn.active.transfer,
+    body.theme-light .tx-icon-box span,
+    body.theme-light .card-net-worth,
+    body.theme-light .card-net-worth * {
+      color: #FFFFFF !important;
+    }
+
+    /* Forecast Banner in Light Mode */
+    body.theme-light .forecast-banner {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.05)) !important;
+      border-color: rgba(59, 130, 246, 0.25) !important;
+      color: #0F172A !important;
+    }
+
+    /* Bottom Navigation Bar in Light Mode */
+    body.theme-light .mobile-bottom-nav {
+      background: #FFFFFF !important;
+      border-top: 1px solid #E2E8F0 !important;
+      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.05) !important;
+    }
+    body.theme-light .nav-tab {
+      color: #64748B !important;
+    }
+    body.theme-light .nav-tab.active {
+      color: #2563EB !important;
+    }
+    body.theme-light .nav-tab.active span {
+      color: #2563EB !important;
+    }
+
+    /* Form Inputs and Search in Light Mode */
+    body.theme-light .form-input-pill,
+    body.theme-light input[type="text"],
+    body.theme-light input[type="password"],
+    body.theme-light input[type="number"],
+    body.theme-light input[type="tel"],
+    body.theme-light select {
+      background: #FFFFFF !important;
+      border: 1.5px solid #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .form-input-pill::placeholder,
+    body.theme-light input::placeholder {
+      color: #94A3B8 !important;
+    }
+
+    /* Keypad & Sheet Buttons in Light Mode */
     body.theme-light .keypad-btn,
     body.theme-light .key-btn {
       background: #F1F5F9 !important;
       color: #0F172A !important;
       border-color: #E2E8F0 !important;
+    }
+    body.theme-light .key-btn:active {
+      background: #E2E8F0 !important;
+    }
+
+    /* Segmented Control in Light Mode */
+    body.theme-light .segmented-control {
+      background: #E2E8F0 !important;
+      border-color: #CBD5E1 !important;
+    }
+    body.theme-light .segment-btn {
+      color: #64748B !important;
+    }
+    body.theme-light .segment-btn.active {
+      background: #FFFFFF !important;
+      color: #0F172A !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    /* Header Action Icon Buttons in Light Mode */
+    body.theme-light .btn-icon-header {
+      background: #FFFFFF !important;
+      border-color: #E2E8F0 !important;
+      color: #0F172A !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    /* Auth Overlay in Light Mode */
+    body.theme-light .auth-overlay {
+      background: rgba(248, 250, 252, 0.98) !important;
     }
 
     /* Phase 19: Bank-Grade Statement Print & PDF Styles */
@@ -1165,17 +1316,55 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- TAB 2: TRANSACTIONS LEDGER SCREEN              -->
       <!-- ============================================== -->
-      <div class="app-screen" id="tab-transactions">
-        <div class="app-header" style="display:flex; align-items:center; gap:10px;">
+      <!-- TAB 2: ANALYTICS & SPENDING SCREEN             -->
+      <!-- ============================================== -->
+      <div class="app-screen" id="tab-analytics">
+        <div class="app-header" style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
           <div class="btn-icon-header" onclick="goBack()" title="Back">
             <span class="material-icons-round">arrow_back</span>
           </div>
-          <div class="user-name" style="font-size:18px; font-weight:800; flex:1;">Transactions Ledger</div>
+          <div class="user-name" style="font-size:18px; font-weight:800; flex:1;">Spending Analytics</div>
           <div class="btn-icon-header" onclick="openQuickEntrySheet('EXPENSE')" title="Add Transaction">
             <span class="material-icons-round">add</span>
           </div>
+        </div>
+
+        <!-- Visual Chart 1: Category Breakdown Donut -->
+        <div class="section-header-row">
+          <div class="section-title">📊 Expense Breakdown by Category</div>
+          <div class="section-link" id="chartTotalDisplay" style="font-weight:700;">Total: ₹0.00</div>
+        </div>
+
+        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:center; align-items:center; position:relative; min-height:190px;">
+            <canvas id="categoryDonutCanvas" width="220" height="190" style="max-width:100%;"></canvas>
+            <div id="donutCenterLabel" style="position:absolute; text-align:center; pointer-events:none;">
+              <div style="font-size:10px; color:var(--text-muted); font-weight:700;">TOTAL SPENT</div>
+              <div style="font-size:15px; font-weight:800; color:var(--text-primary);" id="donutCenterAmount">₹0.00</div>
+            </div>
+          </div>
+          <div id="categoryChartLegend" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
+            <!-- Category legend pills dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Visual Chart 2: 6-Month Cashflow History -->
+        <div class="section-header-row">
+          <div class="section-title">📈 6-Month Cashflow History</div>
+          <div style="display:flex; gap:8px; font-size:11px; font-weight:700;">
+            <span style="color:var(--color-emerald);">● Inflow</span>
+            <span style="color:var(--color-ruby);">● Outflow</span>
+          </div>
+        </div>
+
+        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:20px;">
+          <canvas id="historyBarCanvas" width="300" height="150" style="width:100%; height:150px;"></canvas>
+        </div>
+
+        <!-- All Transactions List & Filters -->
+        <div class="section-header-row">
+          <div class="section-title">📝 All Transactions</div>
         </div>
 
         <!-- Filter Segmented Tabs -->
@@ -1258,20 +1447,20 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- TAB 4: FORECASTING & ANALYTICS SCREEN          -->
+      <!-- TAB 4: AI FINANCIAL ASSISTANT & FORECAST SCREEN-->
       <!-- ============================================== -->
-      <div class="app-screen" id="tab-forecast">
+      <div class="app-screen" id="tab-ai">
         <!-- Top App Bar with Native Back Button -->
         <div class="app-header" style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
           <div class="btn-icon-header" onclick="goBack()" title="Back">
             <span class="material-icons-round">arrow_back</span>
           </div>
           <div style="flex:1;">
-            <div class="user-name" style="font-size:18px; font-weight:800; color:#FFF; display:flex; align-items:center; gap:6px;">
-              <span>🔮 Smart Forecast & Suggestions</span>
-              <span style="font-size:10px; background:rgba(139,92,246,0.25); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">PRO</span>
+            <div class="user-name" style="font-size:18px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+              <span>🤖 AI Assistant & Forecast</span>
+              <span style="font-size:10px; background:rgba(139,92,246,0.25); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">SMART</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PROPRIETARY FORECASTING & ACTIONABLE ADVICE</div>
+            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & MONTH-END RUNWAY</div>
           </div>
           <div class="btn-icon-header" onclick="refreshForecastData()" title="Recalculate AI Forecast">
             <span class="material-icons-round">refresh</span>
@@ -1408,37 +1597,7 @@
           </div>
         </div>
 
-        <!-- Phase 11: Visual Charts - Category Breakdown Donut -->
-        <div class="section-header-row">
-          <div class="section-title">📊 Expense Breakdown by Category</div>
-          <div class="section-link" id="chartTotalDisplay" style="font-weight:700;">Total: ₹0.00</div>
-        </div>
 
-        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:18px;">
-          <div style="display:flex; justify-content:center; align-items:center; position:relative; min-height:190px;">
-            <canvas id="categoryDonutCanvas" width="220" height="190" style="max-width:100%;"></canvas>
-            <div id="donutCenterLabel" style="position:absolute; text-align:center; pointer-events:none;">
-              <div style="font-size:10px; color:var(--text-muted); font-weight:700;">TOTAL SPENT</div>
-              <div style="font-size:15px; font-weight:800; color:#FFF;" id="donutCenterAmount">₹0.00</div>
-            </div>
-          </div>
-          <div id="categoryChartLegend" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px;">
-            <!-- Category legend pills dynamically populated -->
-          </div>
-        </div>
-
-        <!-- Phase 11: Visual Charts - 6-Month Cashflow History -->
-        <div class="section-header-row">
-          <div class="section-title">📈 6-Month Cashflow History</div>
-          <div style="display:flex; gap:8px; font-size:11px; font-weight:700;">
-            <span style="color:var(--color-emerald);">● Inflow</span>
-            <span style="color:var(--color-ruby);">● Outflow</span>
-          </div>
-        </div>
-
-        <div class="card-net-worth" style="background:#131D33; padding:16px; margin-bottom:20px;">
-          <canvas id="historyBarCanvas" width="300" height="150" style="width:100%; height:150px;"></canvas>
-        </div>
 
         <!-- AI FINANCIAL MENTOR (PHASE 9) -->
         <div class="section-header-row">
@@ -1714,29 +1873,29 @@
     <!-- 5-Destination Bottom Navigation Bar -->
     <div class="mobile-bottom-nav">
       <div class="nav-tab active" id="nav-tab-home" onclick="switchTab('tab-home')">
-        <span class="material-icons-round">dashboard</span>
+        <span class="material-icons-round">home</span>
         <span>Home</span>
       </div>
-      <div class="nav-tab" id="nav-tab-transactions" onclick="switchTab('tab-transactions')">
-        <span class="material-icons-round">receipt_long</span>
-        <span>Ledger</span>
+      <div class="nav-tab" id="nav-tab-analytics" onclick="switchTab('tab-analytics')">
+        <span class="material-icons-round">insights</span>
+        <span>Analytics</span>
       </div>
       
       <!-- Elevated Center (+) FAB -->
-      <div class="fab-center" onclick="openQuickEntrySheet('EXPENSE')" title="Quick Add Transaction">
-        <span class="material-icons-round" style="font-size:28px;">add</span>
+      <div class="fab-center" onclick="openQuickEntrySheet('EXPENSE')" title="Quick Add Expense">
+        <span class="material-icons-round" style="font-size:32px;">add</span>
       </div>
 
-      <!-- HERO DIFFERENTIATOR: Dedicated Forecast & Next Suggestions -->
-      <div class="nav-tab" id="nav-tab-forecast" onclick="switchTab('tab-forecast')" style="position:relative;">
+      <!-- AI Assistant Tab -->
+      <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" style="position:relative;">
         <span class="material-icons-round" style="color:var(--color-purple); font-size:24px;">auto_awesome</span>
-        <span style="font-weight:800; color:var(--color-purple);">Forecast</span>
-        <span style="position:absolute; top:2px; right:8px; width:7px; height:7px; background:#8B5CF6; border-radius:50%; box-shadow:0 0 8px #8B5CF6;"></span>
+        <span style="font-weight:700; color:var(--color-purple);">AI Assistant</span>
+        <span style="position:absolute; top:4px; right:10px; width:6px; height:6px; background:#8B5CF6; border-radius:50%; box-shadow:0 0 8px #8B5CF6;"></span>
       </div>
 
       <!-- Hub: Profile, Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
       <div class="nav-tab" id="nav-tab-profile" onclick="switchTab('tab-profile')" title="Profile & Settings">
-        <span class="material-icons-round">account_circle</span>
+        <span class="material-icons-round">person</span>
         <span>Profile</span>
       </div>
     </div>
@@ -2526,40 +2685,60 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- 2FA REGISTRATION & LOGIN MODAL OVERLAY         -->
+    <!-- MODERN USER-FRIENDLY AUTH MODAL (LOGIN & SIGNUP) -->
     <!-- ============================================== -->
     <div class="auth-overlay hidden" id="authOverlay">
-      <div class="auth-brand">
-        <div class="auth-shield-icon">
-          <span class="material-icons-round">verified_user</span>
+      <div class="auth-brand" style="margin-bottom:20px;">
+        <div class="auth-shield-icon" style="background:linear-gradient(135deg, rgba(37,99,235,0.2), rgba(16,185,129,0.2)); border-color:rgba(37,99,235,0.35); color:var(--color-sapphire); width:64px; height:64px; border-radius:22px;">
+          <span class="material-icons-round" style="font-size:34px;">account_balance_wallet</span>
         </div>
-        <div class="auth-title" id="authModalTitle">2FA Secure Access</div>
-        <div class="auth-subtitle" id="authModalSubtitle">Bank-grade verification for your finances</div>
+        <div class="auth-title" id="authModalTitle" style="font-size:24px; font-weight:800; letter-spacing:-0.5px;">Welcome Back</div>
+        <div class="auth-subtitle" id="authModalSubtitle" style="font-size:13px; color:var(--text-muted); margin-top:4px;">Manage your daily finances smartly & easily</div>
       </div>
 
-      <!-- Login / Register Form View -->
+      <!-- Segmented Tab: Log In vs Sign Up -->
       <div id="authCredentialsView">
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-          <button class="segment-btn active" style="background:#1F2937; color:#FFF;" id="authTabLogin" onclick="switchAuthTab('LOGIN')">Log In</button>
-          <button class="segment-btn" style="color:var(--text-muted);" id="authTabSignup" onclick="switchAuthTab('SIGNUP')">Sign Up</button>
+        <div class="segmented-control" style="margin-bottom:18px; padding:4px; border-radius:14px; background:#1E293B;">
+          <button class="segment-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')" style="font-weight:700; border-radius:10px;">Log In</button>
+          <button class="segment-btn" id="authTabSignup" onclick="switchAuthTab('SIGNUP')" style="font-weight:700; border-radius:10px; color:var(--text-muted);">Sign Up</button>
         </div>
 
-        <div id="authNameField" style="display:none;">
-          <input type="text" class="form-input-pill" placeholder="Full Name" id="authInputName">
+        <!-- Full Name (Only for Signup) -->
+        <div id="authNameField" style="display:none; margin-bottom:14px;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Full Name</label>
+          <input type="text" class="form-input-pill" placeholder="e.g. Rahul Sharma" id="authInputName" style="margin-bottom:0;">
         </div>
-        <input type="text" class="form-input-pill" placeholder="Email or Mobile (+91...)" id="authInputIdentifier">
-        <input type="password" class="form-input-pill" placeholder="Password" id="authInputPassword">
 
-        <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn">Continue with 2FA</button>
+        <!-- Email or Mobile -->
+        <div style="margin-bottom:14px;">
+          <label id="authIdentifierLabel" style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Mobile Number or Email</label>
+          <input type="text" class="form-input-pill" placeholder="Enter Mobile No or Email" id="authInputIdentifier" style="margin-bottom:0;">
+        </div>
+
+        <!-- Password -->
+        <div style="margin-bottom:22px; position:relative;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; display:block;">Password</label>
+          <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="margin-bottom:0; padding-right:42px;">
+          <span class="material-icons-round" onclick="togglePasswordVisibility()" id="pwdToggleIcon" style="position:absolute; right:14px; top:31px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+        </div>
+
+        <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn" style="height:48px; font-size:16px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span>Log In</span>
+          <span class="material-icons-round" style="font-size:20px;">arrow_forward</span>
+        </button>
       </div>
 
-      <!-- OTP Verification View -->
+      <!-- OTP Verification View (For Initial Signup Only) -->
       <div id="authOtpView" style="display:none; text-align:center;">
-        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
-          Enter the 6-digit verification code sent to your contact:
-        </p>
+        <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:14px 16px; margin-bottom:22px;">
+          <span class="material-icons-round" style="color:var(--color-emerald); font-size:28px; margin-bottom:4px;">mark_email_read</span>
+          <p style="font-size:13px; color:var(--text-primary); margin:4px 0 0 0; font-weight:600;">
+            Enter the 6-digit verification code sent to your contact:
+          </p>
+          <div id="otpRecipientDisplay" style="font-size:13px; font-weight:800; color:var(--color-emerald); margin-top:4px;"></div>
+        </div>
 
-        <div class="otp-boxes-row">
+        <div class="otp-boxes-row" style="margin-bottom:24px;">
           <input type="tel" maxlength="1" class="otp-digit-input" id="otp_1" oninput="focusNextOtp(1, event)">
           <input type="tel" maxlength="1" class="otp-digit-input" id="otp_2" oninput="focusNextOtp(2, event)">
           <input type="tel" maxlength="1" class="otp-digit-input" id="otp_3" oninput="focusNextOtp(3, event)">
@@ -2568,11 +2747,13 @@
           <input type="tel" maxlength="1" class="otp-digit-input" id="otp_6" oninput="focusNextOtp(6, event)">
         </div>
 
-        <div class="auto-fill-chip" id="autoFillOtpChip" onclick="autoFillSimulatedOtp()">
-          ⚡ Auto-fill Test OTP: <span id="simulatedOtpDisplay">123456</span>
-        </div>
+        <button class="btn-submit-sheet" onclick="verifyOtpCode()" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px;">
+          Verify & Get Started
+        </button>
 
-        <button class="btn-submit-sheet" onclick="verifyOtpCode()">Verify & Unlock App</button>
+        <button type="button" class="segment-btn" onclick="switchAuthTab('LOGIN')" style="background:transparent; border:none; color:var(--text-muted); font-size:13px; text-decoration:underline; cursor:pointer;">
+          ← Back to Login
+        </button>
       </div>
 
     </div>
@@ -2728,10 +2909,16 @@
     function switchTab(tabId, pushHistory = true) {
       try {
         triggerHaptic('light');
+
+        // Normalize aliases for 5-element nav
+        let targetId = tabId;
+        if (tabId === 'tab-transactions') targetId = 'tab-analytics';
+        if (tabId === 'tab-forecast') targetId = 'tab-ai';
+
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
-        const activeScreen = document.getElementById(tabId);
+        const activeScreen = document.getElementById(targetId) || document.getElementById(tabId);
         if (activeScreen) {
           activeScreen.classList.add('active');
           activeScreen.scrollTop = 0;
@@ -2740,19 +2927,24 @@
         const vp = document.getElementById('screenViewport');
         if (vp) vp.scrollTop = 0;
 
-        const navTab = document.getElementById(`nav-${tabId}`);
+        const navTab = document.getElementById(`nav-${targetId}`) || document.getElementById(`nav-${tabId}`);
         if (navTab) navTab.classList.add('active');
 
         if (pushHistory && window.history) {
-          window.history.pushState({ tab: tabId }, '');
+          window.history.pushState({ tab: targetId }, '');
         }
 
-        // Tab specific hooks wrapped safely in try/catch
-        if (tabId === 'tab-profile') {
+        // Tab specific lifecycle hooks wrapped safely in try/catch
+        if (targetId === 'tab-profile') {
           try { updateUserUI(); } catch (e) { console.error('updateUserUI error:', e); }
           try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
         }
-        if (tabId === 'tab-forecast') {
+        if (targetId === 'tab-analytics') {
+          try { renderCategoryChart(); } catch (e) { console.error('renderCategoryChart error:', e); }
+          try { renderCashflowHistoryChart(); } catch (e) { console.error('renderCashflowHistoryChart error:', e); }
+          try { renderTransactionsList(); } catch (e) { console.error('renderTransactionsList error:', e); }
+        }
+        if (targetId === 'tab-ai') {
           try { renderAiPredictionHero(); } catch (e) { console.error('renderAiPredictionHero error:', e); }
         }
       } catch (err) {
@@ -4342,16 +4534,60 @@
       switchAuthTab(mode);
     }
 
+    function togglePasswordVisibility() {
+      const inp = document.getElementById('authInputPassword');
+      const icon = document.getElementById('pwdToggleIcon');
+      if (!inp || !icon) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerText = 'visibility_off';
+      } else {
+        inp.type = 'password';
+        icon.innerText = 'visibility';
+      }
+    }
+    window.togglePasswordVisibility = togglePasswordVisibility;
+
     function switchAuthTab(mode) {
       APP_STATE.authMode = mode;
       const isLogin = mode === 'LOGIN';
-      document.getElementById('authTabLogin').style.background = isLogin ? '#1F2937' : 'transparent';
-      document.getElementById('authTabLogin').style.color = isLogin ? '#FFF' : 'var(--text-muted)';
-      document.getElementById('authTabSignup').style.background = !isLogin ? '#1F2937' : 'transparent';
-      document.getElementById('authTabSignup').style.color = !isLogin ? '#FFF' : 'var(--text-muted)';
-      document.getElementById('authNameField').style.display = isLogin ? 'none' : 'block';
-      document.getElementById('authSubmitBtn').innerText = isLogin ? 'Log In with 2FA' : 'Sign Up with OTP';
-      document.getElementById('authModalTitle').innerText = isLogin ? '2FA Secure Login' : 'Secure Registration';
+      
+      const tabLog = document.getElementById('authTabLogin');
+      const tabSign = document.getElementById('authTabSignup');
+      if (tabLog && tabSign) {
+        tabLog.classList.toggle('active', isLogin);
+        tabSign.classList.toggle('active', !isLogin);
+        tabLog.style.color = isLogin ? '#FFF' : 'var(--text-muted)';
+        tabSign.style.color = !isLogin ? '#FFF' : 'var(--text-muted)';
+      }
+
+      const nameField = document.getElementById('authNameField');
+      if (nameField) nameField.style.display = isLogin ? 'none' : 'block';
+
+      const submitBtn = document.getElementById('authSubmitBtn');
+      if (submitBtn) {
+        submitBtn.innerHTML = isLogin 
+          ? `<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`
+          : `<span>Create Account</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`;
+      }
+
+      const title = document.getElementById('authModalTitle');
+      if (title) title.innerText = isLogin ? 'Welcome Back' : 'Create Your Account';
+
+      const subtitle = document.getElementById('authModalSubtitle');
+      if (subtitle) {
+        subtitle.innerText = isLogin 
+          ? 'Log in with your Mobile/Email and Password' 
+          : 'Sign up in seconds to start tracking your wealth';
+      }
+
+      const identLabel = document.getElementById('authIdentifierLabel');
+      if (identLabel) {
+        identLabel.innerText = isLogin ? 'Mobile Number or Email' : 'Email or Mobile (+91...)';
+      }
+
+      document.getElementById('authCredentialsView').style.display = 'block';
+      document.getElementById('authOtpView').style.display = 'none';
     }
 
     async function handleAuthSubmit() {
@@ -4360,14 +4596,14 @@
       const name = document.getElementById('authInputName').value.trim();
 
       if (!identifier || !password) {
-        alert('Please fill all required credentials.');
+        alert('Please enter your Mobile/Email and Password.');
         return;
       }
 
       APP_STATE.pendingIdentifier = identifier;
 
       if (APP_STATE.authMode === 'SIGNUP') {
-        if (!name) { alert('Name is required.'); return; }
+        if (!name) { alert('Please enter your Full Name.'); return; }
         const res = await apiRequest('/auth/register', 'POST', {
           name,
           email: identifier.includes('@') ? identifier : '',
@@ -4377,28 +4613,53 @@
         if (res && res.success) {
           triggerOtpView(res.otp_code);
         } else {
-          alert(res?.error || 'Registration failed.');
+          alert(res?.error || 'Registration failed. Please check your details.');
         }
       } else {
-        // LOGIN
+        // DIRECT LOGIN (Fast & Frictionless for returning users)
         const res = await apiRequest('/auth/login', 'POST', {
           identifier,
           password
         });
         if (res && res.success) {
-          triggerOtpView(res.otp_code);
+          if (res.require_otp) {
+            triggerOtpView(res.otp_code);
+          } else {
+            // Instant Login Success!
+            APP_STATE.token = res.access_token;
+            APP_STATE.user = res.user;
+            localStorage.setItem('jwt_access_token', res.access_token);
+            localStorage.setItem('user_profile', JSON.stringify(res.user));
+
+            document.getElementById('authOverlay').classList.add('hidden');
+            updateUserUI();
+            await initializeAppData();
+            if (typeof showToast === 'function') {
+              showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
+            }
+          }
         } else {
-          alert(res?.error || 'Login failed. Invalid credentials.');
+          alert(res?.error || 'Invalid email/phone or password.');
         }
       }
     }
 
     function triggerOtpView(otpCode) {
-      APP_STATE.simulatedOtp = otpCode || '123456';
+      APP_STATE.simulatedOtp = otpCode || '';
       document.getElementById('authCredentialsView').style.display = 'none';
       document.getElementById('authOtpView').style.display = 'block';
-      document.getElementById('simulatedOtpDisplay').innerText = APP_STATE.simulatedOtp;
-      document.getElementById('otp_1').focus();
+      
+      const rcpt = document.getElementById('otpRecipientDisplay');
+      if (rcpt) rcpt.innerText = APP_STATE.pendingIdentifier || '';
+
+      for (let i = 1; i <= 6; i++) {
+        const inp = document.getElementById(`otp_${i}`);
+        if (inp) inp.value = '';
+      }
+      setTimeout(() => {
+        const o1 = document.getElementById('otp_1');
+        if (o1) o1.focus();
+      }, 150);
     }
 
     function focusNextOtp(idx, e) {

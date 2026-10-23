@@ -113,12 +113,11 @@ def debug_smtp_status():
     if user and pwd:
         try:
             import smtplib
-            with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
-                server.starttls()
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
                 server.login(user, pwd)
-            status_report["connection_test"] = "SUCCESS_AUTHENTICATED"
+            status_report["connection_test"] = "SUCCESS_AUTHENTICATED_465"
         except Exception as e:
-            status_report["connection_test"] = f"FAILED: {str(e)}"
+            status_report["connection_test"] = f"FAILED_465: {str(e)}"
 
     return jsonify(status_report), 200
 

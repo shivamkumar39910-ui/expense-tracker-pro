@@ -97,6 +97,31 @@ def record_security_failed_attempt(action_key: str):
 def clear_security_failed_attempts(action_key: str):
     FAILED_SECURITY_ATTEMPTS.pop(action_key, None)
 
+@api_v1.route('/debug/smtp-status', methods=['GET'])
+def debug_smtp_status():
+    user = os.environ.get("SMTP_USER", "").strip()
+    pwd = os.environ.get("SMTP_PASSWORD", "").replace(" ", "").strip()
+    
+    status_report = {
+        "has_smtp_user": bool(user),
+        "smtp_user": user if user else None,
+        "has_smtp_password": bool(pwd),
+        "password_length": len(pwd),
+        "connection_test": "NOT_TESTED"
+    }
+
+    if user and pwd:
+        try:
+            import smtplib
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+                server.starttls()
+                server.login(user, pwd)
+            status_report["connection_test"] = "SUCCESS_AUTHENTICATED"
+        except Exception as e:
+            status_report["connection_test"] = f"FAILED: {str(e)}"
+
+    return jsonify(status_report), 200
+
 # ==================================================
 # 1. Authentication & 2FA OTP Endpoints
 # ==================================================

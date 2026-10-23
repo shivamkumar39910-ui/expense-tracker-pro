@@ -29,14 +29,17 @@ TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
 
 def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User") -> bool:
     """Sends OTP via real SMTP email with a fintech-styled HTML template."""
-    if not SMTP_USER or not SMTP_PASSWORD:
+    user = os.environ.get("SMTP_USER", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "").replace(" ", "").strip()
+
+    if not user or not password:
         print(f"[OTP AUDIT - EMAIL NOT CONFIGURED] To: {recipient_email} | OTP: {otp_code} (Configure SMTP_USER & SMTP_PASSWORD in Render to send real emails)")
         return False
 
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"🔐 {otp_code} is your Expense Tracker Pro Verification Code"
-        msg["From"] = f"{SMTP_FROM_NAME} <{SMTP_USER}>"
+        msg["From"] = f"{SMTP_FROM_NAME} <{user}>"
         msg["To"] = recipient_email
 
         html_content = f"""
@@ -76,8 +79,8 @@ def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User")
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
             server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, recipient_email, msg.as_string())
+            server.login(user, password)
+            server.sendmail(user, recipient_email, msg.as_string())
 
         print(f"[OTP DISPATCH SUCCESS] Real email sent to {recipient_email}")
         return True

@@ -2914,7 +2914,7 @@
         <div class="auth-subtitle" id="authModalSubtitle">Log in with your Mobile/Email and Password</div>
       </div>
 
-      <!-- Segmented Tab: Log In vs Sign Up -->
+            <!-- Segmented Tab: Log In vs Sign Up -->
       <div id="authCredentialsView">
         <div class="auth-tab-bar">
           <button type="button" class="auth-tab-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')">
@@ -2940,10 +2940,24 @@
         </div>
 
         <!-- Password -->
-        <div style="margin-bottom:20px; position:relative;">
+        <div style="margin-bottom:14px; position:relative;">
           <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Password</label>
           <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="margin-bottom:0; padding-right:42px;">
-          <span class="material-icons-round" onclick="togglePasswordVisibility()" id="pwdToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+          <span class="material-icons-round" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+        </div>
+
+        <!-- Confirm Password (Only for Signup) -->
+        <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px; position:relative;">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Confirm Password</label>
+          <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="margin-bottom:0; padding-right:42px;">
+          <span class="material-icons-round" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+        </div>
+
+        <!-- Forgot Password Link (Only for Login) -->
+        <div id="authForgotPwdRow" style="text-align:right; margin-top:-4px; margin-bottom:18px;">
+          <button type="button" onclick="openForgotPasswordFlow()" style="background:transparent; border:none; color:var(--color-sapphire); font-size:12px; font-weight:700; cursor:pointer; padding:0; text-decoration:none;">
+            Forgot Password?
+          </button>
         </div>
 
         <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
@@ -2960,57 +2974,117 @@
         </div>
       </div>
 
-      <!-- OTP Verification View (For Initial Signup Only) -->
-      <div id="authOtpView" style="display:none; text-align:center;">
-        <div style="background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
-          <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.18); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
-            <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
+      <!-- Forgot Password & OTP Flow View (Professional 3-Step Flow) -->
+      <div id="authForgotPasswordView" style="display:none;">
+
+        <!-- Step 1: Identifier Input -->
+        <div id="fpStepIdentifier" style="display:block;">
+          <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; align-items:center; gap:10px;">
+            <span class="material-icons-round" style="color:var(--color-sapphire); font-size:24px;">lock_reset</span>
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+              Enter your registered Email or Mobile number to receive a secure 6-digit verification code.
+            </div>
           </div>
-          <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Sent</div>
-          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-            We dispatched a 6-digit verification code to:
+
+          <div style="margin-bottom:20px;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Registered Email or Mobile</label>
+            <input type="text" class="form-input-pill" placeholder="e.g. rahul@gmail.com or +919876543210" id="fpInputIdentifier" style="margin-bottom:0;">
           </div>
-          <div id="otpRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
-        </div>
 
-        <!-- Prominent Verification Code Display with 1-Tap Fill -->
-        <div style="background:rgba(16,185,129,0.08); border:1.5px dashed rgba(16,185,129,0.45); border-radius:16px; padding:14px 16px; margin-bottom:20px;">
-          <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--color-emerald); letter-spacing:0.5px;">Your Verification Code</div>
-          <div id="dispatchedOtpCode" style="font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:800; letter-spacing:6px; color:var(--color-emerald); margin:8px 0;">------</div>
-          <button type="button" class="auto-fill-chip" onclick="autoFillSimulatedOtp()" style="margin:0 auto; background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.35); color:var(--color-emerald);">
-            <span class="material-icons-round" style="font-size:16px;">bolt</span>
-            <span>1-Tap Auto-Fill Code</span>
+          <button class="btn-submit-sheet" onclick="submitForgotPasswordIdentifier()" id="btnFpSendOtp" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+            <span>Send Verification Code</span>
+            <span class="material-icons-round" style="font-size:20px;">send</span>
           </button>
+
+          <div style="text-align:center;">
+            <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer;">
+              ← Back to Login
+            </button>
+          </div>
         </div>
 
-        <div class="otp-boxes-row" style="margin-bottom:20px;">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_1" oninput="focusNextOtp(1, event)" onkeydown="handleOtpKeydown(1, event)" onpaste="handleOtpPaste(event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_2" oninput="focusNextOtp(2, event)" onkeydown="handleOtpKeydown(2, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_3" oninput="focusNextOtp(3, event)" onkeydown="handleOtpKeydown(3, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_4" oninput="focusNextOtp(4, event)" onkeydown="handleOtpKeydown(4, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_5" oninput="focusNextOtp(5, event)" onkeydown="handleOtpKeydown(5, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="otp_6" oninput="focusNextOtp(6, event)" onkeydown="handleOtpKeydown(6, event)">
-        </div>
+        <!-- Step 2: 6-Digit OTP Verification (Real Delivery Only - Never shown on screen!) -->
+        <div id="fpStepOtp" style="display:none; text-align:center;">
+          <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
+            <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
+              <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
+            </div>
+            <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Dispatched</div>
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+              We sent a 6-digit code to your registered destination:
+            </div>
+            <div id="fpRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
+            <div style="font-size:11px; color:#ef4444; margin-top:6px; font-weight:600;">
+              ⚠️ Check your Email Inbox/Spam or SMS. Code is valid for 10 minutes.
+            </div>
+          </div>
 
-        <button class="btn-submit-sheet" onclick="verifyOtpCode()" id="btnVerifyOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:8px;">
-          <span class="material-icons-round" style="font-size:20px;">verified_user</span>
-          <span>Verify & Activate Account</span>
-        </button>
+          <div class="otp-boxes-row" style="margin-bottom:18px;">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_1" oninput="focusNextFpOtp(1, event)" onkeydown="handleFpOtpKeydown(1, event)" onpaste="handleFpOtpPaste(event)">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_2" oninput="focusNextFpOtp(2, event)" onkeydown="handleFpOtpKeydown(2, event)">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_3" oninput="focusNextFpOtp(3, event)" onkeydown="handleFpOtpKeydown(3, event)">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_4" oninput="focusNextFpOtp(4, event)" onkeydown="handleFpOtpKeydown(4, event)">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_5" oninput="focusNextFpOtp(5, event)" onkeydown="handleFpOtpKeydown(5, event)">
+            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_6" oninput="focusNextFpOtp(6, event)" onkeydown="handleFpOtpKeydown(6, event)">
+          </div>
 
-        <div style="display:flex; justify-content:center; gap:16px; align-items:center;">
-          <button type="button" onclick="switchAuthTab('SIGNUP')" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
-            ← Edit Details
+          <!-- Resend Countdown -->
+          <div style="margin-bottom:18px; font-size:12px; color:var(--text-muted);">
+            <span id="fpResendTimerText">Didn't receive code? Resend in <strong id="fpCountdownVal">30s</strong></span>
+            <button type="button" id="btnFpResend" onclick="resendForgotPasswordOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
+              Resend Code
+            </button>
+          </div>
+
+          <button class="btn-submit-sheet" onclick="submitForgotPasswordOtp()" id="btnVerifyFpOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span class="material-icons-round" style="font-size:20px;">verified</span>
+            <span>Verify OTP</span>
           </button>
-          <span style="color:var(--text-muted); font-size:12px;">•</span>
-          <button type="button" onclick="switchAuthTab('LOGIN')" style="background:transparent; border:none; color:var(--color-sapphire); font-size:12px; font-weight:700; cursor:pointer;">
-            Back to Login
-          </button>
+
+          <div style="text-align:center;">
+            <button type="button" onclick="showFpStep('IDENTIFIER')" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+              ← Change Mobile / Email
+            </button>
+          </div>
         </div>
+
+        <!-- Step 3: Create New Password -->
+        <div id="fpStepNewPassword" style="display:none;">
+          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; align-items:center; gap:10px;">
+            <span class="material-icons-round" style="color:var(--color-emerald); font-size:24px;">lock</span>
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+              Identity verified! Enter your new password below.
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px; position:relative;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">New Password (Min 6 Characters)</label>
+            <input type="password" class="form-input-pill" placeholder="Enter new password" id="fpInputNewPassword" style="margin-bottom:0; padding-right:42px;">
+            <span class="material-icons-round" onclick="togglePasswordVisibility('fpInputNewPassword', 'fpNewPwdIcon')" id="fpNewPwdIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+          </div>
+
+          <div style="margin-bottom:20px; position:relative;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Confirm New Password</label>
+            <input type="password" class="form-input-pill" placeholder="Re-enter new password" id="fpInputConfirmPassword" style="margin-bottom:0; padding-right:42px;">
+            <span class="material-icons-round" onclick="togglePasswordVisibility('fpInputConfirmPassword', 'fpConfirmPwdIcon')" id="fpConfirmPwdIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
+          </div>
+
+          <button class="btn-submit-sheet" onclick="submitForgotPasswordReset()" id="btnFpResetSubmit" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+            <span>Save & Enter App</span>
+            <span class="material-icons-round" style="font-size:20px;">check_circle</span>
+          </button>
+
+          <div style="text-align:center;">
+            <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
       </div>
-
     </div>
-
   </div>
+
 
   <!-- Mobile Finance Application Controller Script -->
   <script>
@@ -4790,9 +4864,10 @@
       switchAuthTab(mode);
     }
 
-    function togglePasswordVisibility() {
-      const inp = document.getElementById('authInputPassword');
-      const icon = document.getElementById('pwdToggleIcon');
+    // Password Visibility Switcher
+    function togglePasswordVisibility(targetInputId = 'authInputPassword', iconId = 'pwdToggleIcon') {
+      const inp = document.getElementById(targetInputId);
+      const icon = document.getElementById(iconId);
       if (!inp || !icon) return;
       if (inp.type === 'password') {
         inp.type = 'text';
@@ -4804,6 +4879,7 @@
     }
     window.togglePasswordVisibility = togglePasswordVisibility;
 
+    // Switch between Login and Signup tabs
     function switchAuthTab(mode) {
       APP_STATE.authMode = mode;
       const isLogin = mode === 'LOGIN';
@@ -4811,17 +4887,18 @@
       const tabLog = document.getElementById('authTabLogin');
       const tabSign = document.getElementById('authTabSignup');
       if (tabLog && tabSign) {
-        if (isLogin) {
-          tabLog.className = 'auth-tab-btn active';
-          tabSign.className = 'auth-tab-btn';
-        } else {
-          tabLog.className = 'auth-tab-btn';
-          tabSign.className = 'auth-tab-btn active';
-        }
+        tabLog.className = isLogin ? 'auth-tab-btn active' : 'auth-tab-btn';
+        tabSign.className = isLogin ? 'auth-tab-btn' : 'auth-tab-btn active';
       }
 
       const nameField = document.getElementById('authNameField');
       if (nameField) nameField.style.display = isLogin ? 'none' : 'block';
+
+      const confirmPwdField = document.getElementById('authConfirmPasswordField');
+      if (confirmPwdField) confirmPwdField.style.display = isLogin ? 'none' : 'block';
+
+      const forgotRow = document.getElementById('authForgotPwdRow');
+      if (forgotRow) forgotRow.style.display = isLogin ? 'block' : 'none';
 
       const demoPill = document.getElementById('demoAccountPill');
       if (demoPill) demoPill.style.display = isLogin ? 'block' : 'none';
@@ -4830,7 +4907,7 @@
       if (submitBtn) {
         submitBtn.innerHTML = isLogin 
           ? `<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`
-          : `<span>Create Account & Verify</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`;
+          : `<span>Sign Up</span><span class="material-icons-round" style="font-size:20px;">person_add</span>`;
       }
 
       const title = document.getElementById('authModalTitle');
@@ -4840,17 +4917,14 @@
       if (subtitle) {
         subtitle.innerText = isLogin 
           ? 'Log in with your Mobile/Email and Password' 
-          : 'First-time sign-up requires quick OTP verification';
-      }
-
-      const identLabel = document.getElementById('authIdentifierLabel');
-      if (identLabel) {
-        identLabel.innerText = isLogin ? 'Mobile Number or Email' : 'Mobile Number or Email';
+          : 'Enter your details to create a free account';
       }
 
       document.getElementById('authCredentialsView').style.display = 'block';
-      document.getElementById('authOtpView').style.display = 'none';
+      const fpView = document.getElementById('authForgotPasswordView');
+      if (fpView) fpView.style.display = 'none';
     }
+    window.switchAuthTab = switchAuthTab;
 
     function fillDemoCredentials() {
       const idInput = document.getElementById('authInputIdentifier');
@@ -4860,136 +4934,284 @@
     }
     window.fillDemoCredentials = fillDemoCredentials;
 
+    // Handle Login or Signup submission
     async function handleAuthSubmit() {
       const identifier = document.getElementById('authInputIdentifier').value.trim();
       const password = document.getElementById('authInputPassword').value;
-      const name = document.getElementById('authInputName').value.trim();
+      const isLogin = (APP_STATE.authMode === 'LOGIN');
 
       if (!identifier || !password) {
         alert('Please enter your Mobile/Email and Password.');
         return;
       }
 
-      APP_STATE.pendingIdentifier = identifier;
+      if (!isLogin) {
+        // Condition 2: Sign Up
+        const name = document.getElementById('authInputName').value.trim();
+        const confirmPassword = document.getElementById('authInputConfirmPassword').value;
 
-      if (APP_STATE.authMode === 'SIGNUP') {
-        if (!name) { alert('Please enter your Full Name.'); return; }
+        if (!name) {
+          alert('Please enter your Full Name.');
+          return;
+        }
+        if (password.length < 6) {
+          alert('Password must be at least 6 characters.');
+          return;
+        }
+        if (password !== confirmPassword) {
+          alert('Passwords do not match. Please re-enter.');
+          return;
+        }
+
         const res = await apiRequest('/auth/register', 'POST', {
           name,
           email: identifier.includes('@') ? identifier : '',
           phone: !identifier.includes('@') ? identifier : '',
-          password
+          password,
+          confirm_password: confirmPassword,
+          auto_login: true
         });
+
         if (res && res.success) {
-          triggerOtpView(res.otp_code);
+          // Instant direct onboarding into dashboard!
+          APP_STATE.token = res.access_token;
+          APP_STATE.user = res.user;
+          localStorage.setItem('jwt_access_token', res.access_token);
+          localStorage.setItem('user_profile', JSON.stringify(res.user));
+
+          document.getElementById('authOverlay').classList.add('hidden');
+          updateUserUI();
+          await initializeAppData();
+          if (typeof showToast === 'function') {
+            showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
+          }
         } else {
           alert(res?.error || 'Registration failed. Please check your details.');
         }
+
       } else {
-        // DIRECT LOGIN (Fast & Frictionless for returning users)
+        // Condition 1: Direct Password Login
         const res = await apiRequest('/auth/login', 'POST', {
           identifier,
           password
         });
-        if (res && res.success) {
-          if (res.require_otp) {
-            triggerOtpView(res.otp_code);
-          } else {
-            // Instant Login Success!
-            APP_STATE.token = res.access_token;
-            APP_STATE.user = res.user;
-            localStorage.setItem('jwt_access_token', res.access_token);
-            localStorage.setItem('user_profile', JSON.stringify(res.user));
 
-            document.getElementById('authOverlay').classList.add('hidden');
-            updateUserUI();
-            await initializeAppData();
-            if (typeof showToast === 'function') {
-              showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
-            }
+        if (res && res.success) {
+          APP_STATE.token = res.access_token;
+          APP_STATE.user = res.user;
+          localStorage.setItem('jwt_access_token', res.access_token);
+          localStorage.setItem('user_profile', JSON.stringify(res.user));
+
+          document.getElementById('authOverlay').classList.add('hidden');
+          updateUserUI();
+          await initializeAppData();
+          if (typeof showToast === 'function') {
+            showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
           }
         } else {
           alert(res?.error || 'Invalid email/phone or password.');
         }
       }
     }
+    window.handleAuthSubmit = handleAuthSubmit;
 
-    function triggerOtpView(otpCode) {
-      APP_STATE.simulatedOtp = otpCode || '';
+    // ==================================================
+    // Forgot Password Flow Controller
+    // ==================================================
+    let fpCountdownTimer = null;
+    let fpPendingIdentifier = '';
+    let fpVerifiedOtp = '';
+
+    function openForgotPasswordFlow() {
       document.getElementById('authCredentialsView').style.display = 'none';
-      document.getElementById('authOtpView').style.display = 'block';
-      
-      const rcpt = document.getElementById('otpRecipientDisplay');
-      if (rcpt) rcpt.innerText = APP_STATE.pendingIdentifier || '';
+      document.getElementById('authForgotPasswordView').style.display = 'block';
+      showFpStep('IDENTIFIER');
+    }
+    window.openForgotPasswordFlow = openForgotPasswordFlow;
 
-      const codeDisplay = document.getElementById('dispatchedOtpCode');
-      if (codeDisplay) codeDisplay.innerText = APP_STATE.simulatedOtp || '123456';
+    function closeForgotPasswordFlow() {
+      if (fpCountdownTimer) clearInterval(fpCountdownTimer);
+      document.getElementById('authForgotPasswordView').style.display = 'none';
+      switchAuthTab('LOGIN');
+    }
+    window.closeForgotPasswordFlow = closeForgotPasswordFlow;
 
-      for (let i = 1; i <= 6; i++) {
-        const inp = document.getElementById(`otp_${i}`);
-        if (inp) inp.value = '';
+    function showFpStep(step) {
+      document.getElementById('fpStepIdentifier').style.display = (step === 'IDENTIFIER') ? 'block' : 'none';
+      document.getElementById('fpStepOtp').style.display = (step === 'OTP') ? 'block' : 'none';
+      document.getElementById('fpStepNewPassword').style.display = (step === 'NEW_PWD') ? 'block' : 'none';
+
+      const title = document.getElementById('authModalTitle');
+      const subtitle = document.getElementById('authModalSubtitle');
+
+      if (step === 'IDENTIFIER') {
+        if (title) title.innerText = 'Reset Password';
+        if (subtitle) subtitle.innerText = 'Enter your registered contact to recover account';
+      } else if (step === 'OTP') {
+        if (title) title.innerText = 'Verify Identity';
+        if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your contact';
+      } else if (step === 'NEW_PWD') {
+        if (title) title.innerText = 'Create New Password';
+        if (subtitle) subtitle.innerText = 'Choose a strong new password for your account';
       }
-      setTimeout(() => {
-        const o1 = document.getElementById('otp_1');
-        if (o1) o1.focus();
-      }, 150);
+    }
+    window.showFpStep = showFpStep;
+
+    async function submitForgotPasswordIdentifier() {
+      const identifier = document.getElementById('fpInputIdentifier').value.trim();
+      if (!identifier) {
+        alert('Please enter your registered Email or Mobile number.');
+        return;
+      }
+      fpPendingIdentifier = identifier;
+
+      const btn = document.getElementById('btnFpSendOtp');
+      if (btn) btn.disabled = true;
+
+      const res = await apiRequest('/auth/forgot-password/send-otp', 'POST', { identifier });
+      if (btn) btn.disabled = false;
+
+      if (res && res.success) {
+        const rcpt = document.getElementById('fpRecipientDisplay');
+        if (rcpt) rcpt.innerText = identifier;
+
+        showFpStep('OTP');
+        startFpCountdown(30);
+
+        // Clear previous OTP boxes
+        for (let i = 1; i <= 6; i++) {
+          const inp = document.getElementById(`fp_otp_${i}`);
+          if (inp) inp.value = '';
+        }
+        setTimeout(() => {
+          const first = document.getElementById('fp_otp_1');
+          if (first) first.focus();
+        }, 150);
+
+        if (typeof showToast === 'function') {
+          showToast(res.message || 'Verification code sent!', 'info');
+        }
+      } else {
+        alert(res?.error || 'Failed to dispatch verification code. Please check your contact.');
+      }
+    }
+    window.submitForgotPasswordIdentifier = submitForgotPasswordIdentifier;
+
+    function startFpCountdown(seconds) {
+      if (fpCountdownTimer) clearInterval(fpCountdownTimer);
+      let rem = seconds;
+      const timerText = document.getElementById('fpResendTimerText');
+      const valSpan = document.getElementById('fpCountdownVal');
+      const resendBtn = document.getElementById('btnFpResend');
+
+      if (timerText) timerText.style.display = 'inline';
+      if (resendBtn) resendBtn.style.display = 'none';
+      if (valSpan) valSpan.innerText = rem + 's';
+
+      fpCountdownTimer = setInterval(() => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(fpCountdownTimer);
+          if (timerText) timerText.style.display = 'none';
+          if (resendBtn) resendBtn.style.display = 'inline';
+        } else {
+          if (valSpan) valSpan.innerText = rem + 's';
+        }
+      }, 1000);
     }
 
-    function focusNextOtp(idx, e) {
+    async function resendForgotPasswordOtp() {
+      await submitForgotPasswordIdentifier();
+    }
+    window.resendForgotPasswordOtp = resendForgotPasswordOtp;
+
+    function focusNextFpOtp(idx, e) {
       if (e.target.value.length === 1 && idx < 6) {
-        document.getElementById(`otp_${idx + 1}`).focus();
+        document.getElementById(`fp_otp_${idx + 1}`).focus();
       }
     }
+    window.focusNextFpOtp = focusNextFpOtp;
 
-    function handleOtpKeydown(idx, e) {
+    function handleFpOtpKeydown(idx, e) {
       if (e.key === 'Backspace' && !e.target.value && idx > 1) {
-        const prev = document.getElementById(`otp_${idx - 1}`);
+        const prev = document.getElementById(`fp_otp_${idx - 1}`);
         if (prev) {
           prev.focus();
           prev.value = '';
         }
       }
     }
+    window.handleFpOtpKeydown = handleFpOtpKeydown;
 
-    function handleOtpPaste(e) {
+    function handleFpOtpPaste(e) {
       e.preventDefault();
       const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
       if (/^\d{6}$/.test(pasted)) {
         for (let i = 0; i < 6; i++) {
-          const inp = document.getElementById(`otp_${i + 1}`);
+          const inp = document.getElementById(`fp_otp_${i + 1}`);
           if (inp) inp.value = pasted[i];
         }
-        document.getElementById('otp_6').focus();
+        document.getElementById('fp_otp_6').focus();
       }
     }
+    window.handleFpOtpPaste = handleFpOtpPaste;
 
-    function autoFillSimulatedOtp() {
-      const code = APP_STATE.simulatedOtp || '123456';
-      for (let i = 0; i < 6; i++) {
-        const inp = document.getElementById(`otp_${i + 1}`);
-        if (inp) inp.value = code[i] || '';
-      }
-      const last = document.getElementById('otp_6');
-      if (last) last.focus();
-    }
-
-    async function verifyOtpCode() {
+    async function submitForgotPasswordOtp() {
       let otp = '';
       for (let i = 1; i <= 6; i++) {
-        otp += document.getElementById(`otp_${i}`).value;
+        const inp = document.getElementById(`fp_otp_${i}`);
+        if (inp) otp += inp.value.trim();
       }
+
       if (otp.length !== 6) {
-        alert('Please enter all 6 digits of the OTP.');
+        alert('Please enter all 6 digits of the verification code.');
         return;
       }
 
-      const endpoint = APP_STATE.authMode === 'SIGNUP' ? '/auth/verify-otp' : '/auth/login-verify-otp';
-      const res = await apiRequest(endpoint, 'POST', {
-        identifier: APP_STATE.pendingIdentifier,
-        otp: otp
+      const res = await apiRequest('/auth/forgot-password/verify-otp', 'POST', {
+        identifier: fpPendingIdentifier,
+        otp
       });
 
       if (res && res.success) {
+        fpVerifiedOtp = otp;
+        showFpStep('NEW_PWD');
+        setTimeout(() => {
+          const np = document.getElementById('fpInputNewPassword');
+          if (np) np.focus();
+        }, 150);
+      } else {
+        alert(res?.error || 'Invalid verification code. Please check and try again.');
+      }
+    }
+    window.submitForgotPasswordOtp = submitForgotPasswordOtp;
+
+    async function submitForgotPasswordReset() {
+      const new_password = document.getElementById('fpInputNewPassword').value;
+      const confirm_password = document.getElementById('fpInputConfirmPassword').value;
+
+      if (!new_password) {
+        alert('Please enter a new password.');
+        return;
+      }
+      if (new_password.length < 6) {
+        alert('Password must be at least 6 characters.');
+        return;
+      }
+      if (new_password !== confirm_password) {
+        alert('Passwords do not match. Please re-enter.');
+        return;
+      }
+
+      const res = await apiRequest('/auth/forgot-password/reset', 'POST', {
+        identifier: fpPendingIdentifier,
+        otp: fpVerifiedOtp,
+        new_password,
+        confirm_password
+      });
+
+      if (res && res.success) {
+        // Automatically logged in and directed to dashboard!
         APP_STATE.token = res.access_token;
         APP_STATE.user = res.user;
         localStorage.setItem('jwt_access_token', res.access_token);
@@ -4998,10 +5220,15 @@
         document.getElementById('authOverlay').classList.add('hidden');
         updateUserUI();
         await initializeAppData();
+
+        if (typeof showToast === 'function') {
+          showToast('Password reset successful! Welcome to your dashboard.', 'success');
+        }
       } else {
-        alert(res?.error || 'Invalid OTP code.');
+        alert(res?.error || 'Failed to reset password. Please try again.');
       }
     }
+    window.submitForgotPasswordReset = submitForgotPasswordReset;
 
     function updateUserUI() {
       try {

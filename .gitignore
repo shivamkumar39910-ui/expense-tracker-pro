@@ -12,4 +12,11 @@ templates/mobile_app.backup.html
 expenses_backup_pre_postgres.db
 scratch_db_audit.json
 *.zip
+node_modules/
+package-lock.json
+package.json
+users_export.csv
+migrate_to_supabase.js
+migrate_to_supabase.py
+
 

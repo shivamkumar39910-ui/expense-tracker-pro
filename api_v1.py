@@ -133,10 +133,6 @@ def register():
     phone = (data.get("phone") or "").strip()
     password = data.get("password") or ""
     confirm_password = data.get("confirm_password") or ""
-    # When auto_login or direct_signup is passed (e.g. from mobile app), activate account directly;
-    # otherwise generate OTP (e.g. for strict 2FA or test suites)
-    auto_login = data.get("auto_login", False) or data.get("direct_signup", False)
-    require_otp = not auto_login
 
     if not name:
         return jsonify({"success": False, "error": "Name is required"}), 400
@@ -150,31 +146,69 @@ def register():
     conn = database.get_db_connection()
     cursor = conn.cursor()
 
+    otp = generate_otp()
+    otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+    hashed_pwd = generate_password_hash(password)
+
     # Check existing user
     if email:
         cursor.execute("SELECT id, is_verified FROM users WHERE LOWER(email) = ?", (email,))
         existing = cursor.fetchone()
         if existing:
-            conn.close()
-            return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+            if existing["is_verified"] == 1:
+                conn.close()
+                return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+            else:
+                user_id = existing["id"]
+                cursor.execute("""
+                    UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
+                    WHERE id = ?
+                """, (name, hashed_pwd, otp, otp_expiry, user_id))
+                conn.commit()
+                conn.close()
+                otp_service.dispatch_otp(email, otp, name)
+                res_payload = {
+                    "success": True,
+                    "require_otp": True,
+                    "message": "Registration updated. Verification OTP sent.",
+                    "identifier": email
+                }
+                is_prod = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+                if not is_prod:
+                    res_payload["otp_code"] = otp
+                return jsonify(res_payload), 200
 
     if phone:
         cursor.execute("SELECT id, is_verified FROM users WHERE phone = ?", (phone,))
         existing = cursor.fetchone()
         if existing:
-            conn.close()
-            return jsonify({"success": False, "error": "An account with this phone number already exists. Please Log In."}), 400
-
-    hashed_pwd = generate_password_hash(password)
-    otp = generate_otp()
-    otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-
-    is_verified_val = 0 if require_otp else 1
+            if existing["is_verified"] == 1:
+                conn.close()
+                return jsonify({"success": False, "error": "An account with this phone number already exists. Please Log In."}), 400
+            else:
+                user_id = existing["id"]
+                cursor.execute("""
+                    UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
+                    WHERE id = ?
+                """, (name, hashed_pwd, otp, otp_expiry, user_id))
+                conn.commit()
+                conn.close()
+                otp_service.dispatch_otp(phone, otp, name)
+                res_payload = {
+                    "success": True,
+                    "require_otp": True,
+                    "message": "Registration updated. Verification OTP sent.",
+                    "identifier": phone
+                }
+                is_prod = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+                if not is_prod:
+                    res_payload["otp_code"] = otp
+                return jsonify(res_payload), 200
 
     cursor.execute("""
         INSERT INTO users (name, email, phone, password, is_verified, otp_code, otp_expires_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (name, email or f"{phone}@phone.local", phone, hashed_pwd, is_verified_val, otp if require_otp else None, otp_expiry if require_otp else None))
+        VALUES (?, ?, ?, ?, 0, ?, ?)
+    """, (name, email or f"{phone}@phone.local", phone, hashed_pwd, otp, otp_expiry))
     user_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -182,32 +216,62 @@ def register():
     # Initialize default accounts for user
     database.create_user_default_data(user_id)
 
-    if require_otp:
-        otp_service.dispatch_otp(email or phone, otp, name)
-        return jsonify({
-            "success": True,
-            "require_otp": True,
-            "message": "Registration initiated. Verification OTP sent.",
-            "identifier": email or phone,
-            "otp_code": otp # Included only when require_otp is requested
-        }), 201
+    # Dispatch OTP via real Email/SMS engine
+    otp_service.dispatch_otp(email or phone, otp, name)
 
-    # Condition 2: Direct seamless signup -> Dashboard!
-    access_token, refresh_token = generate_tokens(user_id)
-    return jsonify({
+    res_payload = {
         "success": True,
-        "require_otp": False,
-        "message": "Account created successfully! Welcome to Expense Tracker Pro.",
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user": {
-            "id": user_id,
-            "name": name,
-            "email": email or f"{phone}@phone.local",
-            "phone": phone,
-            "currency_symbol": "₹"
-        }
-    }), 201
+        "require_otp": True,
+        "message": "Registration initiated. Verification OTP sent.",
+        "identifier": email or phone
+    }
+    is_prod = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+    if not is_prod:
+        res_payload["otp_code"] = otp
+
+    return jsonify(res_payload), 201
+
+@api_v1.route('/auth/resend-otp', methods=['POST'])
+def resend_otp():
+    """Universal resend endpoint for both Registration and Forgot Password."""
+    data = request.get_json() or {}
+    identifier = (data.get("identifier") or data.get("email") or data.get("phone") or "").strip().lower()
+
+    if not identifier:
+        return jsonify({"success": False, "error": "Identifier is required"}), 400
+
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, email, phone FROM users WHERE LOWER(email) = ? OR phone = ?
+    """, (identifier, identifier))
+    user = cursor.fetchone()
+
+    if not user:
+        conn.close()
+        return jsonify({"success": False, "error": "No account found with this email or mobile number."}), 404
+
+    user_dict = dict(user)
+    otp = generate_otp()
+    otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+    cursor.execute("""
+        UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?
+    """, (otp, otp_expiry, user_dict["id"]))
+    conn.commit()
+    conn.close()
+
+    otp_service.dispatch_otp(identifier, otp, user_dict.get("name", "User"))
+
+    res_payload = {
+        "success": True,
+        "message": "A fresh 6-digit verification code has been dispatched."
+    }
+    from flask import current_app
+    if current_app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "testing":
+        res_payload["otp_code"] = otp
+
+    return jsonify(res_payload), 200
 
 # ==================================================
 # Forgot Password & Account Recovery Endpoints

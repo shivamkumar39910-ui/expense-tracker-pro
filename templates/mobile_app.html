@@ -3082,6 +3082,51 @@
         </div>
 
       </div>
+
+      <!-- Signup OTP Verification View (Dispatched to real email/mobile) -->
+      <div id="authSignupOtpView" style="display:none; text-align:center;">
+        <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
+          <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
+            <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
+          </div>
+          <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Dispatched</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+            We dispatched a 6-digit verification code to:
+          </div>
+          <div id="signupRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
+          <div style="font-size:11px; color:#ef4444; margin-top:6px; font-weight:600;">
+            ⚠️ Check your Email Inbox/Spam or SMS. Code is valid for 10 minutes.
+          </div>
+        </div>
+
+        <div class="otp-boxes-row" style="margin-bottom:18px;">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_1" oninput="focusNextSignupOtp(1, event)" onkeydown="handleSignupOtpKeydown(1, event)" onpaste="handleSignupOtpPaste(event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_2" oninput="focusNextSignupOtp(2, event)" onkeydown="handleSignupOtpKeydown(2, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_3" oninput="focusNextSignupOtp(3, event)" onkeydown="handleSignupOtpKeydown(3, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_4" oninput="focusNextSignupOtp(4, event)" onkeydown="handleSignupOtpKeydown(4, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_5" oninput="focusNextSignupOtp(5, event)" onkeydown="handleSignupOtpKeydown(5, event)">
+          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_6" oninput="focusNextSignupOtp(6, event)" onkeydown="handleSignupOtpKeydown(6, event)">
+        </div>
+
+        <!-- Resend Countdown -->
+        <div style="margin-bottom:18px; font-size:12px; color:var(--text-muted);">
+          <span id="signupResendTimerText">Didn't receive code? Resend in <strong id="signupCountdownVal">30s</strong></span>
+          <button type="button" id="btnSignupResend" onclick="resendSignupOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
+            Resend Code
+          </button>
+        </div>
+
+        <button class="btn-submit-sheet" onclick="submitSignupOtp()" id="btnVerifySignupOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span class="material-icons-round" style="font-size:20px;">verified</span>
+          <span>Verify & Activate Account</span>
+        </button>
+
+        <div style="text-align:center;">
+          <button type="button" onclick="closeSignupOtpFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+            ← Edit Registration Details
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4923,6 +4968,9 @@
       document.getElementById('authCredentialsView').style.display = 'block';
       const fpView = document.getElementById('authForgotPasswordView');
       if (fpView) fpView.style.display = 'none';
+      const signupOtpView = document.getElementById('authSignupOtpView');
+      if (signupOtpView) signupOtpView.style.display = 'none';
+      if (signupCountdownTimer) clearInterval(signupCountdownTimer);
     }
     window.switchAuthTab = switchAuthTab;
 
@@ -4933,6 +4981,185 @@
       if (pwdInput) pwdInput.value = 'password123';
     }
     window.fillDemoCredentials = fillDemoCredentials;
+
+    // ==================================================
+    // Signup OTP Flow Controller
+    // ==================================================
+    let signupCountdownTimer = null;
+    let signupPendingIdentifier = '';
+
+    function openSignupOtpFlow(identifier) {
+      signupPendingIdentifier = identifier;
+      document.getElementById('authCredentialsView').style.display = 'none';
+      const fpView = document.getElementById('authForgotPasswordView');
+      if (fpView) fpView.style.display = 'none';
+
+      const signupOtpView = document.getElementById('authSignupOtpView');
+      if (signupOtpView) signupOtpView.style.display = 'block';
+
+      const rcpt = document.getElementById('signupRecipientDisplay');
+      if (rcpt) rcpt.innerText = identifier;
+
+      const title = document.getElementById('authModalTitle');
+      if (title) title.innerText = 'Verify Registration';
+      const subtitle = document.getElementById('authModalSubtitle');
+      if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your contact';
+
+      for (let i = 1; i <= 6; i++) {
+        const inp = document.getElementById(signup_otp_);
+        if (inp) inp.value = '';
+      }
+      setTimeout(() => {
+        const first = document.getElementById('signup_otp_1');
+        if (first) first.focus();
+      }, 150);
+
+      startSignupCountdown(30);
+    }
+    window.openSignupOtpFlow = openSignupOtpFlow;
+
+    function closeSignupOtpFlow() {
+      if (signupCountdownTimer) clearInterval(signupCountdownTimer);
+      const signupOtpView = document.getElementById('authSignupOtpView');
+      if (signupOtpView) signupOtpView.style.display = 'none';
+      switchAuthTab('SIGNUP');
+    }
+    window.closeSignupOtpFlow = closeSignupOtpFlow;
+
+    function startSignupCountdown(seconds) {
+      if (signupCountdownTimer) clearInterval(signupCountdownTimer);
+      let rem = seconds;
+      const timerText = document.getElementById('signupResendTimerText');
+      const valSpan = document.getElementById('signupCountdownVal');
+      const resendBtn = document.getElementById('btnSignupResend');
+
+      if (timerText) timerText.style.display = 'inline';
+      if (resendBtn) resendBtn.style.display = 'none';
+      if (valSpan) valSpan.innerText = rem + 's';
+
+      signupCountdownTimer = setInterval(() => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(signupCountdownTimer);
+          if (timerText) timerText.style.display = 'none';
+          if (resendBtn) resendBtn.style.display = 'inline';
+        } else {
+          if (valSpan) valSpan.innerText = rem + 's';
+        }
+      }, 1000);
+    }
+
+    async function resendSignupOtp() {
+      if (!signupPendingIdentifier) return;
+      const btn = document.getElementById('btnSignupResend');
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await apiRequest('/auth/resend-otp', 'POST', {
+          identifier: signupPendingIdentifier
+        });
+
+        if (res && res.success) {
+          startSignupCountdown(30);
+          if (typeof showToast === 'function') {
+            showToast(res.message || 'Fresh verification code dispatched!', 'info');
+          }
+        } else {
+          alert(res?.error || 'Failed to resend code. Please try again.');
+        }
+      } catch (e) {
+        alert('Failed to resend verification code.');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+    window.resendSignupOtp = resendSignupOtp;
+
+    function focusNextSignupOtp(idx, e) {
+      if (e.target.value.length === 1 && idx < 6) {
+        const next = document.getElementById(signup_otp_);
+        if (next) next.focus();
+      }
+    }
+    window.focusNextSignupOtp = focusNextSignupOtp;
+
+    function handleSignupOtpKeydown(idx, e) {
+      if (e.key === 'Backspace' && !e.target.value && idx > 1) {
+        const prev = document.getElementById(signup_otp_);
+        if (prev) {
+          prev.focus();
+          prev.value = '';
+        }
+      }
+    }
+    window.handleSignupOtpKeydown = handleSignupOtpKeydown;
+
+    function handleSignupOtpPaste(e) {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (/^\d{6}$/.test(pasted)) {
+        for (let i = 0; i < 6; i++) {
+          const inp = document.getElementById(signup_otp_);
+          if (inp) inp.value = pasted[i];
+        }
+        const last = document.getElementById('signup_otp_6');
+        if (last) last.focus();
+      }
+    }
+    window.handleSignupOtpPaste = handleSignupOtpPaste;
+
+    async function submitSignupOtp() {
+      let otp = '';
+      for (let i = 1; i <= 6; i++) {
+        const inp = document.getElementById(signup_otp_);
+        if (inp) otp += inp.value.trim();
+      }
+
+      if (otp.length !== 6) {
+        alert('Please enter all 6 digits of the verification code.');
+        return;
+      }
+
+      const btn = document.getElementById('btnVerifySignupOtp');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Verifying...</span>';
+      }
+
+      try {
+        const res = await apiRequest('/auth/verify-otp', 'POST', {
+          identifier: signupPendingIdentifier,
+          otp: otp
+        });
+
+        if (res && res.success) {
+          if (signupCountdownTimer) clearInterval(signupCountdownTimer);
+          APP_STATE.token = res.access_token;
+          APP_STATE.user = res.user;
+          localStorage.setItem('jwt_access_token', res.access_token);
+          localStorage.setItem('user_profile', JSON.stringify(res.user));
+
+          document.getElementById('authOverlay').classList.add('hidden');
+          updateUserUI();
+          await initializeAppData();
+
+          if (typeof showToast === 'function') {
+            showToast('Account verified! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
+          }
+        } else {
+          alert(res?.error || 'Invalid verification code. Please check and try again.');
+        }
+      } catch (err) {
+        alert('Verification error: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+    window.submitSignupOtp = submitSignupOtp;
 
     // Handle Login or Signup submission
     async function handleAuthSubmit() {
@@ -4946,7 +5173,7 @@
       }
 
       if (!isLogin) {
-        // Condition 2: Sign Up
+        // Condition 2: Sign Up with OTP verification
         const name = document.getElementById('authInputName').value.trim();
         const confirmPassword = document.getElementById('authInputConfirmPassword').value;
 
@@ -4963,53 +5190,89 @@
           return;
         }
 
-        const res = await apiRequest('/auth/register', 'POST', {
-          name,
-          email: identifier.includes('@') ? identifier : '',
-          phone: !identifier.includes('@') ? identifier : '',
-          password,
-          confirm_password: confirmPassword,
-          auto_login: true
-        });
+        const submitBtn = document.getElementById('authSubmitBtn');
+        const origContent = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>Creating Account...</span>';
+        }
 
-        if (res && res.success) {
-          // Instant direct onboarding into dashboard!
-          APP_STATE.token = res.access_token;
-          APP_STATE.user = res.user;
-          localStorage.setItem('jwt_access_token', res.access_token);
-          localStorage.setItem('user_profile', JSON.stringify(res.user));
+        try {
+          const res = await apiRequest('/auth/register', 'POST', {
+            name,
+            email: identifier.includes('@') ? identifier : '',
+            phone: !identifier.includes('@') ? identifier : '',
+            password,
+            confirm_password: confirmPassword
+          });
 
-          document.getElementById('authOverlay').classList.add('hidden');
-          updateUserUI();
-          await initializeAppData();
-          if (typeof showToast === 'function') {
-            showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
+          if (res && res.success) {
+            if (res.require_otp) {
+              openSignupOtpFlow(res.identifier || identifier);
+              if (typeof showToast === 'function') {
+                showToast('Verification code dispatched! Please check your inbox.', 'info');
+              }
+            } else {
+              APP_STATE.token = res.access_token;
+              APP_STATE.user = res.user;
+              localStorage.setItem('jwt_access_token', res.access_token);
+              localStorage.setItem('user_profile', JSON.stringify(res.user));
+              document.getElementById('authOverlay').classList.add('hidden');
+              updateUserUI();
+              await initializeAppData();
+              if (typeof showToast === 'function') {
+                showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
+              }
+            }
+          } else {
+            alert(res?.error || 'Registration failed. Please check your details.');
           }
-        } else {
-          alert(res?.error || 'Registration failed. Please check your details.');
+        } catch (err) {
+          alert('Registration request failed: ' + (err.message || 'Network error'));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origContent;
+          }
         }
 
       } else {
         // Condition 1: Direct Password Login
-        const res = await apiRequest('/auth/login', 'POST', {
-          identifier,
-          password
-        });
+        const submitBtn = document.getElementById('authSubmitBtn');
+        const origContent = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>Signing In...</span>';
+        }
 
-        if (res && res.success) {
-          APP_STATE.token = res.access_token;
-          APP_STATE.user = res.user;
-          localStorage.setItem('jwt_access_token', res.access_token);
-          localStorage.setItem('user_profile', JSON.stringify(res.user));
+        try {
+          const res = await apiRequest('/auth/login', 'POST', {
+            identifier,
+            password
+          });
 
-          document.getElementById('authOverlay').classList.add('hidden');
-          updateUserUI();
-          await initializeAppData();
-          if (typeof showToast === 'function') {
-            showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
+          if (res && res.success) {
+            APP_STATE.token = res.access_token;
+            APP_STATE.user = res.user;
+            localStorage.setItem('jwt_access_token', res.access_token);
+            localStorage.setItem('user_profile', JSON.stringify(res.user));
+
+            document.getElementById('authOverlay').classList.add('hidden');
+            updateUserUI();
+            await initializeAppData();
+            if (typeof showToast === 'function') {
+              showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
+            }
+          } else {
+            alert(res?.error || 'Invalid email/phone or password.');
           }
-        } else {
-          alert(res?.error || 'Invalid email/phone or password.');
+        } catch (err) {
+          alert('Login request failed: ' + (err.message || 'Network error'));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origContent;
+          }
         }
       }
     }
@@ -5066,33 +5329,45 @@
       fpPendingIdentifier = identifier;
 
       const btn = document.getElementById('btnFpSendOtp');
-      if (btn) btn.disabled = true;
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Sending Code...</span>';
+      }
 
-      const res = await apiRequest('/auth/forgot-password/send-otp', 'POST', { identifier });
-      if (btn) btn.disabled = false;
+      try {
+        const res = await apiRequest('/auth/forgot-password/send-otp', 'POST', { identifier });
 
-      if (res && res.success) {
-        const rcpt = document.getElementById('fpRecipientDisplay');
-        if (rcpt) rcpt.innerText = identifier;
+        if (res && res.success) {
+          const rcpt = document.getElementById('fpRecipientDisplay');
+          if (rcpt) rcpt.innerText = identifier;
 
-        showFpStep('OTP');
-        startFpCountdown(30);
+          showFpStep('OTP');
+          startFpCountdown(30);
 
-        // Clear previous OTP boxes
-        for (let i = 1; i <= 6; i++) {
-          const inp = document.getElementById(`fp_otp_${i}`);
-          if (inp) inp.value = '';
+          // Clear previous OTP boxes
+          for (let i = 1; i <= 6; i++) {
+            const inp = document.getElementById(p_otp_);
+            if (inp) inp.value = '';
+          }
+          setTimeout(() => {
+            const first = document.getElementById('fp_otp_1');
+            if (first) first.focus();
+          }, 150);
+
+          if (typeof showToast === 'function') {
+            showToast(res.message || 'Verification code sent!', 'info');
+          }
+        } else {
+          alert(res?.error || 'Failed to dispatch verification code. Please check your contact.');
         }
-        setTimeout(() => {
-          const first = document.getElementById('fp_otp_1');
-          if (first) first.focus();
-        }, 150);
-
-        if (typeof showToast === 'function') {
-          showToast(res.message || 'Verification code sent!', 'info');
+      } catch (err) {
+        alert('Failed to send verification code: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
         }
-      } else {
-        alert(res?.error || 'Failed to dispatch verification code. Please check your contact.');
       }
     }
     window.submitForgotPasswordIdentifier = submitForgotPasswordIdentifier;
@@ -5159,7 +5434,7 @@
     async function submitForgotPasswordOtp() {
       let otp = '';
       for (let i = 1; i <= 6; i++) {
-        const inp = document.getElementById(`fp_otp_${i}`);
+        const inp = document.getElementById(p_otp_);
         if (inp) otp += inp.value.trim();
       }
 
@@ -5168,20 +5443,36 @@
         return;
       }
 
-      const res = await apiRequest('/auth/forgot-password/verify-otp', 'POST', {
-        identifier: fpPendingIdentifier,
-        otp
-      });
+      const btn = document.getElementById('btnVerifyFpOtp');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Verifying...</span>';
+      }
 
-      if (res && res.success) {
-        fpVerifiedOtp = otp;
-        showFpStep('NEW_PWD');
-        setTimeout(() => {
-          const np = document.getElementById('fpInputNewPassword');
-          if (np) np.focus();
-        }, 150);
-      } else {
-        alert(res?.error || 'Invalid verification code. Please check and try again.');
+      try {
+        const res = await apiRequest('/auth/forgot-password/verify-otp', 'POST', {
+          identifier: fpPendingIdentifier,
+          otp
+        });
+
+        if (res && res.success) {
+          fpVerifiedOtp = otp;
+          showFpStep('NEW_PWD');
+          setTimeout(() => {
+            const np = document.getElementById('fpInputNewPassword');
+            if (np) np.focus();
+          }, 150);
+        } else {
+          alert(res?.error || 'Invalid verification code. Please check and try again.');
+        }
+      } catch (err) {
+        alert('Verification error: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
     window.submitForgotPasswordOtp = submitForgotPasswordOtp;
@@ -5203,29 +5494,45 @@
         return;
       }
 
-      const res = await apiRequest('/auth/forgot-password/reset', 'POST', {
-        identifier: fpPendingIdentifier,
-        otp: fpVerifiedOtp,
-        new_password,
-        confirm_password
-      });
+      const btn = document.getElementById('btnFpResetSubmit');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Saving...</span>';
+      }
 
-      if (res && res.success) {
-        // Automatically logged in and directed to dashboard!
-        APP_STATE.token = res.access_token;
-        APP_STATE.user = res.user;
-        localStorage.setItem('jwt_access_token', res.access_token);
-        localStorage.setItem('user_profile', JSON.stringify(res.user));
+      try {
+        const res = await apiRequest('/auth/forgot-password/reset', 'POST', {
+          identifier: fpPendingIdentifier,
+          otp: fpVerifiedOtp,
+          new_password,
+          confirm_password
+        });
 
-        document.getElementById('authOverlay').classList.add('hidden');
-        updateUserUI();
-        await initializeAppData();
+        if (res && res.success) {
+          // Automatically logged in and directed to dashboard!
+          APP_STATE.token = res.access_token;
+          APP_STATE.user = res.user;
+          localStorage.setItem('jwt_access_token', res.access_token);
+          localStorage.setItem('user_profile', JSON.stringify(res.user));
 
-        if (typeof showToast === 'function') {
-          showToast('Password reset successful! Welcome to your dashboard.', 'success');
+          document.getElementById('authOverlay').classList.add('hidden');
+          updateUserUI();
+          await initializeAppData();
+
+          if (typeof showToast === 'function') {
+            showToast('Password reset successful! Welcome to your dashboard.', 'success');
+          }
+        } else {
+          alert(res?.error || 'Failed to reset password. Please try again.');
         }
-      } else {
-        alert(res?.error || 'Failed to reset password. Please try again.');
+      } catch (err) {
+        alert('Reset request failed: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
       }
     }
     window.submitForgotPasswordReset = submitForgotPasswordReset;

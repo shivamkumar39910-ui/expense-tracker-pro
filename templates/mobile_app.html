@@ -4904,8 +4904,12 @@
     function showAuthOverlay(mode = 'LOGIN') {
       APP_STATE.authMode = mode;
       document.getElementById('authOverlay').classList.remove('hidden');
-      document.getElementById('authCredentialsView').style.display = 'block';
-      document.getElementById('authOtpView').style.display = 'none';
+      const creds = document.getElementById('authCredentialsView');
+      if (creds) creds.style.display = 'block';
+      const fp = document.getElementById('authForgotPasswordView');
+      if (fp) fp.style.display = 'none';
+      const so = document.getElementById('authSignupOtpView');
+      if (so) so.style.display = 'none';
       switchAuthTab(mode);
     }
 
@@ -5286,20 +5290,45 @@
     let fpVerifiedOtp = '';
 
     function openForgotPasswordFlow() {
-      document.getElementById('authCredentialsView').style.display = 'none';
-      document.getElementById('authForgotPasswordView').style.display = 'block';
+      const creds = document.getElementById('authCredentialsView');
+      if (creds) creds.style.display = 'none';
+      const fp = document.getElementById('authForgotPasswordView');
+      if (fp) fp.style.display = 'block';
+      const so = document.getElementById('authSignupOtpView');
+      if (so) so.style.display = 'none';
+
+      // Pre-fill forgot password input if user already typed their email in login box
+      const mainId = document.getElementById('authInputIdentifier');
+      const fpId = document.getElementById('fpInputIdentifier');
+      if (mainId && fpId && mainId.value.trim() && !fpId.value.trim()) {
+        fpId.value = mainId.value.trim();
+      }
+
       showFpStep('IDENTIFIER');
     }
     window.openForgotPasswordFlow = openForgotPasswordFlow;
 
     function closeForgotPasswordFlow() {
       if (fpCountdownTimer) clearInterval(fpCountdownTimer);
-      document.getElementById('authForgotPasswordView').style.display = 'none';
+      const fp = document.getElementById('authForgotPasswordView');
+      if (fp) fp.style.display = 'none';
+      const so = document.getElementById('authSignupOtpView');
+      if (so) so.style.display = 'none';
+      const creds = document.getElementById('authCredentialsView');
+      if (creds) creds.style.display = 'block';
       switchAuthTab('LOGIN');
     }
     window.closeForgotPasswordFlow = closeForgotPasswordFlow;
 
     function showFpStep(step) {
+      // Strictly guarantee authCredentialsView and authSignupOtpView are hidden
+      const creds = document.getElementById('authCredentialsView');
+      if (creds) creds.style.display = 'none';
+      const so = document.getElementById('authSignupOtpView');
+      if (so) so.style.display = 'none';
+      const fp = document.getElementById('authForgotPasswordView');
+      if (fp) fp.style.display = 'block';
+
       document.getElementById('fpStepIdentifier').style.display = (step === 'IDENTIFIER') ? 'block' : 'none';
       document.getElementById('fpStepOtp').style.display = (step === 'OTP') ? 'block' : 'none';
       document.getElementById('fpStepNewPassword').style.display = (step === 'NEW_PWD') ? 'block' : 'none';

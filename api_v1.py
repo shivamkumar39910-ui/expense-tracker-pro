@@ -1,4 +1,5 @@
 import os
+import threading
 import re
 import csv
 import io
@@ -1525,12 +1526,18 @@ def delete_goal(goal_id):
 # 9. Predictive Warning & Notifications (Phase 10)
 # ==================================================
 
+_last_predictive_check = {}
+
 @api_v1.route('/notifications', methods=['GET'])
 @token_required
 def get_notifications():
     user_id = request.user["id"]
-    # Trigger smart predictive alert generator
-    database.generate_predictive_notifications(user_id)
+    
+    # Non-blocking predictive health audit with 5-minute cooldown
+    now_ts = datetime.utcnow().timestamp()
+    if user_id not in _last_predictive_check or (now_ts - _last_predictive_check[user_id]) > 300:
+        _last_predictive_check[user_id] = now_ts
+        threading.Thread(target=database.generate_predictive_notifications, args=(user_id,), daemon=True).start()
     
     unread_only = request.args.get("unread_only", "false").lower() == "true"
     limit = int(request.args.get("limit", 30))

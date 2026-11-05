@@ -182,10 +182,41 @@ class PostgresCursorWrapper:
             yield PostgresRowWrapper(r)
 
 
+import threading
+_pg_pool = None
+_pg_pool_lock = threading.Lock()
+
+def _get_pg_pool():
+    """Thread-safe connection pool for lightning-fast sub-millisecond database queries."""
+    global _pg_pool
+    if _pg_pool is None and DATABASE_URL:
+        with _pg_pool_lock:
+            if _pg_pool is None and DATABASE_URL:
+                try:
+                    import psycopg2.pool
+                    _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                        minconn=1,
+                        maxconn=10,
+                        dsn=DATABASE_URL,
+                        connect_timeout=10,
+                        keepalives=1,
+                        keepalives_idle=30,
+                        keepalives_interval=10,
+                        keepalives_count=5
+                    )
+                    print("[DB ENGINE] ThreadedConnectionPool online (1-10 connections, TCP keepalives)")
+                except Exception as pool_err:
+                    print(f"[DB ENGINE POOL INIT WARNING] {pool_err}")
+                    _pg_pool = None
+    return _pg_pool
+
+
 class PostgresConnectionWrapper:
     """Wraps a psycopg2 connection to provide cursor() with PostgresCursorWrapper."""
-    def __init__(self, raw_conn):
+    def __init__(self, raw_conn, from_pool: bool = False):
         self._conn = raw_conn
+        self._from_pool = from_pool
+        self._closed = False
 
     def cursor(self):
         import psycopg2.extras
@@ -193,13 +224,33 @@ class PostgresConnectionWrapper:
         return PostgresCursorWrapper(raw_cur)
 
     def commit(self):
-        self._conn.commit()
+        if not self._closed and not self._conn.closed:
+            self._conn.commit()
 
     def rollback(self):
-        self._conn.rollback()
+        if not self._closed and not self._conn.closed:
+            self._conn.rollback()
 
     def close(self):
-        self._conn.close()
+        if self._closed:
+            return
+        self._closed = True
+        pool = _get_pg_pool()
+        if self._from_pool and pool:
+            try:
+                if not self._conn.closed:
+                    self._conn.rollback()
+                pool.putconn(self._conn)
+            except Exception:
+                try:
+                    pool.putconn(self._conn, close=True)
+                except Exception:
+                    pass
+        else:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
 
     def execute(self, query: str, params: Any = None):
         cur = self.cursor()
@@ -214,6 +265,7 @@ class PostgresConnectionWrapper:
             self.rollback()
         else:
             self.commit()
+        self.close()
 
 
 # ==================================================
@@ -223,16 +275,27 @@ class PostgresConnectionWrapper:
 def get_db_connection():
     """
     Universal database connection factory.
-    Returns a connection to PostgreSQL if DATABASE_URL is configured,
-    otherwise returns a connection to SQLite (expenses.db).
-    Both connections support standard cursor(), commit(), rollback(), and row_factory access.
+    Uses pre-warmed connection pool for sub-millisecond acquisition time in production.
     """
     if is_postgres():
+        pool = _get_pg_pool()
+        if pool:
+            for _ in range(2):
+                try:
+                    raw_conn = pool.getconn()
+                    if raw_conn.closed:
+                        pool.putconn(raw_conn, close=True)
+                        continue
+                    return PostgresConnectionWrapper(raw_conn, from_pool=True)
+                except Exception:
+                    pass
+        
+        # Fallback to direct connect if pool is empty or during initialization
         import psycopg2
         import psycopg2.extras
         try:
             raw_conn = psycopg2.connect(DATABASE_URL)
-            return PostgresConnectionWrapper(raw_conn)
+            return PostgresConnectionWrapper(raw_conn, from_pool=False)
         except Exception as e:
             if os.environ.get("FLASK_ENV") == "production" or os.environ.get("STRICT_DATABASE") == "1":
                 raise RuntimeError(f"[DB ENGINE CRITICAL ERROR] PostgreSQL connection failed in production: {e}")
@@ -247,4 +310,6 @@ def _get_sqlite_connection():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA cache_size = -64000;")
     return conn

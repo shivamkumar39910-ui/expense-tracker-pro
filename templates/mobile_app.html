@@ -23,6 +23,23 @@
   
   <style>
     /* ======================================================== */
+    /* ULTRA-RESPONSIVE TOUCH & TACTILE MICRO-INTERACTIONS       */
+    /* ======================================================== */
+    * {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, .key-btn, .nav-tab, .acc-pill, .btn-submit-sheet, .btn-icon-header, .tx-item, .action-pill {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    button:active, .key-btn:active, .nav-tab:active, .acc-pill:active, .btn-icon-header:active, .tx-item:active, .btn-submit-sheet:active {
+      transform: scale(0.96) !important;
+      opacity: 0.88 !important;
+      transition: transform 0.06s ease, opacity 0.06s ease !important;
+    }
+
+    /* ======================================================== */
     /* DESIGN SYSTEM: EXECUTIVE FINTECH THEME PALETTES          */
     /* ======================================================== */
     :root {
@@ -3435,52 +3452,80 @@
       }
     }
 
-    async function initializeAppData() {
-      await Promise.all([
-        loadCategories(),
-        loadAccountsAndNetWorth(),
-        refreshDashboardData(),
-        loadTransactions(),
-        loadNotifications(),
-        loadGoals(),
-        loadVisualCharts()
-      ]);
-    }
-
-    async function loadAccountsAndNetWorth() {
-      const res = await apiRequest('/accounts');
-      if (res && res.success) {
-        APP_STATE.accounts = res.data.accounts;
-        document.getElementById('netWorthDisplay').innerText = `₹${res.data.net_worth.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        
-        // Render Wallets Pills
-        const row = document.getElementById('accountsPillRow');
-        row.innerHTML = '';
-        res.data.accounts.forEach(acc => {
+    function renderAccountPillsAndNetWorth() {
+      if (!Array.isArray(APP_STATE.accounts)) return;
+      let calculatedNetWorth = 0;
+      const row = document.getElementById('accountsPillRow');
+      if (row) row.innerHTML = '';
+      APP_STATE.accounts.forEach(acc => {
+        const bal = parseFloat(acc.current_balance) || 0;
+        if (acc.type === 'CREDIT_CARD') {
+          calculatedNetWorth -= bal;
+        } else {
+          calculatedNetWorth += bal;
+        }
+        if (row) {
           const pill = document.createElement('div');
           pill.className = 'acc-pill';
           pill.style.cursor = 'pointer';
           pill.title = 'Click to view account statement & reconcile';
           pill.onclick = () => openAccountStatement(acc.id);
           pill.innerHTML = `
-            <span class="material-icons-round acc-pill-icon" style="color:${acc.color_hex};">${acc.icon || 'wallet'}</span>
+            <span class="material-icons-round acc-pill-icon" style="color:${acc.color_hex || '#38BDF8'};">${acc.icon || 'wallet'}</span>
             <div>
               <div class="acc-pill-name">${acc.name}</div>
-              <div class="acc-pill-balance">₹${acc.current_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+              <div class="acc-pill-balance">₹${bal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
             </div>
           `;
           row.appendChild(pill);
-        });
+        }
+      });
+      const nwEl = document.getElementById('netWorthDisplay');
+      if (nwEl) {
+        nwEl.innerText = `₹${calculatedNetWorth.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      }
+      renderProfileAccounts();
+    }
 
-        // Also render Profile accounts
-        renderProfileAccounts();
+    async function initializeAppData(forceFull = false) {
+      const coreTasks = [
+        loadCategories(forceFull),
+        loadAccountsAndNetWorth(),
+        refreshDashboardData(),
+        loadTransactions()
+      ];
+
+      // Load auxiliary data on initial load or when explicitly forced
+      if (forceFull || !APP_STATE._hasHydrated) {
+        APP_STATE._hasHydrated = true;
+        coreTasks.push(loadNotifications());
+        coreTasks.push(loadGoals());
+      }
+
+      // Only calculate & load heavy charts when the Analytics tab is active
+      const currentTab = document.querySelector('.app-screen.active');
+      if (currentTab && (currentTab.id === 'tab-analytics' || currentTab.id === 'tab-transactions')) {
+        coreTasks.push(loadVisualCharts());
+      }
+
+      await Promise.all(coreTasks);
+    }
+
+    async function loadAccountsAndNetWorth() {
+      const res = await apiRequest('/accounts');
+      if (res && res.success && res.data) {
+        APP_STATE.accounts = res.data.accounts || [];
+        renderAccountPillsAndNetWorth();
       }
     }
 
-    async function loadCategories() {
+    async function loadCategories(force = false) {
+      if (!force && APP_STATE.categories && APP_STATE.categories.length > 0) {
+        return; // Cache hit - instant return
+      }
       const res = await apiRequest('/categories');
       if (res && res.success) {
-        APP_STATE.categories = res.categories;
+        APP_STATE.categories = res.categories || [];
       }
     }
 
@@ -4459,6 +4504,7 @@
     function createTxElement(tx, allowDelete = false) {
       const el = document.createElement('div');
       el.className = 'tx-item';
+      if (tx && tx.id) el.setAttribute('data-tx-id', tx.id);
       
       const isExpense = tx.transaction_type === 'EXPENSE';
       const isIncome = tx.transaction_type === 'INCOME';
@@ -4535,14 +4581,62 @@
 
     async function deleteActiveTx() {
       if (!ACTIVE_TX) return;
-      if (confirm(`Delete this transaction of ₹${ACTIVE_TX.amount} and restore balance?`)) {
-        const res = await apiRequest(`/transactions/${ACTIVE_TX.id}`, 'DELETE');
-        if (res && res.success) {
-          closeTxDetailModal();
-          await initializeAppData();
-        } else {
-          alert(res?.error || 'Failed to delete transaction');
+      const txToDelete = { ...ACTIVE_TX };
+      const txId = txToDelete.id;
+      const amount = parseFloat(txToDelete.amount) || 0;
+      const type = txToDelete.transaction_type;
+      const accId = txToDelete.account_id;
+
+      if (!confirm(`Delete this transaction of ₹${amount.toLocaleString('en-IN', {minimumFractionDigits: 2})} and restore balance?`)) {
+        return;
+      }
+
+      // 1. INSTANT 0ms OPTIMISTIC UI: Close sheet immediately
+      closeTxDetailModal();
+
+      // 2. Animate out and remove from DOM immediately
+      const domItems = document.querySelectorAll(`[data-tx-id="${txId}"]`);
+      domItems.forEach(el => {
+        el.style.transition = 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-24px) scale(0.96)';
+        setTimeout(() => el.remove(), 230);
+      });
+
+      // 3. Remove from in-memory state
+      if (Array.isArray(APP_STATE.transactions)) {
+        APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== txId);
+      }
+
+      // 4. Instant mathematical balance restoration in UI
+      if (Array.isArray(APP_STATE.accounts)) {
+        const acc = APP_STATE.accounts.find(a => a.id === accId);
+        if (acc) {
+          if (type === 'EXPENSE') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
+          else if (type === 'INCOME') acc.current_balance = (parseFloat(acc.current_balance) || 0) - amount;
         }
+      }
+      renderAccountPillsAndNetWorth();
+
+      if (typeof showToast === 'function') {
+        showToast('Transaction deleted & balance restored', 'success');
+      }
+
+      // 5. Send background DELETE call without freezing UI
+      try {
+        const res = await apiRequest(`/transactions/${txId}`, 'DELETE');
+        if (!res || !res.success) {
+          if (typeof showToast === 'function') {
+            showToast(res?.error || 'Failed to delete transaction. Reverting...', 'error');
+          }
+          await initializeAppData(true);
+        } else {
+          // Quiet background sync without screen freeze
+          setTimeout(() => refreshDashboardData(), 400);
+        }
+      } catch (err) {
+        console.error('Delete transaction network error:', err);
+        await initializeAppData(true);
       }
     }
 
@@ -4889,12 +4983,31 @@
         payload.subcategory_id = APP_STATE.sheetSubcategoryId;
       }
 
-      const res = await apiRequest('/transactions', 'POST', payload);
-      if (res && res.success) {
-        closeQuickEntrySheet();
-        await initializeAppData();
-      } else {
-        alert(res?.error || 'Failed to record transaction');
+      const btn = document.getElementById('btnSubmitQuickTx');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Recording...</span>';
+      }
+
+      try {
+        const res = await apiRequest('/transactions', 'POST', payload);
+        if (res && res.success) {
+          closeQuickEntrySheet();
+          if (typeof showToast === 'function') {
+            showToast('Transaction recorded successfully!', 'success');
+          }
+          await initializeAppData();
+        } else {
+          alert(res?.error || 'Failed to record transaction');
+        }
+      } catch (e) {
+        alert('Failed to record transaction: ' + (e.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
       }
     }
 

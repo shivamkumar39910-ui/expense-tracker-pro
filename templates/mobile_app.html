@@ -665,7 +665,33 @@
       animation: orbFloatPulse 3s ease-in-out infinite;
     }
     .ai-floating-orb:active {
-      transform: scale(0.92) !important;
+      transform: scale(0.9) !important;
+    }
+
+    /* Universal Instant Touch & Zero-Delay Touch Response */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, a, input, select, textarea, .nav-tab, .acc-pill, .fintech-card, .key-btn, .btn-icon-header, .fab-center, #floatingAiBotBtn {
+      touch-action: manipulation;
+    }
+
+    /* Hardware Accelerated GPU Compositing */
+    .app-screen, .bottom-sheet, .fintech-card, #floatingAiBotBtn {
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+
+    /* Automatically Hide Floating AI Button whenever ANY sheet or modal is open */
+    body:has(.bottom-sheet.active) #floatingAiBotBtn,
+    body:has(.sheet-backdrop.active) #floatingAiBotBtn,
+    body:has(.auth-overlay:not(.hidden)) #floatingAiBotBtn,
+    #floatingAiBotBtn.hidden-by-sheet {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      visibility: hidden !important;
     }
 
     /* ======================================================== */
@@ -1928,17 +1954,13 @@
 
     </div>
 
-    <!-- FLIPKART-STYLE FLOATING AI CHATBOT BUTTON (HOVERING ABOVE 5TH NAV PROFILE) -->
-    <div id="floatingAiBotBtn" onclick="openAiChatModal()" style="position:absolute; bottom:74px; right:14px; z-index:850; display:flex; flex-direction:column; align-items:center; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;" title="Open AI Financial Assistant">
-      <!-- Glowing Animated Floating AI Orb -->
-      <div class="ai-floating-orb" style="width:48px; height:48px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #C084FC 0%, #7C3AED 45%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); border:2px solid rgba(255, 255, 255, 0.45); position:relative; transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
-        <span class="material-icons-round" style="color:#FFF; font-size:24px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">auto_awesome</span>
+    <!-- COMPACT FLOATING AI CHATBOT BUTTON (25% REDUCED, NO TEXT LABEL, ABOVE PROFILE) -->
+    <div id="floatingAiBotBtn" onclick="openAiChatModal()" style="position:absolute; bottom:70px; right:16px; z-index:850; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;" title="AI Financial Assistant">
+      <!-- 25% Reduced Size Glowing Animated Floating AI Orb (36px) -->
+      <div class="ai-floating-orb" style="width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #C084FC 0%, #7C3AED 45%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(124, 58, 237, 0.5), 0 0 10px rgba(6, 182, 212, 0.4); border:1.8px solid rgba(255, 255, 255, 0.5); position:relative; transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+        <span class="material-icons-round" style="color:#FFF; font-size:18px; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));">auto_awesome</span>
         <!-- Online active indicator dot -->
-        <span style="position:absolute; top:2px; right:2px; width:9px; height:9px; background:#10B981; border:2px solid #0F172A; border-radius:50%; box-shadow:0 0 6px #10B981;"></span>
-      </div>
-      <!-- Sleek Mini Pill Label -->
-      <div style="background:rgba(15, 23, 42, 0.88); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:2px 7px; font-size:9px; font-weight:800; color:#E0E7FF; margin-top:3px; letter-spacing:0.3px; box-shadow:0 2px 8px rgba(0,0,0,0.4);">
-        AI Assistant
+        <span style="position:absolute; top:1px; right:1px; width:7px; height:7px; background:#10B981; border:1.5px solid #0F172A; border-radius:50%; box-shadow:0 0 5px #10B981;"></span>
       </div>
     </div>
 
@@ -4985,6 +5007,7 @@
     }
 
     function openQuickEntrySheet(type = 'EXPENSE') {
+      hideFloatingAiBtn();
       setSheetTxType(type);
       APP_STATE.sheetAmount = '0';
       setSheetDate('TODAY');
@@ -5021,6 +5044,7 @@
     function closeQuickEntrySheet() {
       document.getElementById('sheetBackdrop').classList.remove('active');
       document.getElementById('quickEntrySheet').classList.remove('active');
+      showFloatingAiBtn();
     }
 
     function setSheetTxType(type) {
@@ -7403,8 +7427,22 @@
       APP_STATE.user = null;
       showAuthOverlay('LOGIN');
     }
+    function hideFloatingAiBtn() {
+      const btn = document.getElementById('floatingAiBotBtn');
+      if (btn) btn.style.display = 'none';
+    }
+
+    function showFloatingAiBtn() {
+      const isAnySheetOpen = document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
+      if (!isAnySheetOpen) {
+        const btn = document.getElementById('floatingAiBotBtn');
+        if (btn) btn.style.display = 'flex';
+      }
+    }
+
     function openAiChatModal() {
       triggerHaptic('light');
+      hideFloatingAiBtn();
       const bd = document.getElementById('aiChatBackdrop');
       const sheet = document.getElementById('aiChatSheet');
       if (bd) bd.classList.add('active');
@@ -7418,6 +7456,26 @@
       const sheet = document.getElementById('aiChatSheet');
       if (bd) bd.classList.remove('active');
       if (sheet) sheet.classList.remove('active');
+      showFloatingAiBtn();
+    }
+
+    // Universal Reactive Observer: Guarantees Floating AI Button is NEVER visible when any sheet/keypad/chat is open
+    try {
+      const globalSheetObserver = new MutationObserver(() => {
+        const hasOpenSheet = !!document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
+        const btn = document.getElementById('floatingAiBotBtn');
+        if (!btn) return;
+        if (hasOpenSheet) {
+          btn.style.display = 'none';
+        } else {
+          btn.style.display = 'flex';
+        }
+      });
+      window.addEventListener('DOMContentLoaded', () => {
+        globalSheetObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class', 'style'] });
+      });
+    } catch (obsErr) {
+      console.warn('Sheet observer notice:', obsErr);
     }
 
     function sendQuickPrompt(promptText) {

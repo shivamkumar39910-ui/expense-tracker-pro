@@ -1386,10 +1386,6 @@
             </div>
           </div>
           <div class="header-actions">
-            <!-- Phase 15: PWA Install App Button -->
-            <div class="btn-icon-header" id="btnPwaInstall" style="display:none; color:var(--color-emerald); background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.3);" onclick="installPwaApp()" title="Install App to Home Screen">
-              <span class="material-icons-round" style="font-size: 19px;">install_mobile</span>
-            </div>
             <!-- Theme Toggle (Midnight Navy / Light Mode) -->
             <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (Midnight / Light)">
               <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">light_mode</span>
@@ -1399,27 +1395,10 @@
               <span class="material-icons-round" style="font-size: 20px;">notifications</span>
               <span id="notifBadge" style="position:absolute; top:-2px; right:-2px; background:var(--color-ruby); color:#fff; font-size:10px; font-weight:800; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; border:2px solid var(--bg-app);">0</span>
             </div>
-            <!-- Quick Refresh -->
-            <div class="btn-icon-header" onclick="refreshDashboardData()" title="Sync / Refresh Data">
-              <span class="material-icons-round" style="font-size: 20px;">sync</span>
-            </div>
           </div>
         </div>
 
-        <!-- Phase 15: PWA Install Mobile App Banner -->
-        <div id="pwaInstallBanner" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:var(--radius-md); background:linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.18)); border:1px solid rgba(16, 185, 129, 0.35); align-items:center; justify-content:space-between; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="material-icons-round" style="color:var(--color-emerald); font-size:22px; flex-shrink:0;">install_mobile</span>
-            <div>
-              <div style="font-size:12px; font-weight:700; color:var(--text-primary);">Install Expense Tracker Pro</div>
-              <div style="font-size:10px; color:var(--text-secondary);">Use as a standalone native app on your phone</div>
-            </div>
-          </div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <button onclick="installPwaApp()" style="background:var(--color-emerald); color:#FFF; border:none; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer;">Install</button>
-            <button onclick="dismissPwaBanner()" style="background:transparent; color:var(--text-muted); border:none; padding:4px; font-size:14px; cursor:pointer;">✕</button>
-          </div>
-        </div>
+
 
         <!-- Phase 10: High-Priority Critical Alert Banner -->
         <div id="criticalAlertBanner" style="display:none; margin-bottom:14px; padding:12px 14px; border-radius:var(--radius-md); background:linear-gradient(135deg, rgba(239, 68, 68, 0.16), rgba(245, 158, 11, 0.1)); border:1px solid rgba(239, 68, 68, 0.38); align-items:flex-start; gap:10px; position:relative;">
@@ -1431,48 +1410,18 @@
           <span class="material-icons-round" onclick="dismissCriticalAlert()" style="color:var(--text-muted); font-size:18px; cursor:pointer;" title="Dismiss">close</span>
         </div>
 
-        <!-- Net Worth Card -->
-        <div class="card-net-worth">
+        <!-- Total Expense Card (Optimized per user request) -->
+        <div class="card-net-worth" style="background:linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border:1px solid rgba(99, 102, 241, 0.35); padding:18px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div class="net-worth-label" style="margin-bottom:0;">Total Net Worth</div>
-            <!-- Phase 13: Privacy Mode Toggle Button -->
-            <span class="material-icons-round" id="privacyToggleIcon" onclick="togglePrivacyMode()" style="font-size:18px; color:var(--text-muted); cursor:pointer;" title="Toggle Privacy Mask (Hide Balances)">visibility</span>
+            <div class="net-worth-label" style="margin-bottom:0; color:#A5B4FC; letter-spacing:0.5px; font-weight:800;">Total Expenses (This Month)</div>
+            <span class="material-icons-round" id="privacyToggleIcon" onclick="togglePrivacyMode()" style="font-size:18px; color:var(--text-muted); cursor:pointer;" title="Toggle Privacy Mask">visibility</span>
           </div>
-          <div class="net-worth-amount" id="netWorthDisplay">₹48,800.00</div>
-          
-          <!-- Wallets Row -->
-          <div class="accounts-pill-row" id="accountsPillRow">
-            <div class="acc-pill">
-              <span class="material-icons-round acc-pill-icon">payments</span>
-              <div>
-                <div class="acc-pill-name">Cash in Hand</div>
-                <div class="acc-pill-balance" id="cashPillVal">₹3,800.00</div>
-              </div>
-            </div>
-            <div class="acc-pill">
-              <span class="material-icons-round acc-pill-icon" style="color:var(--color-sapphire);">account_balance</span>
-              <div>
-                <div class="acc-pill-name">Main Bank</div>
-                <div class="acc-pill-balance" id="bankPillVal">₹45,000.00</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cashflow Grid (Income vs Expenses) -->
-        <div class="cashflow-grid">
-          <div class="cashflow-box">
-            <div class="cf-label income">
-              <span class="material-icons-round" style="font-size:16px;">arrow_downward</span> Inflow
-            </div>
-            <div class="cf-amount" id="cfIncomeVal">₹50,000.00</div>
-          </div>
-          <div class="cashflow-box">
-            <div class="cf-label expense">
-              <span class="material-icons-round" style="font-size:16px;">arrow_upward</span> Outflow
-            </div>
-            <div class="cf-amount" id="cfExpenseVal">₹1,200.00</div>
-          </div>
+          <div class="net-worth-amount" id="homeTotalExpenseDisplay" style="color:#FFF; font-size:32px; font-weight:800; letter-spacing:-0.5px;">₹0.00</div>
+          <!-- Hidden compatibility elements to avoid JS reference breaks -->
+          <span id="netWorthDisplay" style="display:none;">₹0.00</span>
+          <span id="cfIncomeVal" style="display:none;">₹0.00</span>
+          <span id="cfExpenseVal" style="display:none;">₹0.00</span>
+          <div id="accountsPillRow" style="display:none;"></div>
         </div>
 
         <!-- Smart Financial Alert Banner (Phase 6) -->
@@ -1487,56 +1436,52 @@
           <span class="material-icons-round" style="color:var(--text-muted); font-size:18px;">chevron_right</span>
         </div>
 
-        <!-- Monthly Budget Progress Card on Home -->
-        <div class="fintech-card" style="cursor:pointer;" onclick="switchTab('tab-budgets')">
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div class="net-worth-label" style="margin-bottom:0;">Monthly Budget Progress</div>
-            <div style="font-size:11px; color:var(--color-sapphire); font-weight:700; display:flex; align-items:center; gap:2px;">
-              <span>Manage</span>
-              <span class="material-icons-round" style="font-size:14px;">chevron_right</span>
+        <!-- Monthly Budget Progress Card on Home (Refined & Clean) -->
+        <div class="fintech-card" style="cursor:pointer; padding:16px; margin-bottom:14px;" onclick="switchTab('tab-budgets')">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="material-icons-round" style="color:var(--color-sapphire); font-size:18px;">pie_chart</span>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Monthly Budget Progress</div>
             </div>
+            <span id="homeBudgetPercentBadge" style="font-size:11px; font-weight:800; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 9px; border-radius:12px;">0% Used</span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline;">
-            <div class="cf-amount" id="homeBudgetSpentDisplay" style="font-size:22px; font-weight:800;">₹1,200.00</div>
-            <div style="font-size:12px; color:var(--text-muted); font-weight:600;">of <span id="homeBudgetLimitDisplay" style="color:var(--text-primary); font-weight:700;">₹25,000.00</span></div>
+
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+            <div class="cf-amount" id="homeBudgetSpentDisplay" style="font-size:22px; font-weight:800; color:var(--text-primary);">₹0.00</div>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:600;">Budget: <span id="homeBudgetLimitDisplay" style="color:var(--text-primary); font-weight:700;">₹0.00</span></div>
           </div>
           
-          <div style="background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; margin: 10px 0 8px 0;">
-            <div id="homeBudgetProgressBar" style="width: 5%; height:100%; background:var(--color-emerald); transition:width 0.5s ease;"></div>
+          <div style="background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; margin-bottom:10px;">
+            <div id="homeBudgetProgressBar" style="width: 0%; height:100%; background:var(--color-emerald); border-radius:4px; transition:width 0.5s ease;"></div>
           </div>
+
           <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); font-weight:600;">
-            <span id="homeBudgetRemainingText">Remaining: <strong style="color:var(--color-emerald);" id="homeBudgetRemainingDisplay">₹23,800.00</strong></span>
+            <span id="homeBudgetRemainingText">Remaining: <strong style="color:var(--color-emerald);" id="homeBudgetRemainingDisplay">₹0.00</strong></span>
             <span id="homeBudgetDaysRemainingText"><strong style="color:var(--text-primary);" id="homeBudgetDaysDisplay">0</strong> days left</span>
           </div>
         </div>
 
-        <!-- KILLER FEATURE: PERSONAL EXPENSE FORECASTING BANNER -->
-        <div class="forecast-banner" onclick="switchTab('tab-forecast')" style="cursor:pointer;" title="Tap to view deep predictions & suggestions">
-          <div class="forecast-badge-row">
+        <!-- Smart Forecast Banner (Compact & Streamlined) -->
+        <div class="forecast-banner" onclick="switchTab('tab-forecast')" style="cursor:pointer; padding:14px 16px; margin-bottom:16px;" title="Tap to view deep predictions">
+          <div class="forecast-badge-row" style="margin-bottom:8px;">
             <div class="forecast-title" style="display:flex; align-items:center; gap:6px;">
-              <span class="material-icons-round" style="color:#8B5CF6; font-size:20px;">auto_awesome</span>
-              <span style="color:#FFF; font-weight:800;">Smart Forecast & Next Suggestions</span>
+              <span class="material-icons-round" style="color:#8B5CF6; font-size:18px;">auto_awesome</span>
+              <span style="color:#FFF; font-weight:800; font-size:13px;">Smart Forecast</span>
             </div>
-            <div class="forecast-risk-pill risk-safe" id="forecastRiskBadge">SAFE</div>
+            <div class="forecast-risk-pill risk-safe" id="forecastRiskBadge" style="font-size:10px; padding:2px 8px;">SAFE</div>
           </div>
 
-          <div class="forecast-numbers-row">
+          <div class="forecast-numbers-row" style="margin-bottom:6px;">
             <div>
-              <div style="font-size:11px; color:var(--text-muted); font-weight:600;">Projected Month-End</div>
-              <div class="forecast-big-val" id="forecastProjectedVal">₹1,500.00</div>
+              <div style="font-size:10px; color:var(--text-muted); font-weight:600;">Projected Month-End</div>
+              <div class="forecast-big-val" id="forecastProjectedVal" style="font-size:22px;">₹0.00</div>
             </div>
-            <div class="forecast-speed" id="forecastSpeedVal">₹50.0 / day pace</div>
+            <div class="forecast-speed" id="forecastSpeedVal" style="font-size:12px;">₹0.0 / day pace</div>
           </div>
 
-          <p class="forecast-text" id="forecastAdviceText">
-            On track! Projected to consume 6.0% of your ₹25,000.00 monthly budget. Keep up the disciplined spending!
+          <p class="forecast-text" id="forecastAdviceText" style="margin:0; font-size:11px; line-height:1.4;">
+            Analyzing current monthly spending pace...
           </p>
-
-          <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:11px; color:#A78BFA; font-weight:700;">🔮 Tap to see 4 Next Action Suggestions & Drivers</span>
-            <span class="material-icons-round" style="font-size:16px; color:#A78BFA;">arrow_forward</span>
-          </div>
         </div>
 
         <!-- Recent Transactions -->
@@ -1585,12 +1530,11 @@
           </div>
         </div>
 
-        <!-- Visual Chart 2: 6-Month Cashflow History -->
+        <!-- Visual Chart 2: Expense History -->
         <div class="section-header-row">
-          <div class="section-title">📈 6-Month Cashflow History</div>
-          <div style="display:flex; gap:8px; font-size:11px; font-weight:700;">
-            <span style="color:var(--color-emerald);">● Inflow</span>
-            <span style="color:var(--color-ruby);">● Outflow</span>
+          <div class="section-title">📈 Expense History</div>
+          <div style="font-size:11px; font-weight:700; color:var(--color-sapphire);">
+            <span>Monthly Trend</span>
           </div>
         </div>
 
@@ -1761,30 +1705,6 @@
           </div>
         </div>
 
-        <!-- Top Category Drivers (Phase 5 Forecast Engine 2.0) -->
-        <div class="section-header-row" style="margin-bottom:8px;" id="fcCategoryDriversHeader">
-          <div class="section-title">📊 Top Forecast Drivers by Category</div>
-        </div>
-        <div id="fcCategoryDriversContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
-          <!-- Dynamically populated -->
-        </div>
-
-        <!-- Upcoming Committed Bills (Phase 5 Forecast Engine 2.0) -->
-        <div class="section-header-row" style="margin-bottom:8px;" id="fcUpcomingBillsHeader">
-          <div class="section-title">📅 Upcoming Committed Obligations</div>
-        </div>
-        <div id="fcUpcomingBillsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
-          <!-- Dynamically populated -->
-        </div>
-
-        <!-- 3. Smart AI Explainable Recommendations -->
-        <div class="section-header-row" style="margin-bottom:8px;">
-          <div class="section-title">💡 Actionable AI Recommendations</div>
-        </div>
-        <div id="fcRecommendationsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
-          <!-- Dynamically populated with explainable recommendations -->
-        </div>
-
         <!-- 4. Visual Forecast Trajectory Chart -->
         <div class="fintech-card" style="padding:16px; margin-bottom:18px;">
           <div style="font-size:11px; color:var(--text-muted); font-weight:800; margin-bottom:8px; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
@@ -1808,80 +1728,36 @@
           </div>
         </div>
 
-        <!-- Month-over-Month (MoM) Trend Analysis (Phase 8) -->
-        <div class="section-header-row">
-          <div class="section-title">Month-over-Month (MoM) Comparison</div>
-          <div class="section-link" id="momOverallBadge" style="font-weight:700;">Vs Last Month</div>
-        </div>
-        <div id="momCategoriesContainer" style="margin-bottom:18px;">
-          <!-- Dynamically populated MoM cards -->
+        <!-- AI FINANCIAL CHATBOT (INTELLIGENT BILINGUAL ASSISTANT) -->
+        <div class="section-header-row" style="margin-top:16px; margin-bottom:8px;">
+          <div class="section-title">💬 AI Financial Assistant</div>
+          <div style="font-size:10px; color:var(--color-emerald); font-weight:700; display:flex; align-items:center; gap:4px; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:10px;">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--color-emerald);"></span> Bilingual (Hindi & English)
+          </div>
         </div>
 
-        <!-- Anomaly Detection Card -->
-        <div class="section-header-row">
-          <div class="section-title">Statistical Anomalies (μ + 2σ)</div>
-        </div>
-        <div id="anomaliesContainer" style="margin-bottom:20px;">
-          <div class="tx-item" style="border-color:rgba(16,185,129,0.3);">
-            <div class="tx-left">
-              <div class="tx-icon-box" style="background:#10B981;"><span class="material-icons-round">verified</span></div>
-              <div>
-                <div class="tx-title">No Spending Spikes Detected</div>
-                <div class="tx-meta">All category expenditures within normal statistical bounds.</div>
+        <div class="fintech-card" style="padding:16px; margin-bottom:24px; display:flex; flex-direction:column; min-height:280px;">
+          <!-- Chat Messages Area -->
+          <div id="aiChatStream" style="flex:1; overflow-y:auto; max-height:300px; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; padding-right:4px;">
+            <!-- Clean Initial State -->
+            <div id="aiChatEmptyState" style="text-align:center; padding:28px 12px; color:var(--text-muted);">
+              <div style="width:48px; height:48px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
+                <span class="material-icons-round" style="font-size:24px;">smart_toy</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-
-
-        <!-- AI FINANCIAL MENTOR (PHASE 9) -->
-        <div class="section-header-row">
-          <div class="section-title">🤖 AI Financial Mentor</div>
-          <div class="section-link" onclick="askAiMentor('')" style="color:var(--color-emerald);">Refresh Advice</div>
-        </div>
-
-        <div class="fintech-card" style="padding:18px; margin-bottom:24px;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-            <div class="user-avatar" style="background:linear-gradient(135deg, #8B5CF6, #3B82F6); width:38px; height:38px;">
-              <span class="material-icons-round" style="font-size:20px;">smart_toy</span>
-            </div>
-            <div>
-              <div class="tx-title" style="font-size:14px;">Expense Pro AI Mentor</div>
-              <div class="tx-meta">Deterministic Math + Empathetic Guidance</div>
+              <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Ask anything...</div>
+              <div style="font-size:11px; line-height:1.4; color:var(--text-secondary);">मुझसे अपने खर्च, बजट या बचत के बारे में हिंदी या इंग्लिश में कुछ भी पूछें।</div>
             </div>
           </div>
 
-          <!-- AI Message Bubble -->
-          <div id="aiMentorBubble" style="background:var(--bg-card-subtle); border-radius:14px; padding:14px; font-size:12px; line-height:1.5; color:var(--text-primary); margin-bottom:12px; border:1px solid var(--border-card);">
-            Analyzing your spending velocity and forecast models... Tap below for instant advice!
-          </div>
-
-          <!-- Action Steps Container -->
-          <div id="aiActionSteps" style="margin-bottom:14px;"></div>
-
-          <!-- Quick Prompts Chips -->
-          <div style="font-size:10px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">QUICK FINANCIAL QUESTIONS</div>
-          <div class="accounts-pill-row" style="margin-bottom:12px;">
-            <div class="acc-pill" style="cursor:pointer; font-size:11px;" onclick="askAiMentor('How can I avoid overspending this month?')">
-              💡 Avoid Overspending
-            </div>
-            <div class="acc-pill" style="cursor:pointer; font-size:11px;" onclick="askAiMentor('Can I afford a ₹5,000 discretionary purchase right now?')">
-              🛒 Afford ₹5,000 purchase?
-            </div>
-            <div class="acc-pill" style="cursor:pointer; font-size:11px;" onclick="askAiMentor('Where can I cut costs this month?')">
-              ✂️ Where to cut costs?
-            </div>
-          </div>
-
-          <!-- Custom Question Input -->
-          <div style="display:flex; gap:8px;">
-            <input type="text" class="form-input-pill" placeholder="Ask your AI Mentor anything..." id="aiPromptInput" style="margin-bottom:0;" onkeydown="if(event.key==='Enter') sendCustomAiPrompt()">
-            <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; width:44px; flex:none; border-radius:12px;" onclick="sendCustomAiPrompt()">
+          <!-- Chat Input Bar -->
+          <div style="display:flex; gap:8px; align-items:center; background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:14px; padding:4px 6px;">
+            <input type="text" id="aiChatInput" placeholder="Ask anything... (उदा: इस महीने का खर्च कितना है?)" style="flex:1; background:transparent; border:none; outline:none; font-size:13px; color:var(--text-primary); padding:8px 10px;" onkeydown="if(event.key==='Enter') sendAiChatMessage()">
+            <button onclick="sendAiChatMessage()" id="btnSendAiChat" style="background:var(--color-sapphire); color:#FFF; border:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;">
               <span class="material-icons-round" style="font-size:18px;">send</span>
             </button>
           </div>
         </div>
+      </div>
 
       </div>
 
@@ -1914,14 +1790,7 @@
           </div>
         </div>
 
-        <!-- SECTION 1: Wallets & Accounts Management -->
-        <div class="section-header-row">
-          <div class="section-title">💳 Wallets & Bank Accounts</div>
-          <div class="section-link" onclick="promptAddAccount()">+ Add Account</div>
-        </div>
-        <div id="profileAccountsList" style="margin-bottom:18px;">
-          <!-- Dynamically populated accounts -->
-        </div>
+<div id="profileAccountsList" style="display:none;"></div>
 
         <!-- SECTION 2: Budgets, Bills & Goals Shortcuts -->
         <div class="section-header-row">
@@ -1938,16 +1807,7 @@
           <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
         </div>
 
-        <div class="tx-item" onclick="switchTab('tab-budgets')" style="cursor:pointer;">
-          <div class="tx-left">
-            <div class="tx-icon-box" style="background:var(--color-purple);"><span class="material-icons-round">event_repeat</span></div>
-            <div>
-              <div class="tx-title">Recurring Bills & Subscriptions</div>
-              <div class="tx-meta">Manage Netflix, Rent, EMI & Utilities</div>
-            </div>
-          </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
-        </div>
+
 
         <div class="tx-item" onclick="switchTab('tab-budgets')" style="cursor:pointer; margin-bottom:18px;">
           <div class="tx-left">
@@ -1987,43 +1847,7 @@
           <span class="material-icons-round" style="color:var(--text-muted);">file_download</span>
         </div>
 
-        <!-- SECTION 3b: Automation & Real-World Intelligence (Phase 6) -->
-        <div class="section-header-row">
-          <div class="section-title">⚡ Automation & Real-World Intelligence</div>
-        </div>
 
-        <div class="tx-item" onclick="openSmsParserModal()" style="cursor:pointer;">
-          <div class="tx-left">
-            <div class="tx-icon-box" style="background:#10B981;"><span class="material-icons-round">sms</span></div>
-            <div>
-              <div class="tx-title">SMS / UPI Parser</div>
-              <div class="tx-meta">Paste bank text with duplicate prevention & review</div>
-            </div>
-          </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
-        </div>
-
-        <div class="tx-item" onclick="openCashflowCalendarModal()" style="cursor:pointer;">
-          <div class="tx-left">
-            <div class="tx-icon-box" style="background:#3B82F6;"><span class="material-icons-round">calendar_month</span></div>
-            <div>
-              <div class="tx-title">Cash-Flow Calendar & Runway</div>
-              <div class="tx-meta">Daily balance runway, actuals & bill commitments</div>
-            </div>
-          </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
-        </div>
-
-        <div class="tx-item" onclick="openSubscriptionsOverviewModal()" style="cursor:pointer; margin-bottom:18px;">
-          <div class="tx-left">
-            <div class="tx-icon-box" style="background:#8B5CF6;"><span class="material-icons-round">subscriptions</span></div>
-            <div>
-              <div class="tx-title">Subscription Discovery & Audits</div>
-              <div class="tx-meta">Annualized costs & recurring charge discovery</div>
-            </div>
-          </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
-        </div>
 
         <!-- SECTION 4: Security & Privacy -->
         <div class="section-header-row">
@@ -3235,6 +3059,8 @@
               if (incEl) incEl.innerText = '₹' + (cd.cashflow.income || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
               const expEl = document.getElementById('cfExpenseVal');
               if (expEl) expEl.innerText = '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+              const homeExp = document.getElementById('homeTotalExpenseDisplay');
+              if (homeExp) homeExp.innerText = '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
             }
             if (cd.forecast) {
               APP_STATE.forecast = cd.forecast;
@@ -3579,7 +3405,11 @@
         const d = res.data;
         try { localStorage.setItem('cached_dashboard', JSON.stringify(d)); } catch(e) {}
 
-        // Net worth & Cashflow
+        // Net worth & Cashflow & Total Expense on Home screen
+        const expTotal = (d.cashflow && d.cashflow.expenses !== undefined) ? d.cashflow.expenses : (d.forecast ? d.forecast.mtd_actual_spend : 0);
+        const homeExp = document.getElementById('homeTotalExpenseDisplay');
+        if (homeExp) homeExp.innerText = `₹${(expTotal || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
         const nwEl = document.getElementById('netWorthDisplay');
         if (nwEl && d.net_worth) nwEl.innerText = `₹${(d.net_worth.net_worth || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         const incEl = document.getElementById('cfIncomeVal');
@@ -3631,6 +3461,13 @@
         if (homeBar) {
           homeBar.style.width = `${Math.min(100, b.utilization_pct || 0)}%`;
           homeBar.style.background = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+        }
+        const homeBadge = document.getElementById('homeBudgetPercentBadge');
+        if (homeBadge) {
+          const utilPct = Math.min(100, Math.round(b.utilization_pct || 0));
+          homeBadge.innerText = `${utilPct}% Used`;
+          homeBadge.style.color = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+          homeBadge.style.background = b.is_exceeded ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
         }
 
         // Render Category Budgets
@@ -4414,7 +4251,6 @@
       const totalEl = document.getElementById('chartTotalDisplay');
       if (totalEl) totalEl.innerText = `Total: ₹${totalExpense.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
       const centerEl = document.getElementById('donutCenterAmount');
-      if (centerEl) centerEl.innerText = `₹${totalExpense.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
 
       const canvas = document.getElementById('categoryDonutCanvas');
       if (!canvas) return;
@@ -4426,12 +4262,14 @@
       const radius = Math.min(centerX, centerY) - 10;
       const innerRadius = radius * 0.65;
 
+      if (window._donutAnimId) cancelAnimationFrame(window._donutAnimId);
       ctx.clearRect(0, 0, w, h);
 
       const legend = document.getElementById('categoryChartLegend');
       if (legend) legend.innerHTML = '';
 
       if (!slices || slices.length === 0 || totalExpense === 0) {
+        if (centerEl) centerEl.innerText = '₹0';
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.arc(centerX, centerY, innerRadius, 2 * Math.PI, 0, true);
@@ -4441,22 +4279,9 @@
         return;
       }
 
-      let startAngle = -0.5 * Math.PI;
-
-      slices.forEach(s => {
-        const sliceAngle = (s.amount / totalExpense) * 2 * Math.PI;
-        const endAngle = startAngle + sliceAngle;
-
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-        ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
-        ctx.closePath();
-        ctx.fillStyle = s.color || '#3B82F6';
-        ctx.fill();
-
-        startAngle = endAngle;
-
-        if (legend) {
+      // Populate Legend once
+      if (legend) {
+        slices.forEach(s => {
           const pill = document.createElement('div');
           pill.className = 'acc-pill';
           pill.style.padding = '6px 10px';
@@ -4469,8 +4294,56 @@
             </div>
           `;
           legend.appendChild(pill);
+        });
+      }
+
+      // Smooth Ease-Out Sweep Animation
+      let startTime = null;
+      const duration = 650; // ms
+
+      function animateDonut(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min(1, (timestamp - startTime) / duration);
+        // Cubic ease out
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Background track circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.arc(centerX, centerY, innerRadius, 2 * Math.PI, 0, true);
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#F1F5F9' : 'rgba(255,255,255,0.04)';
+        ctx.fill();
+
+        let currentAngle = -0.5 * Math.PI;
+
+        slices.forEach(s => {
+          const sliceFraction = (s.amount / totalExpense);
+          const fullSliceAngle = sliceFraction * 2 * Math.PI;
+          const sliceAngle = fullSliceAngle * ease;
+          const endAngle = currentAngle + sliceAngle;
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, currentAngle, endAngle);
+          ctx.arc(centerX, centerY, innerRadius, endAngle, currentAngle, true);
+          ctx.closePath();
+          ctx.fillStyle = s.color || '#3B82F6';
+          ctx.fill();
+
+          currentAngle = endAngle;
+        });
+
+        // Animated counting in center
+        const curAmount = Math.round(totalExpense * ease);
+        if (centerEl) centerEl.innerText = `₹${curAmount.toLocaleString('en-IN')}`;
+
+        if (progress < 1) {
+          window._donutAnimId = requestAnimationFrame(animateDonut);
         }
-      });
+      }
+
+      window._donutAnimId = requestAnimationFrame(animateDonut);
     }
 
     function renderHistoryBarChart(history) {
@@ -4487,36 +4360,54 @@
       const paddingBottom = 26;
       const chartHeight = h - paddingBottom;
       const barGroupWidth = w / history.length;
-      const singleBarWidth = Math.max(8, (barGroupWidth - 12) / 2);
+      const barWidth = Math.max(14, barGroupWidth - 16);
 
       let maxVal = 1000;
       history.forEach(m => {
-        if (m.income > maxVal) maxVal = m.income;
         if (m.expenses > maxVal) maxVal = m.expenses;
       });
 
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
       history.forEach((m, idx) => {
         const groupX = idx * barGroupWidth;
-        const incomeHeight = Math.max(3, (m.income / maxVal) * (chartHeight - 15));
-        const expenseHeight = Math.max(3, (m.expenses / maxVal) * (chartHeight - 15));
-
-        // Draw Income Bar (Emerald)
-        const incomeX = groupX + 4;
-        const incomeY = chartHeight - incomeHeight;
-        ctx.fillStyle = '#10B981';
-        ctx.fillRect(incomeX, incomeY, singleBarWidth, incomeHeight);
-
-        // Draw Expense Bar (Ruby)
-        const expenseX = incomeX + singleBarWidth + 2;
+        const barX = groupX + (barGroupWidth - barWidth) / 2;
+        const expAmount = parseFloat(m.expenses) || 0;
+        const expenseHeight = Math.max(6, (expAmount / maxVal) * (chartHeight - 20));
         const expenseY = chartHeight - expenseHeight;
-        ctx.fillStyle = '#EF4444';
-        ctx.fillRect(expenseX, expenseY, singleBarWidth, expenseHeight);
 
-        // Month Label
+        // Draw Modern Rounded Expense Bar
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#3B82F6' : '#6366F1';
+        
+        // Rounded top
+        const radius = Math.min(6, barWidth / 2);
+        ctx.beginPath();
+        ctx.moveTo(barX, chartHeight);
+        ctx.lineTo(barX, expenseY + radius);
+        ctx.quadraticCurveTo(barX, expenseY, barX + radius, expenseY);
+        ctx.lineTo(barX + barWidth - radius, expenseY);
+        ctx.quadraticCurveTo(barX + barWidth, expenseY, barX + barWidth, expenseY + radius);
+        ctx.lineTo(barX + barWidth, chartHeight);
+        ctx.closePath();
+        ctx.fill();
+
+        // Amount on top of bar if non-zero
+        if (expAmount > 0) {
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#1E293B' : '#CBD5E1';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
+          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
+        }
+
+        // Fixed Date Label: '1 Jan', '1 Feb', '1 Mar', etc. per user request
+        const monthIdx = (m.month && m.month >= 1 && m.month <= 12) ? (m.month - 1) : idx % 12;
+        const fixedLabel = `1 ${monthNames[monthIdx]}`;
+
         ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8';
-        ctx.font = '9px sans-serif';
+        ctx.font = 'bold 9px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(m.label, groupX + (barGroupWidth / 2), h - 6);
+        ctx.fillText(fixedLabel, barX + (barWidth / 2), h - 6);
       });
     }
 
@@ -4538,11 +4429,17 @@
       transactions.forEach(tx => container.appendChild(createTxElement(tx)));
     }
 
-    function renderTransactionsList(transactions) {
+    function renderTransactionsList(transactions = null) {
       const container = document.getElementById('allTxList');
+      if (!container) return;
       container.innerHTML = '';
       
-      let filtered = transactions;
+      const txList = transactions || APP_STATE.transactions || [];
+      if (!APP_STATE.activeTxFilter) {
+        APP_STATE.activeTxFilter = 'ALL';
+      }
+
+      let filtered = txList;
       if (APP_STATE.activeTxFilter !== 'ALL') {
         filtered = filtered.filter(t => t.transaction_type === APP_STATE.activeTxFilter);
       }
@@ -7143,6 +7040,52 @@
       APP_STATE.user = null;
       showAuthOverlay('LOGIN');
     }
+      async function sendAiChatMessage() {
+      const input = document.getElementById('aiChatInput');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const stream = document.getElementById('aiChatStream');
+      const emptyState = document.getElementById('aiChatEmptyState');
+      if (emptyState) emptyState.remove();
+
+      // 1. Append User Message Bubble
+      const userBubble = document.createElement('div');
+      userBubble.style.cssText = 'background:var(--color-sapphire); color:#FFF; align-self:flex-end; border-radius:14px 14px 4px 14px; padding:10px 14px; max-width:82%; font-size:13px; font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,0.15); word-break:break-word;';
+      userBubble.innerText = text;
+      stream.appendChild(userBubble);
+      stream.scrollTop = stream.scrollHeight;
+
+      // 2. Append Thinking Indicator
+      const thinkingBubble = document.createElement('div');
+      thinkingBubble.id = 'aiThinkingIndicator';
+      thinkingBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-muted); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:8px 12px; font-size:12px; display:flex; align-items:center; gap:6px;';
+      thinkingBubble.innerHTML = '<span class="material-icons-round" style="font-size:16px;">sync</span> <span>AI Advisor is thinking...</span>';
+      stream.appendChild(thinkingBubble);
+      stream.scrollTop = stream.scrollHeight;
+
+      try {
+        const res = await apiRequest('/ai-mentor/chat', 'POST', { message: text });
+        if (thinkingBubble) thinkingBubble.remove();
+
+        const aiBubble = document.createElement('div');
+        aiBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:12px 14px; max-width:88%; font-size:12px; line-height:1.55; box-shadow:0 2px 8px rgba(0,0,0,0.1); white-space:pre-wrap; word-break:break-word;';
+
+        if (res && res.success && res.data) {
+          aiBubble.innerText = res.data.reply;
+        } else {
+          aiBubble.innerText = 'Unable to reach AI Advisor. Please try again.';
+        }
+        stream.appendChild(aiBubble);
+        stream.scrollTop = stream.scrollHeight;
+      } catch (err) {
+        if (thinkingBubble) thinkingBubble.remove();
+        console.error('AI chat error:', err);
+      }
+    }
+
   </script>
 </body>
 </html>

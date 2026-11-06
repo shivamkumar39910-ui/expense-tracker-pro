@@ -262,16 +262,75 @@ def generate_ai_mentor_advice(user_id: int, user_prompt: Optional[str] = None, d
 
     what_user_can_do = " • ".join(action_steps)
 
-    # Contextual query response
+    # Intelligent Bilingual Natural Language Processing (Hindi, Hinglish & English)
     user_q = (user_prompt or "").strip().lower()
-    if "afford" in user_q:
-        avail_cash = net_worth["total_assets"]
-        remaining_budget = max(0.0, budget - proj_spend) if budget > 0 else avail_cash
-        reply_text = f"Regarding affordability: You have Rs.{avail_cash:,.2f} across liquid accounts. After accounting for projected month-end obligations (Rs.{proj_spend:,.2f}), your discretionary cushion is Rs.{remaining_budget:,.2f}."
-    elif "save" in user_q or "cut" in user_q:
-        reply_text = f"To maximize savings: Focus on {mom['highest_category']}. Lowering daily velocity by 20% saves ~Rs.{(daily_velocity * 0.2 * max(1, days_left)):,.2f} over the remaining {days_left} days."
+    
+    # Check if prompt contains Hindi/Hinglish indicators
+    hindi_keywords = ["kharch", "kitna", "bacha", "kaise", "batao", "kya", "mera", "meri", "mere", "paisa", "paise", "rupaye", "kharid", "bache", "sakta", "sakti", "hai", "karna", "chahiye", "saving", "namaste", "shukriya"]
+    is_hindi = any(hk in user_q for hk in hindi_keywords)
+
+    import re
+    amounts_found = re.findall(r'\b\d+(?:,\d+)*(?:\.\d+)?\b', user_q.replace(',', ''))
+    parsed_amount = float(amounts_found[0]) if amounts_found else None
+
+    avail_cash = float(net_worth.get("total_assets", 0.0) or 0.0)
+    remaining_budget = max(0.0, float(budget - cur_spend)) if budget > 0 else avail_cash
+
+    if not user_q:
+        if is_hindi:
+            reply_text = f"नमस्ते! मैं आपका पर्सनल AI फाइनेंशियल एडवाइज़र हूँ। आप मुझसे अपने खर्च (Expenses), बजट, बचत (Savings) या किसी भी खरीदारी के बारे में हिंदी या इंग्लिश में पूछ सकते हैं!"
+        else:
+            reply_text = f"Hello! I am your AI Financial Advisor. Ask me anything about your expenses, budgets, savings runway, or purchase affordability."
+
+    elif any(k in user_q for k in ["hi", "hello", "hey", "namaste", "pranam", "kya haal"]):
+        if is_hindi:
+            reply_text = f"नमस्ते! मैं बिल्कुल ठीक हूँ। इस महीने आपका कुल खर्च ₹{cur_spend:,.2f} हुआ है और ₹{remaining_budget:,.2f} का बजट बचा है। मैं आपकी क्या मदद कर सकता हूँ?"
+        else:
+            reply_text = f"Hello! You have spent ₹{cur_spend:,.2f} so far this month, with ₹{remaining_budget:,.2f} remaining in your budget. How can I assist you with your finances today?"
+
+    elif any(k in user_q for k in ["afford", "kharid", "buy", "purchase", "le lu", "le sakta"]):
+        check_amt = parsed_amount if parsed_amount else (5000.0 if "5000" in user_q else 2000.0)
+        if check_amt <= remaining_budget:
+            if is_hindi:
+                reply_text = f"✅ हाँ, आप ₹{check_amt:,.2f} का खर्च आसानी से कर सकते हैं!\n\n• आपका बचा हुआ बजट: ₹{remaining_budget:,.2f}\n• इस खरीदारी के बाद भी आपके पास ₹{max(0.0, remaining_budget - check_amt):,.2f} का बजट सुरक्षित रहेगा।\n• सेफ डेली लिमिट: ₹{safe_cap:.1f}/दिन।"
+            else:
+                reply_text = f"✅ Yes, you can comfortably afford this ₹{check_amt:,.2f} purchase!\n\n• Current remaining budget: ₹{remaining_budget:,.2f}\n• Post-purchase buffer: ₹{max(0.0, remaining_budget - check_amt):,.2f}\n• Safe daily pace: ₹{safe_cap:.1f}/day."
+        else:
+            if is_hindi:
+                reply_text = f"⚠️ थोड़ा ध्यान दें! ₹{check_amt:,.2f} खर्च करने से आपका बजट ओवररन हो सकता है।\n\n• वर्तमान बचा हुआ बजट: ₹{remaining_budget:,.2f}\n• यह राशि आपके बचे बजट से ₹{(check_amt - remaining_budget):,.2f} अधिक है।\n• सुझाव: इसे अगले महीने प्लान करें या किसी अन्य कैटेगरी में कटौती करें।"
+            else:
+                reply_text = f"⚠️ Caution! A ₹{check_amt:,.2f} expense may exceed your budget ceiling.\n\n• Remaining budget: ₹{remaining_budget:,.2f}\n• Potential deficit: ₹{(check_amt - remaining_budget):,.2f}\n• Suggestion: Defer discretionary purchases or trim other categories."
+
+    elif any(k in user_q for k in ["kharch", "spent", "spending", "total kharcha", "kitna kharcha"]):
+        top_cat_info = f"सबसे ज्यादा खर्च '{mom['highest_category']}' (₹{mom['highest_category_amount']:,.2f}) में हुआ है।" if mom["highest_category"] != "None" else ""
+        if is_hindi:
+            reply_text = f"📊 इस महीने का खर्च सारांश:\n\n• कुल खर्च (Total Expense): ₹{cur_spend:,.2f}\n• दैनिक खर्च स्पीड (Pace): ₹{daily_velocity:.1f} प्रति दिन\n• {top_cat_info}\n• अनुमानित महीना अंत खर्च: ₹{proj_spend:,.2f}"
+        else:
+            reply_text = f"📊 Current Month Expense Summary:\n\n• Total Spend to date: ₹{cur_spend:,.2f}\n• Daily Velocity: ₹{daily_velocity:.1f}/day\n• Top Category: {mom['highest_category']} (₹{mom['highest_category_amount']:,.2f})\n• Projected Month-End: ₹{proj_spend:,.2f}"
+
+    elif any(k in user_q for k in ["budget", "bacha", "remaining"]):
+        if is_hindi:
+            reply_text = f"🎯 आपका बजट स्टेटस:\n\n• कुल बजट: ₹{budget:,.2f}\n• खर्च हुआ: ₹{cur_spend:,.2f}\n• बचा हुआ बजट: ₹{remaining_budget:,.2f}\n• बाकी बचे दिन: {days_left} दिन\n• सेफ डेली खर्च सीमा: ₹{safe_cap:.1f} / दिन"
+        else:
+            reply_text = f"🎯 Monthly Budget Status:\n\n• Total Budget Ceiling: ₹{budget:,.2f}\n• MTD Actual Spend: ₹{cur_spend:,.2f}\n• Remaining Balance: ₹{remaining_budget:,.2f}\n• Days Remaining: {days_left}\n• Safe Daily Pace: ₹{safe_cap:.1f}/day"
+
+    elif any(k in user_q for k in ["save", "saving", "bachat", "kaise bachaye", "cut"]):
+        if is_hindi:
+            reply_text = f"💡 बचत (Savings) बढ़ाने के आसान सुझाव:\n\n1. '{mom['highest_category']}' में 15% की कमी करके आप लगभग ₹{round(mom['highest_category_amount'] * 0.15, 2):,.2f} बचा सकते हैं।\n2. अपनी दैनिक खर्च सीमा ₹{safe_cap:.1f}/दिन के भीतर रखें।\n3. महीने के अंत में संभावित बचत: ₹{max(0.0, budget - proj_spend):,.2f}।"
+        else:
+            reply_text = f"💡 Actionable Savings Recommendations:\n\n1. Focus on {mom['highest_category']}: Trimming 15% saves ~₹{round(mom['highest_category_amount'] * 0.15, 2):,.2f}.\n2. Cap discretionary spending to ₹{safe_cap:.1f}/day for the remaining {days_left} days.\n3. Projected savings buffer: ₹{max(0.0, budget - proj_spend):,.2f}."
+
+    elif any(k in user_q for k in ["forecast", "next month", "aage", "bhavishya"]):
+        if is_hindi:
+            reply_text = f"🔮 AI खर्च अनुमान (Forecast):\n\n• इस महीने का अनुमानित कुल खर्च: ₹{proj_spend:,.2f}\n• रिस्क स्टेटस: {risk}\n• अगर यही स्पीड रही तो अगले महीने का अनुमानित बेसलाइन खर्च: ₹{proj_spend:,.2f} के आसपास रहेगा।"
+        else:
+            reply_text = f"🔮 AI Predictive Forecast:\n\n• Projected Month-End Total: ₹{proj_spend:,.2f}\n• Risk Assessment: {risk}\n• Baseline Run-Rate: ₹{daily_velocity:.1f}/day across {days_left} remaining days."
+
     else:
-        reply_text = f"AI Financial Mentor 2.0 Assessment:\n\n• What Happened: {what_happened}\n• Why It Matters: {why_it_matters}\n• What May Happen: {what_may_happen}\n• What You Can Do: {what_user_can_do}"
+        if is_hindi:
+            reply_text = f"💡 आपका फाइनेंशियल ओवरव्यू:\n\n• इस महीने का कुल खर्च: ₹{cur_spend:,.2f}\n• बचा हुआ बजट: ₹{remaining_budget:,.2f}\n• सेफ डेली खर्च सीमा: ₹{safe_cap:.1f}/दिन\n\nआप किसी भी विशिष्ट खर्च या बजट के बारे में कभी भी पूछ सकते हैं!"
+        else:
+            reply_text = f"💡 Financial Snapshot:\n\n• MTD Spend: ₹{cur_spend:,.2f}\n• Remaining Budget: ₹{remaining_budget:,.2f}\n• Safe Daily Pace: ₹{safe_cap:.1f}/day\n• Status: {risk}\n\nAsk me any question about your transactions, savings goals, or budgets!"
 
     return {
         "reply": reply_text,

@@ -655,6 +655,19 @@
       transform: scale(0.92);
     }
 
+    /* Flipkart-Style Floating AI Orb Pulse & Float Animation */
+    @keyframes orbFloatPulse {
+      0% { transform: translateY(0px) scale(1); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); }
+      50% { transform: translateY(-4px) scale(1.04); box-shadow: 0 10px 26px rgba(124, 58, 237, 0.75), 0 0 22px rgba(6, 182, 212, 0.65); }
+      100% { transform: translateY(0px) scale(1); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); }
+    }
+    .ai-floating-orb {
+      animation: orbFloatPulse 3s ease-in-out infinite;
+    }
+    .ai-floating-orb:active {
+      transform: scale(0.92) !important;
+    }
+
     /* ======================================================== */
     /* BOTTOM SHEETS, KEYPAD & FORM INPUTS                      */
     /* ======================================================== */
@@ -1743,35 +1756,7 @@
           </div>
         </div>
 
-        <!-- AI FINANCIAL CHATBOT (INTELLIGENT BILINGUAL ASSISTANT) -->
-        <div class="section-header-row" style="margin-top:16px; margin-bottom:8px;">
-          <div class="section-title">💬 AI Financial Assistant</div>
-          <div style="font-size:10px; color:var(--color-emerald); font-weight:700; display:flex; align-items:center; gap:4px; background:rgba(16,185,129,0.12); padding:2px 8px; border-radius:10px;">
-            <span style="width:6px; height:6px; border-radius:50%; background:var(--color-emerald);"></span> Bilingual (Hindi & English)
-          </div>
-        </div>
 
-        <div class="fintech-card" style="padding:16px; margin-bottom:24px; display:flex; flex-direction:column; min-height:280px;">
-          <!-- Chat Messages Area -->
-          <div id="aiChatStream" style="flex:1; overflow-y:auto; max-height:300px; display:flex; flex-direction:column; gap:10px; margin-bottom:12px; padding-right:4px;">
-            <!-- Clean Initial State -->
-            <div id="aiChatEmptyState" style="text-align:center; padding:28px 12px; color:var(--text-muted);">
-              <div style="width:48px; height:48px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
-                <span class="material-icons-round" style="font-size:24px;">smart_toy</span>
-              </div>
-              <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Ask anything...</div>
-              <div style="font-size:11px; line-height:1.4; color:var(--text-secondary);">मुझसे अपने खर्च, बजट या बचत के बारे में हिंदी या इंग्लिश में कुछ भी पूछें।</div>
-            </div>
-          </div>
-
-          <!-- Chat Input Bar -->
-          <div style="display:flex; gap:8px; align-items:center; background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:14px; padding:4px 6px;">
-            <input type="text" id="aiChatInput" placeholder="Ask anything... (उदा: इस महीने का खर्च कितना है?)" style="flex:1; background:transparent; border:none; outline:none; font-size:13px; color:var(--text-primary); padding:8px 10px;" onkeydown="if(event.key==='Enter') sendAiChatMessage()">
-            <button onclick="sendAiChatMessage()" id="btnSendAiChat" style="background:var(--color-sapphire); color:#FFF; border:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;">
-              <span class="material-icons-round" style="font-size:18px;">send</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- ============================================== -->
@@ -1943,6 +1928,20 @@
 
     </div>
 
+    <!-- FLIPKART-STYLE FLOATING AI CHATBOT BUTTON (HOVERING ABOVE 5TH NAV PROFILE) -->
+    <div id="floatingAiBotBtn" onclick="openAiChatModal()" style="position:absolute; bottom:74px; right:14px; z-index:850; display:flex; flex-direction:column; align-items:center; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;" title="Open AI Financial Assistant">
+      <!-- Glowing Animated Floating AI Orb -->
+      <div class="ai-floating-orb" style="width:48px; height:48px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #C084FC 0%, #7C3AED 45%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); border:2px solid rgba(255, 255, 255, 0.45); position:relative; transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+        <span class="material-icons-round" style="color:#FFF; font-size:24px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">auto_awesome</span>
+        <!-- Online active indicator dot -->
+        <span style="position:absolute; top:2px; right:2px; width:9px; height:9px; background:#10B981; border:2px solid #0F172A; border-radius:50%; box-shadow:0 0 6px #10B981;"></span>
+      </div>
+      <!-- Sleek Mini Pill Label -->
+      <div style="background:rgba(15, 23, 42, 0.88); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:2px 7px; font-size:9px; font-weight:800; color:#E0E7FF; margin-top:3px; letter-spacing:0.3px; box-shadow:0 2px 8px rgba(0,0,0,0.4);">
+        AI Assistant
+      </div>
+    </div>
+
     <!-- 5-Destination Bottom Navigation Bar -->
     <div class="mobile-bottom-nav">
       <div class="nav-tab active" id="nav-tab-home" onclick="switchTab('tab-home')">
@@ -1970,6 +1969,75 @@
         <span class="material-icons-round">person</span>
         <span>Profile</span>
       </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- AI FINANCIAL ASSISTANT FLOATING CHAT MODAL     -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="aiChatBackdrop" onclick="closeAiChatModal()"></div>
+    <div class="bottom-sheet" id="aiChatSheet" style="max-height:86vh; height:86vh; display:flex; flex-direction:column; padding:0; border-radius:24px 24px 0 0; background:var(--bg-card); overflow:hidden; border:1px solid rgba(255,255,255,0.12);">
+      
+      <!-- Sheet Drag Handle & Header -->
+      <div style="padding:14px 18px 12px 18px; border-bottom:1px solid var(--border-card); background:rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(6,182,212,0.4);">
+            <span class="material-icons-round" style="color:#FFF; font-size:20px;">auto_awesome</span>
+          </div>
+          <div>
+            <div style="font-size:15px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+              AI Financial Assistant
+              <span style="font-size:9px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:2px 6px; border-radius:8px; font-weight:800;">LIVE</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted);">Bilingual (Hindi & English) • Grounded in ledger</div>
+          </div>
+        </div>
+        <div class="btn-icon-header" onclick="closeAiChatModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:20px;">close</span>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Action Chips -->
+      <div style="padding:10px 14px 6px 14px; overflow-x:auto; display:flex; gap:8px; flex-shrink:0; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+        <button class="acc-pill" onclick="sendQuickPrompt('Mera is mahine ka kul kharch kitna hai?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          📊 Is mahine ka kharch?
+        </button>
+        <button class="acc-pill" onclick="sendQuickPrompt('Kya mera budget exceed hone ka risk hai?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          🎯 Budget Overrun Risk?
+        </button>
+        <button class="acc-pill" onclick="sendQuickPrompt('Food pe kitna kharch hua?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          🍔 Food Spend Kitna Hai?
+        </button>
+        <button class="acc-pill" onclick="sendQuickPrompt('Mera total account balance kitna hai?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          💰 Total Balance Kitna Hai?
+        </button>
+        <button class="acc-pill" onclick="sendQuickPrompt('Bachat (savings) kaise badhaye?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          💡 15% Bachat Tips
+        </button>
+      </div>
+
+      <!-- Scrollable Chat Stream -->
+      <div id="aiChatStream" style="flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:12px;">
+        <div id="aiChatEmptyState" style="text-align:center; padding:30px 16px; color:var(--text-muted); margin:auto;">
+          <div style="width:52px; height:52px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
+            <span class="material-icons-round" style="font-size:28px;">smart_toy</span>
+          </div>
+          <div style="font-size:14px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Ask anything...</div>
+          <div style="font-size:12px; line-height:1.4; color:var(--text-secondary); max-width:260px; margin:0 auto;">
+            Apne kharch, budget, accounts balance ya shopping affordability ke baare me Hindi ya English me puchein.
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Footer -->
+      <div style="padding:12px 14px 16px 14px; border-top:1px solid var(--border-card); background:rgba(255,255,255,0.02); flex-shrink:0;">
+        <div style="display:flex; gap:8px; align-items:center; background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:16px; padding:4px 8px;">
+          <input type="text" id="aiChatInput" placeholder="Ask anything... (e.g. food pe kitna gaya?)" style="flex:1; background:transparent; border:none; outline:none; font-size:13px; color:var(--text-primary); padding:8px 8px;" onkeydown="if(event.key==='Enter') sendAiChatMessage()">
+          <button onclick="sendAiChatMessage()" id="btnSendAiChat" style="background:linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); color:#FFF; border:none; width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; box-shadow:0 2px 8px rgba(6,182,212,0.4);">
+            <span class="material-icons-round" style="font-size:18px;">send</span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <!-- ============================================== -->
@@ -3229,6 +3297,7 @@
     });
 
     function closeAllSheets() {
+      closeAiChatModal();
       closeQuickEntrySheet();
       closeAccountStatementSheet();
       closeTxDetailModal();
@@ -5112,31 +5181,152 @@
         payload.subcategory_id = APP_STATE.sheetSubcategoryId;
       }
 
-      const btn = document.getElementById('btnSubmitQuickTx');
-      const origText = btn ? btn.innerHTML : '';
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span>Recording...</span>';
+      // ========================================================
+      // 1. INSTANT 0ms OPTIMISTIC UI: Close sheet immediately!
+      // ========================================================
+      triggerHaptic('medium');
+      closeQuickEntrySheet();
+
+      // Find Account and Category names for instant realistic rendering
+      const acc = (APP_STATE.accounts || []).find(a => a.id === payload.account_id);
+      const targetAcc = payload.target_account_id ? (APP_STATE.accounts || []).find(a => a.id === payload.target_account_id) : null;
+      let catName = 'Uncategorized';
+      let catIcon = 'category';
+      let catColor = '#6B7280';
+      if (APP_STATE.categories) {
+        const pool = (payload.transaction_type === 'INCOME') ? (APP_STATE.categories.income || []) : (APP_STATE.categories.expense || []);
+        const foundCat = pool.find(c => c.id === payload.category_id);
+        if (foundCat) {
+          catName = foundCat.name;
+          catIcon = foundCat.icon || catIcon;
+          catColor = foundCat.color_hex || catColor;
+        }
       }
 
+      const tempTx = {
+        id: 'temp-' + Date.now(),
+        transaction_type: payload.transaction_type,
+        amount: payload.amount,
+        date: payload.date,
+        note: payload.note,
+        account_id: payload.account_id,
+        account_name: acc ? acc.name : 'Account',
+        target_account_id: payload.target_account_id,
+        target_account_name: targetAcc ? targetAcc.name : null,
+        category_id: payload.category_id,
+        category_name: catName,
+        category_icon: catIcon,
+        category_color: catColor,
+        is_optimistic: true
+      };
+
+      // ========================================================
+      // 2. Instant Mathematical Updates (0ms)
+      // ========================================================
+      if (payload.transaction_type === 'EXPENSE') {
+        // A. Update Home Total Expense display instantly
+        const homeExp = document.getElementById('homeTotalExpenseDisplay');
+        if (homeExp) {
+          const raw = homeExp.dataset.realVal || homeExp.innerText;
+          const curExp = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
+          const newExp = curExp + amount;
+          setMaskableText('homeTotalExpenseDisplay', `₹${newExp.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+        }
+        // B. Deduct balance from account instantly
+        if (acc) {
+          acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+        }
+        // C. Update Donut Category Breakdown in 0ms
+        if (Array.isArray(APP_STATE.categoryBreakdown)) {
+          APP_STATE.categoryTotalExpense = (APP_STATE.categoryTotalExpense || 0) + amount;
+          let existingSlice = APP_STATE.categoryBreakdown.find(s => s.name === catName);
+          if (existingSlice) {
+            existingSlice.amount = (parseFloat(existingSlice.amount) || 0) + amount;
+          } else {
+            APP_STATE.categoryBreakdown.push({
+              name: catName,
+              amount: amount,
+              percentage: 0,
+              color: catColor,
+              icon: catIcon,
+              count: 1
+            });
+          }
+          APP_STATE.categoryBreakdown.forEach(s => {
+            s.percentage = Math.round((s.amount / APP_STATE.categoryTotalExpense) * 1000) / 10;
+          });
+          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
+        }
+      } else if (payload.transaction_type === 'INCOME') {
+        if (acc) {
+          acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
+        }
+        const incEl = document.getElementById('cfIncomeVal');
+        if (incEl) {
+          const raw = incEl.dataset.realVal || incEl.innerText;
+          const curInc = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
+          setMaskableText('cfIncomeVal', `₹${(curInc + amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+        }
+      } else if (payload.transaction_type === 'TRANSFER') {
+        if (acc) acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+        if (targetAcc) targetAcc.current_balance = (parseFloat(targetAcc.current_balance) || 0) + amount;
+      }
+
+      renderAccountPillsAndNetWorth();
+
+      // D. Prepend to Transactions lists in 0ms
+      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
+      APP_STATE.transactions.unshift(tempTx);
+      renderTransactionsList(APP_STATE.transactions);
+
+      const recentList = document.getElementById('homeRecentTxList');
+      if (recentList) {
+        const emptyNotice = recentList.querySelector('div[style*="text-align:center"]');
+        if (emptyNotice) emptyNotice.remove();
+        const newTxEl = createTxElement(tempTx, true);
+        recentList.insertBefore(newTxEl, recentList.firstChild);
+      }
+
+      // E. Update localStorage cache instantly
+      try {
+        const cached = localStorage.getItem('cached_bootstrap');
+        if (cached) {
+          const bObj = JSON.parse(cached);
+          bObj.transactions = APP_STATE.transactions.slice(0, 50);
+          bObj.recent_transactions = APP_STATE.transactions.slice(0, 5);
+          bObj.accounts = APP_STATE.accounts;
+          if (bObj.cashflow && payload.transaction_type === 'EXPENSE') {
+            bObj.cashflow.expenses = (bObj.cashflow.expenses || 0) + amount;
+          }
+          bObj.breakdown = APP_STATE.categoryBreakdown;
+          bObj.total_expense = APP_STATE.categoryTotalExpense;
+          localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
+        }
+      } catch (ce) {}
+
+      if (typeof showToast === 'function') {
+        showToast(`₹${amount.toLocaleString('en-IN')} recorded instantly!`, 'success');
+      }
+
+      // ========================================================
+      // 3. Send Network Call Quietly in Background
+      // ========================================================
       try {
         const res = await apiRequest('/transactions', 'POST', payload);
         if (res && res.success) {
-          closeQuickEntrySheet();
-          if (typeof showToast === 'function') {
-            showToast('Transaction recorded successfully!', 'success');
+          if (res.transaction && res.transaction.id) {
+            tempTx.id = res.transaction.id;
+            delete tempTx.is_optimistic;
           }
-          await initializeAppData();
+          setTimeout(() => refreshDashboardData(), 300);
         } else {
-          alert(res?.error || 'Failed to record transaction');
+          if (typeof showToast === 'function') {
+            showToast(res?.error || 'Failed to save transaction on server. Reverting...', 'error');
+          }
+          await initializeAppData(true);
         }
-      } catch (e) {
-        alert('Failed to record transaction: ' + (e.message || 'Network error'));
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = origText;
-        }
+      } catch (err) {
+        console.warn('Background transaction post error:', err);
       }
     }
 
@@ -7213,7 +7403,31 @@
       APP_STATE.user = null;
       showAuthOverlay('LOGIN');
     }
-      async function sendAiChatMessage() {
+    function openAiChatModal() {
+      triggerHaptic('light');
+      const bd = document.getElementById('aiChatBackdrop');
+      const sheet = document.getElementById('aiChatSheet');
+      if (bd) bd.classList.add('active');
+      if (sheet) sheet.classList.add('active');
+      const inp = document.getElementById('aiChatInput');
+      if (inp) setTimeout(() => inp.focus(), 250);
+    }
+
+    function closeAiChatModal() {
+      const bd = document.getElementById('aiChatBackdrop');
+      const sheet = document.getElementById('aiChatSheet');
+      if (bd) bd.classList.remove('active');
+      if (sheet) sheet.classList.remove('active');
+    }
+
+    function sendQuickPrompt(promptText) {
+      triggerHaptic('light');
+      const inp = document.getElementById('aiChatInput');
+      if (inp) inp.value = promptText;
+      sendAiChatMessage();
+    }
+
+    async function sendAiChatMessage() {
       const input = document.getElementById('aiChatInput');
       if (!input) return;
       const text = input.value.trim();

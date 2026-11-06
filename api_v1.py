@@ -809,9 +809,20 @@ def get_categories():
     """, (user_id,))
     cats = [dict(c) for c in cursor.fetchall()]
 
+    # High-performance batch fetch for subcategories (1 single query instead of 16 queries)
+    cat_ids = [c["id"] for c in cats]
+    subcats_by_cat = {c["id"]: [] for c in cats}
+    if cat_ids:
+        placeholders = ",".join("?" for _ in cat_ids)
+        cursor.execute(f"SELECT id, category_id, name FROM subcategories WHERE category_id IN ({placeholders}) ORDER BY name ASC", tuple(cat_ids))
+        for s in cursor.fetchall():
+            s_dict = dict(s)
+            c_id = s_dict["category_id"]
+            if c_id in subcats_by_cat:
+                subcats_by_cat[c_id].append({"id": s_dict["id"], "name": s_dict["name"]})
+
     for cat in cats:
-        cursor.execute("SELECT id, name FROM subcategories WHERE category_id = ? ORDER BY name ASC", (cat["id"],))
-        cat["subcategories"] = [dict(s) for s in cursor.fetchall()]
+        cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
 
     conn.close()
 
@@ -910,6 +921,7 @@ def create_transaction():
             tag=data.get("tag"),
             is_recurring=1 if data.get("is_recurring") else 0
         )
+        forecasting_engine.invalidate_forecast_cache(user_id)
         return jsonify({"success": True, "message": "Transaction recorded", "transaction_id": tx_id}), 201
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400
@@ -922,6 +934,7 @@ def delete_transaction(tx_id):
     user_id = request.user["id"]
     success = database.delete_user_transaction(user_id, tx_id)
     if success:
+        forecasting_engine.invalidate_forecast_cache(user_id)
         return jsonify({"success": True, "message": "Transaction deleted & balance restored"}), 200
     return jsonify({"success": False, "error": "Transaction not found"}), 404
 
@@ -971,6 +984,7 @@ def update_transaction(tx_id):
             note=data.get("note"),
             tag=data.get("tag")
         )
+        forecasting_engine.invalidate_forecast_cache(user_id)
         return jsonify({"success": True, "message": "Transaction updated successfully", "transaction_id": new_tx_id}), 200
     except Exception as e:
         return jsonify({"success": False, "error": f"Failed to update transaction: {str(e)}"}), 500
@@ -1693,28 +1707,60 @@ def get_chart_history_6m():
     """
     Returns 6 months historical comparison (Income vs Expense vs Savings)
     for rendering monthly bar/line charts.
+    High-performance single batch query optimization.
     """
     user_id = request.user["id"]
     today = date.today()
-    history = []
 
+    months_list = []
     for i in range(5, -1, -1):
         m = today.month - i
         y = today.year
         while m <= 0:
             m += 12
             y -= 1
-        
-        summary = database.get_monthly_cashflow_summary(user_id, m, y)
+        months_list.append((y, m))
+
+    earliest_y, earliest_m = months_list[0]
+    start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
+
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
+        FROM transactions
+        WHERE user_id = ? AND date >= ?
+        GROUP BY SUBSTR(date, 1, 7), transaction_type
+    """, (user_id, start_date_str))
+    rows = cursor.fetchall()
+    conn.close()
+
+    monthly_totals = {}
+    for r in rows:
+        ym = str(r["ym"])[:7]
+        ttype = r["transaction_type"]
+        tot = float(r["total"] or 0.0)
+        if ym not in monthly_totals:
+            monthly_totals[ym] = {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0}
+        monthly_totals[ym][ttype] = tot
+
+    history = []
+    for y, m in months_list:
+        ym_key = f"{y:04d}-{m:02d}"
+        d = monthly_totals.get(ym_key, {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0})
+        inc = round(d.get("INCOME", 0.0), 2)
+        exp = round(d.get("EXPENSE", 0.0), 2)
+        net_savings = round(inc - exp, 2)
+        savings_rate = round((net_savings / inc * 100), 1) if inc > 0 else 0.0
         month_label = date(y, m, 1).strftime("%b %y")
         history.append({
             "label": month_label,
             "month": m,
             "year": y,
-            "income": summary["income"],
-            "expenses": summary["expenses"],
-            "net_savings": summary["net_savings"],
-            "savings_rate_pct": summary["savings_rate_pct"]
+            "income": inc,
+            "expenses": exp,
+            "net_savings": net_savings,
+            "savings_rate_pct": savings_rate
         })
 
     return jsonify({

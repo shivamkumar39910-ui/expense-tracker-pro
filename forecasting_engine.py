@@ -15,10 +15,20 @@ Pipeline Architecture:
 
 import sqlite3
 import calendar
+import time
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, date, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import db_engine
+
+# High-performance in-memory forecast cache (60s TTL)
+_forecast_cache: Dict[Tuple[int, str], Tuple[float, Dict[str, Any]]] = {}
+
+def invalidate_forecast_cache(user_id: int):
+    """Invalidates cached forecast for a user on transaction create/edit/delete."""
+    keys_to_del = [k for k in _forecast_cache if k[0] == user_id]
+    for k in keys_to_del:
+        _forecast_cache.pop(k, None)
 
 def to_decimal(val) -> Decimal:
     """Safely converts an integer, float, or string to Decimal with 2 decimal places."""
@@ -92,42 +102,61 @@ class ForecastDataPipeline:
         """
         Retrieves total expenses and category breakdowns for up to `months_back` completed months.
         Guarantees no future leakage: only months strictly prior to current_month/current_year are fetched.
+        High-performance single batch query optimization.
         """
-        history = []
+        months_list = []
         y, m = current_year, current_month
         for _ in range(months_back):
             m -= 1
             if m == 0:
                 m = 12
                 y -= 1
-            pattern = f"{y:04d}-{m:02d}%"
-            cursor.execute("""
-                SELECT COALESCE(SUM(amount), 0.0) as total_spend, COUNT(id) as tx_count
-                FROM transactions
-                WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date LIKE ? AND amount > 0
-            """, (user_id, pattern))
-            row = cursor.fetchone()
-            spend = to_decimal(row["total_spend"] if row else 0.0)
-            count = int(row["tx_count"] if row else 0)
+            months_list.append((y, m))
 
-            # Category breakdown for this historical month
-            cursor.execute("""
-                SELECT COALESCE(c.name, 'Uncategorized') as category_name, COALESCE(SUM(t.amount), 0.0) as cat_spend
-                FROM transactions t
-                LEFT JOIN categories c ON t.category_id = c.id
-                WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ? AND t.amount > 0
-                GROUP BY c.name
-            """, (user_id, pattern))
-            cat_rows = cursor.fetchall()
-            cat_breakdown = {cr["category_name"]: float(to_decimal(cr["cat_spend"])) for cr in cat_rows}
+        if not months_list:
+            return []
 
+        earliest_y, earliest_m = months_list[-1]
+        start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
+        end_date_str = f"{current_year:04d}-{current_month:02d}-01"
+
+        cursor.execute("""
+            SELECT 
+                SUBSTR(t.date, 1, 7) as ym,
+                COALESCE(c.name, 'Uncategorized') as category_name,
+                SUM(t.amount) as total_spend,
+                COUNT(t.id) as tx_count
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' 
+              AND t.date >= ? AND t.date < ? AND t.amount > 0
+            GROUP BY SUBSTR(t.date, 1, 7), c.name
+        """, (user_id, start_date_str, end_date_str))
+        rows = cursor.fetchall()
+
+        month_data = {}
+        for r in rows:
+            ym = str(r["ym"])[:7]
+            if ym not in month_data:
+                month_data[ym] = {"total_spend": 0.0, "tx_count": 0, "categories": {}}
+            amt = float(r["total_spend"] or 0.0)
+            cnt = int(r["tx_count"] or 0)
+            cat = str(r["category_name"] or "Uncategorized")
+            month_data[ym]["total_spend"] += amt
+            month_data[ym]["tx_count"] += cnt
+            month_data[ym]["categories"][cat] = amt
+
+        history = []
+        for y, m in months_list:
+            ym_key = f"{y:04d}-{m:02d}"
+            d = month_data.get(ym_key, {"total_spend": 0.0, "tx_count": 0, "categories": {}})
             history.append({
                 "year": y,
                 "month": m,
                 "label": f"{calendar.month_abbr[m]} {y}",
-                "total_spend": float(spend),
-                "tx_count": count,
-                "categories": cat_breakdown
+                "total_spend": float(round(d["total_spend"], 2)),
+                "tx_count": d["tx_count"],
+                "categories": d["categories"]
             })
         return history
 
@@ -726,6 +755,14 @@ def calculate_month_end_forecast(
     current_day = today.day
     total_days = get_days_in_month(current_year, current_month)
 
+    # Fast in-memory cache check (60s TTL)
+    cache_key = (user_id, f"{current_year:04d}-{current_month:02d}")
+    now_ts = time.time()
+    if cache_key in _forecast_cache:
+        cached_ts, cached_res = _forecast_cache[cache_key]
+        if (now_ts - cached_ts) < 60:
+            return cached_res
+
     conn, cursor = get_db_cursor(db_path)
 
     try:
@@ -803,7 +840,7 @@ def calculate_month_end_forecast(
         # Construct backward-compatible & enhanced payload
         overrun_amount = max(0.0, float(final_forecast - monthly_budget)) if monthly_budget > 0 else 0.0
 
-        return {
+        forecast_result = {
             # Legacy fields for complete backward compatibility
             "current_date": cutoff_date_str,
             "days_elapsed": max(1, current_day),
@@ -844,6 +881,8 @@ def calculate_month_end_forecast(
                 "formula": "F = (alpha * Velocity_Spend) + ((1 - alpha) * Baseline_WMA) + Upcoming_Unpaid_Bills"
             }
         }
+        _forecast_cache[cache_key] = (now_ts, forecast_result)
+        return forecast_result
     finally:
         conn.close()
 

@@ -3211,6 +3211,43 @@
       } else {
         updateUserUI();
         applyPrivacyMode();
+
+        // 0. INSTANT 0ms HYDRATION FROM LOCALSTORAGE CACHE
+        try {
+          const cachedCats = localStorage.getItem('cached_categories');
+          if (cachedCats) APP_STATE.categories = JSON.parse(cachedCats);
+
+          const cachedAccs = localStorage.getItem('cached_accounts');
+          if (cachedAccs) {
+            APP_STATE.accounts = JSON.parse(cachedAccs);
+            renderAccountPillsAndNetWorth();
+          }
+
+          const cachedDash = localStorage.getItem('cached_dashboard');
+          if (cachedDash) {
+            const cd = JSON.parse(cachedDash);
+            if (cd.net_worth) {
+              const nwEl = document.getElementById('netWorthDisplay');
+              if (nwEl) nwEl.innerText = '₹' + (cd.net_worth.net_worth || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+            }
+            if (cd.cashflow) {
+              const incEl = document.getElementById('cfIncomeVal');
+              if (incEl) incEl.innerText = '₹' + (cd.cashflow.income || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+              const expEl = document.getElementById('cfExpenseVal');
+              if (expEl) expEl.innerText = '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+            }
+            if (cd.forecast) {
+              APP_STATE.forecast = cd.forecast;
+              updateForecastUI(cd.forecast);
+            }
+            if (Array.isArray(cd.recent_transactions) && cd.recent_transactions.length > 0) {
+              renderRecentTx(cd.recent_transactions);
+            }
+          }
+        } catch (cacheErr) {
+          console.warn('Instant cache hydration notice:', cacheErr);
+        }
+
         // 2. Check App PIN Security Lock (Phase 13)
         await checkSecurityOnStartup();
         // 3. Multi-Currency Engine (Phase 16)
@@ -3515,6 +3552,7 @@
       const res = await apiRequest('/accounts');
       if (res && res.success && res.data) {
         APP_STATE.accounts = res.data.accounts || [];
+        try { localStorage.setItem('cached_accounts', JSON.stringify(APP_STATE.accounts)); } catch(e) {}
         renderAccountPillsAndNetWorth();
       }
     }
@@ -3526,70 +3564,85 @@
       const res = await apiRequest('/categories');
       if (res && res.success) {
         APP_STATE.categories = res.categories || [];
+        try { localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories)); } catch(e) {}
       }
     }
 
     async function refreshDashboardData() {
-      const res = await apiRequest('/command-center/summary');
-      if (res && res.success) {
+      // Parallel fetch summary + budgets for sub-100ms dashboard update
+      const [res, budgetRes] = await Promise.all([
+        apiRequest('/command-center/summary'),
+        apiRequest('/budgets')
+      ]);
+
+      if (res && res.success && res.data) {
         const d = res.data;
+        try { localStorage.setItem('cached_dashboard', JSON.stringify(d)); } catch(e) {}
+
         // Net worth & Cashflow
-        document.getElementById('netWorthDisplay').innerText = `₹${d.net_worth.net_worth.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        document.getElementById('cfIncomeVal').innerText = `₹${d.cashflow.income.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        document.getElementById('cfExpenseVal').innerText = `₹${d.cashflow.expenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const nwEl = document.getElementById('netWorthDisplay');
+        if (nwEl && d.net_worth) nwEl.innerText = `₹${(d.net_worth.net_worth || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const incEl = document.getElementById('cfIncomeVal');
+        if (incEl && d.cashflow) incEl.innerText = `₹${(d.cashflow.income || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const expEl = document.getElementById('cfExpenseVal');
+        if (expEl && d.cashflow) expEl.innerText = `₹${(d.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
         // Forecast Banner
         APP_STATE.forecast = d.forecast;
         updateForecastUI(d.forecast);
 
-        // Budget Tab (Phase 6 & 7)
-        const budgetRes = await apiRequest('/budgets');
-        if (budgetRes && budgetRes.success) {
-          const b = budgetRes.data;
-          document.getElementById('budgetLimitDisplay').innerText = `₹${b.overall_budget.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          document.getElementById('budgetSpentDisplay').innerText = `₹${b.total_spent.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          document.getElementById('budgetRemainingDisplay').innerText = `₹${b.remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          document.getElementById('budgetProgressBar').style.width = `${Math.min(100, b.utilization_pct)}%`;
-          document.getElementById('budgetProgressBar').style.background = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
-          
-          // Safe Daily Spending Cap
-          document.getElementById('budgetDailyCapDisplay').innerText = `₹${b.safe_daily_cap.toFixed(2)} / day`;
-          document.getElementById('budgetDaysLeftDisplay').innerText = b.days_remaining;
+        // Recent Transactions rendered immediately (zero-wait)
+        if (d.recent_transactions) {
+          renderRecentTx(d.recent_transactions);
+        }
+      }
 
-          // Sync Home Screen Budget Card
-          const homeSpent = document.getElementById('homeBudgetSpentDisplay');
-          if (homeSpent) homeSpent.innerText = `₹${b.total_spent.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          const homeLimit = document.getElementById('homeBudgetLimitDisplay');
-          if (homeLimit) homeLimit.innerText = `₹${b.overall_budget.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          const homeRem = document.getElementById('homeBudgetRemainingDisplay');
-          if (homeRem) homeRem.innerText = `₹${b.remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-          const homeDays = document.getElementById('homeBudgetDaysDisplay');
-          if (homeDays) homeDays.innerText = b.days_remaining;
-          const homeBar = document.getElementById('homeBudgetProgressBar');
-          if (homeBar) {
-            homeBar.style.width = `${Math.min(100, b.utilization_pct)}%`;
-            homeBar.style.background = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
-          }
+      // Budget Tab (Phase 6 & 7)
+      if (budgetRes && budgetRes.success && budgetRes.data) {
+        const b = budgetRes.data;
+        const bLimit = document.getElementById('budgetLimitDisplay');
+        if (bLimit) bLimit.innerText = `₹${(b.overall_budget || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const bSpent = document.getElementById('budgetSpentDisplay');
+        if (bSpent) bSpent.innerText = `₹${(b.total_spent || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const bRem = document.getElementById('budgetRemainingDisplay');
+        if (bRem) bRem.innerText = `₹${(b.remaining || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const bBar = document.getElementById('budgetProgressBar');
+        if (bBar) {
+          bBar.style.width = `${Math.min(100, b.utilization_pct || 0)}%`;
+          bBar.style.background = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+        }
+        
+        // Safe Daily Spending Cap
+        const bDaily = document.getElementById('budgetDailyCapDisplay');
+        if (bDaily) bDaily.innerText = `₹${(b.safe_daily_cap || 0).toFixed(2)} / day`;
+        const bDays = document.getElementById('budgetDaysLeftDisplay');
+        if (bDays) bDays.innerText = b.days_remaining;
 
-          // Render Category Budgets
-          renderCategoryBudgets(b.category_budgets);
+        // Sync Home Screen Budget Card
+        const homeSpent = document.getElementById('homeBudgetSpentDisplay');
+        if (homeSpent) homeSpent.innerText = `₹${(b.total_spent || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const homeLimit = document.getElementById('homeBudgetLimitDisplay');
+        if (homeLimit) homeLimit.innerText = `₹${(b.overall_budget || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const homeRem = document.getElementById('homeBudgetRemainingDisplay');
+        if (homeRem) homeRem.innerText = `₹${(b.remaining || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        const homeDays = document.getElementById('homeBudgetDaysDisplay');
+        if (homeDays) homeDays.innerText = b.days_remaining;
+        const homeBar = document.getElementById('homeBudgetProgressBar');
+        if (homeBar) {
+          homeBar.style.width = `${Math.min(100, b.utilization_pct || 0)}%`;
+          homeBar.style.background = b.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
         }
 
-        // Load Recurring Bills (Phase 7)
-        await loadRecurringBills();
-
-        // Load Notifications, Goals, Charts & Smart Alerts (Phase 6)
-        await Promise.all([
-          loadNotifications(),
-          loadGoals(),
-          loadVisualCharts(),
-          checkSmartAlerts()
-        ]);
-
-
-        // Recent Transactions
-        renderRecentTx(d.recent_transactions);
+        // Render Category Budgets
+        if (b.category_budgets) {
+          renderCategoryBudgets(b.category_budgets);
+        }
       }
+
+      // Quiet non-blocking background loads for secondary tabs
+      loadRecurringBills().catch(console.error);
+      loadNotifications().catch(console.error);
+      loadGoals().catch(console.error);
     }
 
     function updateForecastUI(f) {

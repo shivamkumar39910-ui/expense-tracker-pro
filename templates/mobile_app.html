@@ -1759,8 +1759,6 @@
         </div>
       </div>
 
-      </div>
-
       <!-- ============================================== -->
       <!-- TAB 5: PROFILE & SECURITY SETTINGS SCREEN      -->
       <!-- ============================================== -->
@@ -3195,12 +3193,11 @@
           try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
         }
         if (targetId === 'tab-analytics') {
-          try { renderCategoryChart(); } catch (e) { console.error('renderCategoryChart error:', e); }
-          try { renderCashflowHistoryChart(); } catch (e) { console.error('renderCashflowHistoryChart error:', e); }
+          loadVisualCharts().catch(console.error);
           try { renderTransactionsList(); } catch (e) { console.error('renderTransactionsList error:', e); }
         }
         if (targetId === 'tab-ai') {
-          try { renderAiPredictionHero(); } catch (e) { console.error('renderAiPredictionHero error:', e); }
+          try { renderForecastDetails(APP_STATE.forecast); } catch (e) { console.error('renderForecastDetails error:', e); }
         }
       } catch (err) {
         console.error('switchTab error:', err);
@@ -3238,49 +3235,9 @@
     }
 
     function renderAiPredictionHero() {
-      const fc = APP_STATE.forecast;
-      if (!fc) return;
-
-      const sym = APP_STATE.currencySymbol || '₹';
-      const mtd = fc.month_to_date_spending || 0;
-      const budget = fc.monthly_budget || 25000;
-      const proj = fc.projected_month_end || 0;
-      const vel = fc.daily_velocity || 0;
-      const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-      const currentDay = new Date().getDate();
-      const remainingDays = Math.max(1, daysInMonth - currentDay);
-      const remainingBudget = Math.max(0, budget - mtd);
-      const safeCap = remainingDays > 0 ? (remainingBudget / remainingDays) : 0;
-      const surplus = budget - proj;
-
-      const projEl = document.getElementById('fcMonthEndProjectedDisplay');
-      if (projEl) projEl.innerText = `${sym}${proj.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-
-      const surplusEl = document.getElementById('fcSurplusDisplay');
-      if (surplusEl) {
-        if (surplus >= 0) {
-          const pct = budget > 0 ? Math.round((surplus / budget) * 100) : 0;
-          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px;">trending_down</span> <span>Projected Month Savings: +${sym}${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${pct}% saved)</span>`;
-          surplusEl.style.color = '#10B981';
-        } else {
-          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">warning</span> <span style="color:#EF4444;">Projected Overspend by ${sym}${Math.abs(surplus).toLocaleString('en-IN', {minimumFractionDigits: 2})}!</span>`;
-        }
+      if (APP_STATE.forecast) {
+        renderForecastDetails(APP_STATE.forecast);
       }
-
-      const velEl = document.getElementById('fcMtdSpend');
-      if (velEl) velEl.innerText = `${sym}${vel.toFixed(1)}/day`;
-
-      const capEl = document.getElementById('fcSafeDailyCap');
-      if (capEl) capEl.innerText = `${sym}${safeCap.toFixed(1)}/day`;
-
-      const badge = document.getElementById('forecastDeepRiskBadge');
-      if (badge) {
-        badge.innerText = fc.risk_status || 'SAFE';
-        badge.className = `forecast-risk-pill ${fc.risk_status === 'CRITICAL' ? 'risk-critical' : fc.risk_status === 'WARNING' ? 'risk-warning' : 'risk-safe'}`;
-      }
-
-      const expText = document.getElementById('fcExplanationText');
-      if (expText) expText.innerText = fc.warning_message || 'On track with normal spending.';
     }
 
     // ----------------------------------------------------
@@ -3365,11 +3322,8 @@
         coreTasks.push(loadGoals());
       }
 
-      // Only calculate & load heavy charts when the Analytics tab is active
-      const currentTab = document.querySelector('.app-screen.active');
-      if (currentTab && (currentTab.id === 'tab-analytics' || currentTab.id === 'tab-transactions')) {
-        coreTasks.push(loadVisualCharts());
-      }
+      // Preload visual charts for instant tab switching
+      coreTasks.push(loadVisualCharts());
 
       await Promise.all(coreTasks);
     }

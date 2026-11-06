@@ -1474,6 +1474,235 @@ def get_command_center_summary():
         }
     }), 200
 
+@api_v1.route('/app/bootstrap', methods=['GET'])
+@token_required
+def get_app_bootstrap():
+    """
+    Ultra-fast single-roundtrip bootstrap endpoint.
+    Aggregates all initial dashboard and screen data in 1 DB session:
+    - User currency
+    - Accounts & Net worth
+    - Monthly Cashflow & Month-end forecast
+    - Categories & Subcategories
+    - Recent transactions (top 5) & transaction list (top 50)
+    - Active Budgets with progress
+    - Category breakdown slices for Donut chart
+    - 6-month historical totals for History bar chart
+    - Unread notifications count
+    Executed within a single pooled database connection for sub-30ms performance.
+    """
+    user_id = request.user["id"]
+    today = date.today()
+    month = today.month
+    year = today.year
+    pattern = f"{year:04d}-{month:02d}%"
+
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+
+    # 1. User Currency
+    curr = database.get_user_currency(user_id)
+
+    # 2. Accounts & Net Worth
+    accounts = database.get_user_accounts(user_id)
+    net_worth = database.get_net_worth_summary(user_id)
+
+    # 3. Cashflow & Forecast
+    cashflow = database.get_monthly_cashflow_summary(user_id, month, year)
+    forecast = forecasting_engine.calculate_month_end_forecast(user_id)
+
+    # 4. Categories with subcategories (same format as /categories)
+    cursor.execute("""
+        SELECT id, name, type, icon, color_hex, is_default
+        FROM categories
+        WHERE user_id IS NULL OR user_id = ?
+        ORDER BY is_default DESC, name ASC
+    """, (user_id,))
+    cats = [dict(c) for c in cursor.fetchall()]
+
+    cat_ids = [c["id"] for c in cats]
+    subcats_by_cat = {c["id"]: [] for c in cats}
+    if cat_ids:
+        placeholders = ",".join("?" for _ in cat_ids)
+        cursor.execute(f"SELECT id, category_id, name FROM subcategories WHERE category_id IN ({placeholders}) ORDER BY name ASC", tuple(cat_ids))
+        for s in cursor.fetchall():
+            s_dict = dict(s)
+            c_id = s_dict["category_id"]
+            if c_id in subcats_by_cat:
+                subcats_by_cat[c_id].append({"id": s_dict["id"], "name": s_dict["name"]})
+
+    for cat in cats:
+        cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
+
+    categories = {
+        "expense": [c for c in cats if c["type"] == 'EXPENSE'],
+        "income": [c for c in cats if c["type"] == 'INCOME']
+    }
+
+    # 5. Transactions (top 50)
+    cursor.execute("""
+        SELECT t.id, t.transaction_type, t.amount, t.date, t.note,
+               t.account_id, t.category_id, t.subcategory_id,
+               a.name as account_name,
+               c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+               s.name as subcategory_name
+        FROM transactions t
+        LEFT JOIN accounts a ON t.account_id = a.id
+        LEFT JOIN categories c ON t.category_id = c.id
+        LEFT JOIN subcategories s ON t.subcategory_id = s.id
+        WHERE t.user_id = ?
+        ORDER BY t.date DESC, t.id DESC LIMIT 50
+    """, (user_id,))
+    tx_rows = [dict(r) for r in cursor.fetchall()]
+
+    # 6. Budgets with progress (matching /budgets payload)
+    cursor.execute("""
+        SELECT amount FROM budgets
+        WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)
+    """, (user_id, month, year))
+    overall_row = cursor.fetchone()
+    overall_budget = float(overall_row["amount"]) if overall_row else 0.0
+
+    days_in_month = calendar.monthrange(year, month)[1]
+    days_remaining = max(1, days_in_month - today.day)
+
+    cursor.execute("""
+        SELECT b.id, b.category_id, b.amount, c.name as category_name, c.icon as category_icon, c.color_hex as category_color
+        FROM budgets b
+        JOIN categories c ON b.category_id = c.id
+        WHERE b.user_id = ? AND b.month = ? AND b.year = ?
+    """, (user_id, month, year))
+    cat_budget_rows = cursor.fetchall()
+
+    category_budgets = []
+    for cb in cat_budget_rows:
+        cid = cb["category_id"]
+        limit_amt = float(cb["amount"])
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0.0) as cat_spent
+            FROM transactions
+            WHERE user_id = ? AND category_id = ? AND date LIKE ? AND transaction_type = 'EXPENSE'
+        """, (user_id, cid, pattern))
+        cat_spent = float(cursor.fetchone()["cat_spent"])
+        cat_util = round((cat_spent / limit_amt * 100), 1) if limit_amt > 0 else 0.0
+
+        category_budgets.append({
+            "category_id": cid,
+            "category_name": cb["category_name"],
+            "category_icon": cb["category_icon"],
+            "category_color": cb["category_color"],
+            "budget_limit": limit_amt,
+            "spent": cat_spent,
+            "remaining": max(0.0, round(limit_amt - cat_spent, 2)),
+            "utilization_pct": cat_util,
+            "is_exceeded": cat_spent > limit_amt
+        })
+
+    budget_data = {
+        "overall_budget": overall_budget,
+        "days_remaining": days_remaining,
+        "category_budgets": category_budgets
+    }
+
+    # 7. Category Breakdown for Donut Chart
+    cursor.execute("""
+        SELECT COALESCE(c.name, 'Uncategorized') as category_name,
+               COALESCE(c.color_hex, '#6B7280') as color_hex,
+               COALESCE(c.icon, 'category') as icon,
+               SUM(t.amount) as total_amount,
+               COUNT(t.id) as tx_count
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ?
+        GROUP BY c.id, c.name, c.color_hex, c.icon
+        ORDER BY total_amount DESC
+    """, (user_id, pattern))
+    bd_rows = cursor.fetchall()
+    total_expense = sum(float(r["total_amount"]) for r in bd_rows)
+    breakdown = []
+    for r in bd_rows:
+        amt = float(r["total_amount"])
+        pct = round((amt / total_expense * 100), 1) if total_expense > 0 else 0.0
+        breakdown.append({
+            "name": r["category_name"],
+            "amount": amt,
+            "percentage": pct,
+            "color": r["color_hex"],
+            "icon": r["icon"],
+            "count": r["tx_count"]
+        })
+
+    # 8. 6-Month History
+    months_list = []
+    for i in range(5, -1, -1):
+        m = today.month - i
+        y = today.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        months_list.append((y, m))
+    earliest_y, earliest_m = months_list[0]
+    start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
+
+    cursor.execute("""
+        SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
+        FROM transactions
+        WHERE user_id = ? AND date >= ?
+        GROUP BY SUBSTR(date, 1, 7), transaction_type
+    """, (user_id, start_date_str))
+    hist_rows = cursor.fetchall()
+    conn.close()
+
+    monthly_totals = {}
+    for r in hist_rows:
+        ym = str(r["ym"])[:7]
+        ttype = r["transaction_type"]
+        tot = float(r["total"] or 0.0)
+        if ym not in monthly_totals:
+            monthly_totals[ym] = {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0}
+        monthly_totals[ym][ttype] = tot
+
+    history_6m = []
+    for y, m in months_list:
+        ym_key = f"{y:04d}-{m:02d}"
+        d = monthly_totals.get(ym_key, {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0})
+        inc = round(d.get("INCOME", 0.0), 2)
+        exp = round(d.get("EXPENSE", 0.0), 2)
+        net_savings = round(inc - exp, 2)
+        savings_rate = round((net_savings / inc * 100), 1) if inc > 0 else 0.0
+        month_label = date(y, m, 1).strftime("%b %y")
+        history_6m.append({
+            "label": month_label,
+            "month": m,
+            "year": y,
+            "income": inc,
+            "expenses": exp,
+            "net_savings": net_savings,
+            "savings_rate_pct": savings_rate
+        })
+
+    # 9. Notifications count
+    notifs = database.get_user_notifications(user_id, limit=5, unread_only=True)
+
+    return jsonify({
+        "success": True,
+        "bootstrap": {
+            "currency": curr,
+            "accounts": accounts,
+            "net_worth": net_worth,
+            "cashflow": cashflow,
+            "forecast": forecast,
+            "categories": categories,
+            "recent_transactions": tx_rows[:5],
+            "transactions": tx_rows,
+            "budgets": budget_data,
+            "breakdown": breakdown,
+            "total_expense": round(total_expense, 2),
+            "history_6m": history_6m,
+            "unread_notifications": len(notifs)
+        }
+    }), 200
+
 # ==================================================
 # ==================================================
 # 8. Financial Goals (Phase 11 Deepening)

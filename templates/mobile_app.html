@@ -1707,19 +1707,34 @@
 
         <!-- 4. Visual Forecast Trajectory Chart -->
         <div class="fintech-card" style="padding:16px; margin-bottom:18px;">
-          <div style="font-size:11px; color:var(--text-muted); font-weight:800; margin-bottom:8px; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
-          <svg viewBox="0 0 300 100" style="width:100%; height:100px; overflow:visible;" id="fcTrajectorySvg">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
+            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">Drag across to inspect</div>
+          </div>
+          <svg viewBox="0 0 300 110" style="width:100%; height:110px; overflow:visible; cursor:crosshair; touch-action:none;" id="fcTrajectorySvg">
             <!-- Target Budget Line -->
             <line id="fcSvgBudgetLine" x1="0" y1="20" x2="300" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4"/>
             <text id="fcSvgBudgetText" x="5" y="16" fill="#EF4444" font-size="9" font-weight="700">Budget Limit</text>
             
             <!-- Actual MTD Line (Solid Cyan) -->
-            <path id="fcSvgActualPath" d="M 5 90 L 150 85" fill="none" stroke="#06B6D4" stroke-width="3" stroke-linecap="round"/>
+            <path id="fcSvgActualPath" d="M 5 95 L 150 85" fill="none" stroke="#06B6D4" stroke-width="3" stroke-linecap="round"/>
             
             <!-- Forecasted Velocity Trajectory (Dashed Emerald) -->
             <path id="fcSvgProjPath" d="M 150 85 L 295 80" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="5" stroke-linecap="round"/>
-            <circle id="fcSvgTodayDot" cx="150" cy="85" r="4" fill="#06B6D4"/>
-            <circle id="fcSvgProjDot" cx="295" cy="80" r="5" fill="#10B981"/>
+
+            <!-- Scrub / Guide vertical line -->
+            <line id="fcSvgGuideLine" x1="150" y1="10" x2="150" y2="95" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="2" style="display:none;"/>
+
+            <!-- Today and Projection Dots -->
+            <circle id="fcSvgTodayRing" cx="150" cy="85" r="8" fill="none" stroke="#06B6D4" stroke-width="1.5" opacity="0.6"/>
+            <circle id="fcSvgTodayDot" cx="150" cy="85" r="4.5" fill="#06B6D4"/>
+            <circle id="fcSvgProjDot" cx="295" cy="80" r="4.5" fill="#10B981"/>
+
+            <!-- Interactive Floating Callout Badge -->
+            <g id="fcTrajectoryCallout" style="transition:transform 0.08s ease-out; pointer-events:none;">
+              <rect id="fcCalloutRect" x="-60" y="-28" width="120" height="22" rx="6" ry="6" fill="#06B6D4" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.4))"/>
+              <text id="fcCalloutText" x="0" y="-14" fill="#030712" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle">Day 1: ₹0 Spent</text>
+            </g>
           </svg>
           <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-weight:700; margin-top:4px;">
             <span>Day 1</span>
@@ -3032,51 +3047,37 @@
         showAuthOverlay('LOGIN');
       } else {
         updateUserUI();
-        applyPrivacyMode();
 
-        // 0. INSTANT 0ms HYDRATION FROM LOCALSTORAGE CACHE
+        // 0. INSTANT 0ms HYDRATION FROM LOCALSTORAGE BOOTSTRAP CACHE
         try {
-          const cachedCats = localStorage.getItem('cached_categories');
-          if (cachedCats) APP_STATE.categories = JSON.parse(cachedCats);
-
-          const cachedAccs = localStorage.getItem('cached_accounts');
-          if (cachedAccs) {
-            APP_STATE.accounts = JSON.parse(cachedAccs);
-            renderAccountPillsAndNetWorth();
-          }
-
-          const cachedDash = localStorage.getItem('cached_dashboard');
-          if (cachedDash) {
-            const cd = JSON.parse(cachedDash);
-            if (cd.net_worth) {
-              const nwEl = document.getElementById('netWorthDisplay');
-              if (nwEl) nwEl.innerText = '₹' + (cd.net_worth.net_worth || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-            }
-            if (cd.cashflow) {
-              const incEl = document.getElementById('cfIncomeVal');
-              if (incEl) incEl.innerText = '₹' + (cd.cashflow.income || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-              const expEl = document.getElementById('cfExpenseVal');
-              if (expEl) expEl.innerText = '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-              const homeExp = document.getElementById('homeTotalExpenseDisplay');
-              if (homeExp) homeExp.innerText = '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-            }
-            if (cd.forecast) {
-              APP_STATE.forecast = cd.forecast;
-              updateForecastUI(cd.forecast);
-            }
-            if (Array.isArray(cd.recent_transactions) && cd.recent_transactions.length > 0) {
-              renderRecentTx(cd.recent_transactions);
+          const cachedBootstrap = localStorage.getItem('cached_bootstrap');
+          if (cachedBootstrap) {
+            applyBootstrapData(JSON.parse(cachedBootstrap));
+          } else {
+            // Legacy individual cache fallback
+            const cachedCats = localStorage.getItem('cached_categories');
+            if (cachedCats) APP_STATE.categories = JSON.parse(cachedCats);
+            const cachedAccs = localStorage.getItem('cached_accounts');
+            if (cachedAccs) { APP_STATE.accounts = JSON.parse(cachedAccs); renderAccountPillsAndNetWorth(); }
+            const cachedDash = localStorage.getItem('cached_dashboard');
+            if (cachedDash) {
+              const cd = JSON.parse(cachedDash);
+              if (cd.cashflow) {
+                setMaskableText('homeTotalExpenseDisplay', '₹' + (cd.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2}));
+              }
+              if (cd.forecast) { APP_STATE.forecast = cd.forecast; updateForecastUI(cd.forecast); }
+              if (Array.isArray(cd.recent_transactions)) renderRecentTx(cd.recent_transactions);
             }
           }
         } catch (cacheErr) {
           console.warn('Instant cache hydration notice:', cacheErr);
         }
 
-        // 2. Check App PIN Security Lock (Phase 13)
-        await checkSecurityOnStartup();
-        // 3. Multi-Currency Engine (Phase 16)
-        await fetchUserCurrency();
-        await initializeAppData();
+        applyPrivacyMode();
+
+        // Non-blocking fast background sync
+        checkSecurityOnStartup().catch(console.warn);
+        initializeAppData().catch(console.error);
       }
     });
 
@@ -3193,6 +3194,13 @@
           try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
         }
         if (targetId === 'tab-analytics') {
+          // Instantly trigger Donut sweep animation and 6M bar chart if data is in state
+          if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
+            renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
+          }
+          if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
+            renderHistoryBarChart(APP_STATE.history6m);
+          }
           loadVisualCharts().catch(console.error);
           try { renderTransactionsList(); } catch (e) { console.error('renderTransactionsList error:', e); }
         }
@@ -3307,24 +3315,119 @@
       renderProfileAccounts();
     }
 
+    function setMaskableText(elementId, formattedText) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.dataset.realVal = formattedText;
+      if (APP_STATE.privacyMode) {
+        el.innerText = '₹ ••••••';
+      } else {
+        el.innerText = formattedText;
+      }
+    }
+
+    function applyBootstrapData(b, isBackground = false) {
+      if (!b) return;
+
+      // 1. User Currency
+      if (b.currency) {
+        APP_STATE.activeCurrency = b.currency.code || 'INR';
+        APP_STATE.currencySymbol = b.currency.symbol || '₹';
+        updateCurrencyUI();
+      }
+
+      // 2. Accounts & Net Worth
+      if (Array.isArray(b.accounts)) {
+        APP_STATE.accounts = b.accounts;
+        try { localStorage.setItem('cached_accounts', JSON.stringify(b.accounts)); } catch(e) {}
+        renderAccountPillsAndNetWorth();
+      }
+
+      // 3. Home Screen Total Expense & Cashflow
+      const expTotal = (b.cashflow && b.cashflow.expenses !== undefined) 
+        ? b.cashflow.expenses 
+        : (b.total_expense !== undefined ? b.total_expense : (b.forecast ? b.forecast.mtd_actual_spend : 0));
+      setMaskableText('homeTotalExpenseDisplay', `₹${(expTotal || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+
+      if (b.net_worth) {
+        setMaskableText('netWorthDisplay', `₹${(b.net_worth.net_worth || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      }
+      if (b.cashflow) {
+        setMaskableText('cfIncomeVal', `₹${(b.cashflow.income || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+        setMaskableText('cfExpenseVal', `₹${(b.cashflow.expenses || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      }
+
+      // 4. Forecast Banner & AI Advisor Trajectory
+      if (b.forecast) {
+        APP_STATE.forecast = b.forecast;
+        updateForecastUI(b.forecast);
+        renderTrajectoryChart(b.forecast);
+      }
+
+      // 5. Recent Transactions on Home
+      if (Array.isArray(b.recent_transactions) && b.recent_transactions.length > 0) {
+        renderRecentTx(b.recent_transactions);
+      }
+
+      // 6. Categories
+      if (b.categories) {
+        APP_STATE.categories = b.categories;
+        try { localStorage.setItem('cached_categories', JSON.stringify(b.categories)); } catch(e) {}
+      }
+
+      // 7. Full Transactions List for Analytics/Transactions Screen
+      if (Array.isArray(b.transactions)) {
+        APP_STATE.transactions = b.transactions;
+        renderTransactionsList(b.transactions);
+      }
+
+      // 8. Analytics Visual Donut Chart & 6M Bar Chart
+      if (Array.isArray(b.breakdown)) {
+        APP_STATE.categoryBreakdown = b.breakdown;
+        APP_STATE.categoryTotalExpense = (b.total_expense !== undefined) ? b.total_expense : expTotal;
+        renderDonutChart(b.breakdown, APP_STATE.categoryTotalExpense);
+      }
+      if (Array.isArray(b.history_6m)) {
+        APP_STATE.history6m = b.history_6m;
+        renderHistoryBarChart(b.history_6m);
+      }
+
+      // 9. Unread Notifications Count
+      if (b.unread_notifications !== undefined) {
+        updateNotificationBadge(b.unread_notifications);
+      }
+
+      applyPrivacyMode();
+    }
+
     async function initializeAppData(forceFull = false) {
+      try {
+        // Ultra-fast single roundtrip bootstrap endpoint (<20ms backend)
+        const res = await apiRequest('/app/bootstrap');
+        if (res && res.success && res.bootstrap) {
+          applyBootstrapData(res.bootstrap, true);
+          try {
+            localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
+          } catch (e) {}
+          return;
+        }
+      } catch (bootstrapErr) {
+        console.warn('Bootstrap endpoint fallback note:', bootstrapErr);
+      }
+
+      // Fallback to individual requests if needed
       const coreTasks = [
         loadCategories(forceFull),
         loadAccountsAndNetWorth(),
         refreshDashboardData(),
         loadTransactions()
       ];
-
-      // Load auxiliary data on initial load or when explicitly forced
       if (forceFull || !APP_STATE._hasHydrated) {
         APP_STATE._hasHydrated = true;
         coreTasks.push(loadNotifications());
         coreTasks.push(loadGoals());
       }
-
-      // Preload visual charts for instant tab switching
       coreTasks.push(loadVisualCharts());
-
       await Promise.all(coreTasks);
     }
 
@@ -3619,6 +3722,7 @@
     }
 
     function renderTrajectoryChart(f) {
+      if (!f) return;
       const budget = f.monthly_budget || 0;
       const mtd = f.mtd_actual_spend || 0;
       const proj = f.projected_month_end_spend || 0;
@@ -3626,7 +3730,7 @@
       const totalDays = f.total_days_in_month || 30;
 
       const maxVal = Math.max(budget * 1.15, proj * 1.15, mtd * 1.15, 1000);
-      const getY = val => Math.max(10, Math.min(90, 90 - (val / maxVal * 80)));
+      const getY = val => Math.max(10, Math.min(95, 95 - (val / maxVal * 80)));
       const getX = d => Math.max(5, Math.min(295, (d / totalDays) * 290 + 5));
 
       const budgetY = budget > 0 ? getY(budget) : 20;
@@ -3648,7 +3752,7 @@
       }
 
       const actualPath = document.getElementById('fcSvgActualPath');
-      if (actualPath) actualPath.setAttribute('d', `M 5 90 L ${todayX} ${mtdY}`);
+      if (actualPath) actualPath.setAttribute('d', `M 5 95 L ${todayX} ${mtdY}`);
 
       const projPath = document.getElementById('fcSvgProjPath');
       if (projPath) projPath.setAttribute('d', `M ${todayX} ${mtdY} L 295 ${projY}`);
@@ -3657,6 +3761,12 @@
       if (todayDot) {
         todayDot.setAttribute('cx', todayX);
         todayDot.setAttribute('cy', mtdY);
+      }
+
+      const todayRing = document.getElementById('fcSvgTodayRing');
+      if (todayRing) {
+        todayRing.setAttribute('cx', todayX);
+        todayRing.setAttribute('cy', mtdY);
       }
 
       const projDot = document.getElementById('fcSvgProjDot');
@@ -3670,6 +3780,78 @@
 
       const monthEndLabel = document.getElementById('fcSvgMonthEndLabel');
       if (monthEndLabel) monthEndLabel.textContent = `Month-End (Day ${totalDays})`;
+
+      // Dynamic Callout Pill Positioning & Sizing
+      function setCalloutPosition(x, y, textContent, isProjected = false) {
+        const callout = document.getElementById('fcTrajectoryCallout');
+        const txt = document.getElementById('fcCalloutText');
+        const rect = document.getElementById('fcCalloutRect');
+        if (!callout || !txt || !rect) return;
+
+        txt.textContent = textContent;
+        const textWidth = Math.max(88, textContent.length * 6.4 + 16);
+        rect.setAttribute('width', textWidth);
+        rect.setAttribute('x', -textWidth / 2);
+
+        // Keep callout strictly within 0..300 SVG boundary
+        let clampedX = Math.max(textWidth / 2 + 5, Math.min(295 - textWidth / 2, x));
+        let calloutY = y > 35 ? y - 18 : y + 26;
+
+        callout.setAttribute('transform', `translate(${clampedX}, ${calloutY})`);
+        rect.setAttribute('fill', isProjected ? '#10B981' : '#06B6D4');
+      }
+
+      const defaultText = `Day ${day}: ₹${Math.round(mtd).toLocaleString('en-IN')} Spent`;
+      setCalloutPosition(todayX, mtdY, defaultText, false);
+
+      // Interactive Touch & Mouse Scrubber
+      const svg = document.getElementById('fcTrajectorySvg');
+      if (svg && !svg._scrubberAttached) {
+        svg._scrubberAttached = true;
+        const guide = document.getElementById('fcSvgGuideLine');
+
+        function handleScrub(e) {
+          const rect = svg.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const relX = clientX - rect.left;
+          const svgX = Math.max(5, Math.min(295, (relX / rect.width) * 300));
+
+          const scrubDay = Math.max(1, Math.min(totalDays, Math.round(((svgX - 5) / 290) * totalDays)));
+          let scrubSpend = 0;
+          let isProj = false;
+
+          if (scrubDay <= day) {
+            scrubSpend = Math.round(mtd * (scrubDay / Math.max(1, day)));
+          } else {
+            isProj = true;
+            const remainingDays = Math.max(1, totalDays - day);
+            const dailyRate = (proj - mtd) / remainingDays;
+            scrubSpend = Math.round(mtd + dailyRate * (scrubDay - day));
+          }
+
+          const pointY = getY(scrubSpend);
+
+          if (guide) {
+            guide.setAttribute('x1', svgX);
+            guide.setAttribute('x2', svgX);
+            guide.style.display = 'block';
+          }
+
+          const statusTag = isProj ? 'Est' : 'Spent';
+          setCalloutPosition(svgX, pointY, `Day ${scrubDay}: ₹${scrubSpend.toLocaleString('en-IN')} (${statusTag})`, isProj);
+        }
+
+        function resetScrub() {
+          if (guide) guide.style.display = 'none';
+          setCalloutPosition(todayX, mtdY, defaultText, false);
+        }
+
+        svg.addEventListener('pointermove', handleScrub);
+        svg.addEventListener('pointerdown', handleScrub);
+        svg.addEventListener('pointerup', resetScrub);
+        svg.addEventListener('pointerleave', resetScrub);
+        svg.addEventListener('pointercancel', resetScrub);
+      }
     }
 
     // ----------------------------------------------------
@@ -4201,7 +4383,23 @@
       }
     }
 
+    const BRIGHT_NEON_PALETTE = [
+      '#06B6D4', // Vibrant Electric Cyan
+      '#10B981', // Vivid Emerald Green
+      '#F59E0B', // Glowing Amber Gold
+      '#EC4899', // Hot Vivid Pink
+      '#8B5CF6', // Electric Purple Violet
+      '#F97316', // Bright Neon Coral Orange
+      '#00F0FF', // Radiant Electric Blue
+      '#84CC16', // High-Brightness Neon Lime
+      '#E11D48', // Vivid Crimson Red
+      '#6366F1'  // High-Brightness Indigo
+    ];
+
     function renderDonutChart(slices, totalExpense) {
+      APP_STATE.categoryBreakdown = slices;
+      APP_STATE.categoryTotalExpense = totalExpense;
+
       const totalEl = document.getElementById('chartTotalDisplay');
       if (totalEl) totalEl.innerText = `Total: ₹${totalExpense.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
       const centerEl = document.getElementById('donutCenterAmount');
@@ -4233,7 +4431,12 @@
         return;
       }
 
-      // Populate Legend once
+      // Assign high-brightness vibrant neon colors to each slice
+      slices.forEach((s, idx) => {
+        s.neonColor = BRIGHT_NEON_PALETTE[idx % BRIGHT_NEON_PALETTE.length];
+      });
+
+      // Populate Legend once with vibrant bullets
       if (legend) {
         slices.forEach(s => {
           const pill = document.createElement('div');
@@ -4241,7 +4444,7 @@
           pill.style.padding = '6px 10px';
           pill.style.fontSize = '11px';
           pill.innerHTML = `
-            <span style="width:10px; height:10px; border-radius:50%; background:${s.color}; flex-shrink:0;"></span>
+            <span style="width:10px; height:10px; border-radius:50%; background:${s.neonColor}; box-shadow:0 0 6px ${s.neonColor}; flex-shrink:0;"></span>
             <div style="overflow:hidden; text-overflow:ellipsis;">
               <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
               <div style="color:var(--text-muted); font-size:10px;">₹${s.amount.toLocaleString('en-IN')} (${s.percentage}%)</div>
@@ -4278,12 +4481,16 @@
           const sliceAngle = fullSliceAngle * ease;
           const endAngle = currentAngle + sliceAngle;
 
+          ctx.save();
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, currentAngle, endAngle);
           ctx.arc(centerX, centerY, innerRadius, endAngle, currentAngle, true);
           ctx.closePath();
-          ctx.fillStyle = s.color || '#3B82F6';
+          ctx.fillStyle = s.neonColor;
+          ctx.shadowColor = s.neonColor;
+          ctx.shadowBlur = 5;
           ctx.fill();
+          ctx.restore();
 
           currentAngle = endAngle;
         });
@@ -4356,7 +4563,7 @@
 
         // Fixed Date Label: '1 Jan', '1 Feb', '1 Mar', etc. per user request
         const monthIdx = (m.month && m.month >= 1 && m.month <= 12) ? (m.month - 1) : idx % 12;
-        const fixedLabel = `1 ${monthNames[monthIdx]}`;
+        const fixedLabel = monthNames[monthIdx];
 
         ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8';
         ctx.font = 'bold 9px sans-serif';
@@ -4512,7 +4719,7 @@
         APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== txId);
       }
 
-      // 4. Instant mathematical balance restoration in UI
+      // 4. Instant mathematical balance and expense restoration in UI (0ms)
       if (Array.isArray(APP_STATE.accounts)) {
         const acc = APP_STATE.accounts.find(a => a.id === accId);
         if (acc) {
@@ -4521,6 +4728,24 @@
         }
       }
       renderAccountPillsAndNetWorth();
+
+      if (type === 'EXPENSE') {
+        const homeExp = document.getElementById('homeTotalExpenseDisplay');
+        if (homeExp) {
+          const raw = homeExp.dataset.realVal || homeExp.innerText;
+          const currentTotal = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
+          const newTotal = Math.max(0, currentTotal - amount);
+          setMaskableText('homeTotalExpenseDisplay', `₹${newTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+        }
+        if (Array.isArray(APP_STATE.categoryBreakdown)) {
+          APP_STATE.categoryTotalExpense = Math.max(0, (APP_STATE.categoryTotalExpense || 0) - amount);
+          const catItem = APP_STATE.categoryBreakdown.find(s => s.name === txToDelete.category_name);
+          if (catItem) {
+            catItem.amount = Math.max(0, catItem.amount - amount);
+          }
+          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
+        }
+      }
 
       if (typeof showToast === 'function') {
         showToast('Transaction deleted & balance restored', 'success');
@@ -6141,7 +6366,8 @@
       const eyeIcon = document.getElementById('privacyToggleIcon');
       if (eyeIcon) {
         eyeIcon.innerText = isPrivate ? 'visibility_off' : 'visibility';
-        eyeIcon.style.color = isPrivate ? 'var(--color-amber)' : 'var(--text-muted)';
+        eyeIcon.style.color = isPrivate ? '#F59E0B' : 'var(--text-muted)';
+        eyeIcon.title = isPrivate ? 'Balances Hidden (Tap to Show)' : 'Balances Visible (Tap to Hide)';
       }
 
       const statusBadge = document.getElementById('privacyModeStatusBadge');
@@ -6150,21 +6376,14 @@
         statusBadge.style.color = isPrivate ? 'var(--color-emerald)' : 'var(--text-muted)';
       }
 
-      const netWorthEl = document.getElementById('netWorthDisplay');
-      if (netWorthEl) {
-        if (isPrivate) {
-          netWorthEl.dataset.realVal = netWorthEl.innerText;
-          netWorthEl.innerText = '₹ ••••••';
-        } else if (netWorthEl.dataset.realVal) {
-          netWorthEl.innerText = netWorthEl.dataset.realVal;
-        }
-      }
-
-      ['cfIncomeVal', 'cfExpenseVal'].forEach(id => {
+      const balanceIds = ['homeTotalExpenseDisplay', 'netWorthDisplay', 'cfIncomeVal', 'cfExpenseVal'];
+      balanceIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
           if (isPrivate) {
-            el.dataset.realVal = el.innerText;
+            if (!el.dataset.realVal || el.innerText !== '₹ ••••••') {
+              el.dataset.realVal = el.innerText;
+            }
             el.innerText = '₹ ••••••';
           } else if (el.dataset.realVal) {
             el.innerText = el.dataset.realVal;

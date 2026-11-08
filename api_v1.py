@@ -849,6 +849,48 @@ def get_categories():
         }
     }), 200
 
+@api_v1.route('/categories', methods=['POST'])
+@token_required
+def create_category():
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"success": False, "error": "Category name is required"}), 400
+
+    cat_type = (data.get("type") or "EXPENSE").upper()
+    icon = data.get("icon") or "category"
+    color_hex = data.get("color_hex") or "#10B981"
+
+    cat_id = database.create_user_category(user_id, name, cat_type, icon, color_hex)
+    new_cat = {
+        "id": cat_id,
+        "user_id": user_id,
+        "name": name,
+        "type": cat_type,
+        "icon": icon,
+        "color_hex": color_hex,
+        "is_default": 0,
+        "subcategories": []
+    }
+    return jsonify({"success": True, "category": new_cat}), 201
+
+@api_v1.route('/categories/<int:cat_id>/subcategories', methods=['POST'])
+@token_required
+def create_subcategory(cat_id):
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"success": False, "error": "Subcategory name is required"}), 400
+
+    sub_id = database.create_subcategory(cat_id, name)
+    new_sub = {
+        "id": sub_id,
+        "category_id": cat_id,
+        "name": name
+    }
+    return jsonify({"success": True, "subcategory": new_sub}), 201
+
 # ==================================================
 # 4. Transactions Ledger (Expense, Income, Transfer)
 # ==================================================

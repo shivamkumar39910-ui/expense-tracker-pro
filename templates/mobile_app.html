@@ -844,6 +844,74 @@
       -webkit-overflow-scrolling: touch;
     }
     .category-scroll-grid::-webkit-scrollbar { display: none; }
+    /* Aesthetic Category Visual Media & Add Action Cards */
+    .cat-select-visual {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .cat-visual-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 10px;
+      transition: transform 0.2s ease;
+    }
+    .cat-select-card:active .cat-visual-img {
+      transform: scale(1.08);
+    }
+    .cat-select-card.selected .cat-select-visual {
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+      border: 2px solid var(--color-emerald);
+    }
+    .cat-select-visual.add-visual-box {
+      background: rgba(16, 185, 129, 0.1) !important;
+      border: 1.5px dashed var(--color-emerald) !important;
+    }
+    .cat-select-card.add-card {
+      border: 1.5px dashed rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .cat-select-card.add-card:active {
+      background: rgba(16, 185, 129, 0.16);
+      transform: scale(0.95);
+    }
+    .add-subcat-pill:hover,
+    .add-subcat-pill:active {
+      background: rgba(16, 185, 129, 0.18) !important;
+      transform: scale(0.96);
+    }
+    body.theme-light .cat-select-visual {
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+      background: #F1F5F9;
+      border-color: #E2E8F0;
+    }
+    body.theme-light .cat-select-card.add-card {
+      background: #F0FDF4;
+      border-color: #86EFAC;
+    }
+    body.theme-light .cat-select-card.add-card .cat-select-name {
+      color: #059669 !important;
+    }
+    body.theme-light .add-subcat-pill {
+      background: #F0FDF4 !important;
+      border-color: #10B981 !important;
+    }
+    body.theme-light .add-subcat-pill span {
+      color: #059669 !important;
+    }
+
     .cat-select-card {
       display: flex;
       flex-direction: column;
@@ -2214,6 +2282,56 @@
     <!-- ============================================== -->
     <!-- ACCOUNT STATEMENT & WALLET MODAL (PHASE 4)     -->
     <!-- ============================================== -->
+        <!-- ============================================== -->
+    <!-- ADD CUSTOM CATEGORY MODAL (TASK 1)             -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="addCategoryBackdrop" onclick="closeAddCategoryModal()"></div>
+    <div class="bottom-sheet" id="addCategorySheet" style="border-radius:24px 24px 0 0; padding:18px 20px; z-index:920;">
+      <div class="sheet-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:16px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+          <span class="material-icons-round" style="color:var(--color-emerald); font-size:22px;">create_new_folder</span>
+          <span>Add New Category</span>
+        </div>
+        <div class="btn-icon-header" onclick="closeAddCategoryModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">CATEGORY NAME</label>
+        <input type="text" id="newCategoryNameInput" class="form-input-pill" placeholder="e.g. Travel, Gym, Groceries, Rent" style="font-size:13px; padding:10px 14px;" onkeydown="if(event.key==='Enter') submitAddCategory()">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" onclick="closeAddCategoryModal()" class="segment-btn" style="flex:1; padding:10px; font-size:13px; font-weight:700; border-radius:12px;">Cancel</button>
+        <button type="button" onclick="submitAddCategory()" class="btn-submit-sheet" style="flex:2; margin:0; padding:10px; font-size:13px; font-weight:800; border-radius:12px;">+ Add Category</button>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- ADD CUSTOM SUBCATEGORY MODAL (TASK 2)          -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="addSubcategoryBackdrop" onclick="closeAddSubcategoryModal()"></div>
+    <div class="bottom-sheet" id="addSubcategorySheet" style="border-radius:24px 24px 0 0; padding:18px 20px; z-index:920;">
+      <div class="sheet-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-size:16px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+          <span class="material-icons-round" style="color:var(--color-sapphire); font-size:22px;">post_add</span>
+          <span id="addSubcategoryModalTitle">Add Subcategory</span>
+        </div>
+        <div class="btn-icon-header" onclick="closeAddSubcategoryModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">SUBCATEGORY NAME</label>
+        <input type="text" id="newSubcategoryNameInput" class="form-input-pill" placeholder="e.g. Swiggy, Uber, Metro, Books" style="font-size:13px; padding:10px 14px;" onkeydown="if(event.key==='Enter') submitAddSubcategory()">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" onclick="closeAddSubcategoryModal()" class="segment-btn" style="flex:1; padding:10px; font-size:13px; font-weight:700; border-radius:12px;">Cancel</button>
+        <button type="button" onclick="submitAddSubcategory()" class="btn-submit-sheet" style="flex:2; margin:0; padding:10px; font-size:13px; font-weight:800; border-radius:12px;">+ Add Subcategory</button>
+      </div>
+    </div>
+
     <div class="sheet-backdrop" id="accountSheetBackdrop" onclick="closeAccountStatementSheet()"></div>
     <div class="bottom-sheet" id="accountStatementSheet">
       <div class="sheet-handle"></div>
@@ -3381,6 +3499,8 @@
     });
 
     function closeAllSheets() {
+      closeAddCategoryModal();
+      closeAddSubcategoryModal();
       closeAiChatModal();
       closeQuickEntrySheet();
       closeAccountStatementSheet();
@@ -5462,43 +5582,191 @@
       });
     }
 
+    const CATEGORY_AESTHETIC_VISUALS = {
+      'food': {
+        shortName: 'Food',
+        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80',
+        icon: 'restaurant',
+        color: '#EF4444'
+      },
+      'education': {
+        shortName: 'Education',
+        image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=120&q=80',
+        icon: 'school',
+        color: '#06B6D4'
+      },
+      'shop': {
+        shortName: 'Shopping',
+        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=120&q=80',
+        icon: 'shopping_bag',
+        color: '#EC4899'
+      },
+      'transport': {
+        shortName: 'Transport',
+        image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=120&q=80',
+        icon: 'directions_car',
+        color: '#F59E0B'
+      },
+      'entertain': {
+        shortName: 'Entertainment',
+        image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=120&q=80',
+        icon: 'movie',
+        color: '#8B5CF6'
+      },
+      'health': {
+        shortName: 'Health',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80',
+        icon: 'local_hospital',
+        color: '#10B981'
+      },
+      'hous': {
+        shortName: 'House',
+        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=120&q=80',
+        icon: 'home',
+        color: '#3B82F6'
+      },
+      'finan': {
+        shortName: 'Financial',
+        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
+        icon: 'trending_up',
+        color: '#6366F1'
+      },
+      'person': {
+        shortName: 'Personal',
+        image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80',
+        icon: 'face',
+        color: '#D946EF'
+      }
+    };
+
+    // User specified exact ordering (Task 3):
+    // food, education, shopping, transport, entertainment, health, house, financial, personal
+    const TARGET_CATEGORY_ORDER = [
+      'food',
+      'education',
+      'shop',
+      'transport',
+      'entertain',
+      'health',
+      'hous',
+      'finan',
+      'person'
+    ];
+
+    function getCategoryOrderRank(catName) {
+      const lower = (catName || '').toLowerCase();
+      for (let i = 0; i < TARGET_CATEGORY_ORDER.length; i++) {
+        if (lower.includes(TARGET_CATEGORY_ORDER[i])) return i;
+      }
+      return 100; // Custom user-added categories placed after standard 9
+    }
+
+    function getCategoryVisualMeta(c) {
+      const lower = (c.name || '').toLowerCase();
+      for (const [key, meta] of Object.entries(CATEGORY_AESTHETIC_VISUALS)) {
+        if (lower.includes(key)) {
+          return {
+            displayName: meta.shortName,
+            image: meta.image,
+            icon: c.icon || meta.icon,
+            color: c.color_hex || meta.color
+          };
+        }
+      }
+      return {
+        displayName: c.name,
+        image: c.image_url || '',
+        icon: c.icon || 'category',
+        color: c.color_hex || '#10B981'
+      };
+    }
+
     function populateSheetCategories() {
       const grid = document.getElementById('sheetCategoryGrid');
       const subWrap = document.getElementById('subcategoryWrapper');
       const subPills = document.getElementById('sheetSubcategoryPills');
+      if (!grid || !subPills) return;
       grid.innerHTML = '';
       subPills.innerHTML = '';
 
-      const list = APP_STATE.sheetType === 'INCOME' ? APP_STATE.categories.income : APP_STATE.categories.expense;
+      const rawList = APP_STATE.sheetType === 'INCOME' ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
       
-      if (!list || list.length === 0) return;
-      if (!APP_STATE.sheetCategoryId) APP_STATE.sheetCategoryId = list[0].id;
+      // 1. Remove "other" / "others" categories per user request (Task 1)
+      const list = rawList.filter(c => !c.name.toLowerCase().includes('other'));
+
+      // 2. Sort categories in exact user-specified order (Task 3)
+      list.sort((a, b) => getCategoryOrderRank(a.name) - getCategoryOrderRank(b.name));
+
+      if (list.length === 0) return;
+      
+      // Ensure currently selected category exists in filtered list
+      const hasSelected = list.find(c => c.id === APP_STATE.sheetCategoryId);
+      if (!hasSelected) {
+        APP_STATE.sheetCategoryId = list[0].id;
+      }
 
       let selectedCategory = null;
 
+      // 3. Render categories with aesthetic visual images & material fallback (Task 4)
       list.forEach(c => {
         const isSelected = c.id === APP_STATE.sheetCategoryId;
         if (isSelected) selectedCategory = c;
+        const visual = getCategoryVisualMeta(c);
+
         const card = document.createElement('div');
         card.className = `cat-select-card ${isSelected ? 'selected' : ''}`;
-        card.innerHTML = `
-          <div class="cat-select-icon" style="background:${c.color_hex};">
-            <span class="material-icons-round">${c.icon}</span>
-          </div>
-          <div class="cat-select-name">${c.name}</div>
-        `;
+        card.title = c.name;
         card.onclick = () => {
+          triggerHaptic('light');
           APP_STATE.sheetCategoryId = c.id;
           APP_STATE.sheetSubcategoryId = null;
           populateSheetCategories();
         };
+
+        const imageMarkup = visual.image ? `
+          <img src="${visual.image}" 
+               alt="${visual.displayName}" 
+               class="cat-visual-img" 
+               loading="lazy" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="cat-select-icon fallback-icon" style="display:none; background:${visual.color};">
+            <span class="material-icons-round">${visual.icon}</span>
+          </div>
+        ` : `
+          <div class="cat-select-icon" style="background:${visual.color};">
+            <span class="material-icons-round">${visual.icon}</span>
+          </div>
+        `;
+
+        card.innerHTML = `
+          <div class="cat-select-visual">
+            ${imageMarkup}
+          </div>
+          <div class="cat-select-name">${visual.displayName}</div>
+        `;
         grid.appendChild(card);
       });
 
-      // Render Subcategories if available for selected category
-      if (selectedCategory && selectedCategory.subcategories && selectedCategory.subcategories.length > 0) {
-        subWrap.style.display = 'block';
-        selectedCategory.subcategories.forEach(sub => {
+      // 4. Append "+ Add" Category Card at the end (Task 1 & Task 3)
+      const addCatCard = document.createElement('div');
+      addCatCard.className = 'cat-select-card add-card';
+      addCatCard.title = 'Add New Category';
+      addCatCard.onclick = () => openAddCategoryModal();
+      addCatCard.innerHTML = `
+        <div class="cat-select-visual add-visual-box">
+          <span class="material-icons-round" style="color:var(--color-emerald); font-size:22px;">add</span>
+        </div>
+        <div class="cat-select-name" style="color:var(--color-emerald); font-weight:800;">+ Add</div>
+      `;
+      grid.appendChild(addCatCard);
+
+      // 5. Render Subcategories with "+ Add" subcategory pill for ANY selected category (Task 2)
+      if (selectedCategory) {
+        if (subWrap) subWrap.style.display = 'block';
+        const subs = selectedCategory.subcategories || [];
+
+        // Render existing subcategories
+        subs.forEach(sub => {
           const subPill = document.createElement('div');
           const isSubSelected = sub.id === APP_STATE.sheetSubcategoryId;
           subPill.className = `acc-pill ${isSubSelected ? 'selected' : ''}`;
@@ -5508,13 +5776,202 @@
           if (isSubSelected) subPill.style.borderColor = 'var(--color-emerald)';
           subPill.innerHTML = `<span>${sub.name}</span>`;
           subPill.onclick = () => {
-            APP_STATE.sheetSubcategoryId = sub.id;
+            triggerHaptic('light');
+            APP_STATE.sheetSubcategoryId = isSubSelected ? null : sub.id;
             populateSheetCategories();
           };
           subPills.appendChild(subPill);
         });
+
+        // Append the "+ Add" subcategory pill at the end of subcategories (Task 2)
+        const addSubPill = document.createElement('div');
+        addSubPill.className = 'acc-pill add-subcat-pill';
+        addSubPill.style.cursor = 'pointer';
+        addSubPill.style.fontSize = '11px';
+        addSubPill.style.padding = '6px 10px';
+        addSubPill.style.border = '1.5px dashed var(--color-emerald)';
+        addSubPill.style.background = 'rgba(16,185,129,0.08)';
+        addSubPill.style.display = 'inline-flex';
+        addSubPill.style.alignItems = 'center';
+        addSubPill.style.gap = '4px';
+        addSubPill.title = `Add new subcategory to ${selectedCategory.name}`;
+        addSubPill.innerHTML = `
+          <span class="material-icons-round" style="font-size:14px; color:var(--color-emerald);">add</span>
+          <span style="color:var(--color-emerald); font-weight:700;">+ Add</span>
+        `;
+        addSubPill.onclick = () => openAddSubcategoryModal();
+        subPills.appendChild(addSubPill);
       } else {
-        subWrap.style.display = 'none';
+        if (subWrap) subWrap.style.display = 'none';
+      }
+    }
+
+    // Modal Control: Add Custom Category (Task 1)
+    function openAddCategoryModal() {
+      triggerHaptic('light');
+      const input = document.getElementById('newCategoryNameInput');
+      if (input) input.value = '';
+      const b = document.getElementById('addCategoryBackdrop');
+      const s = document.getElementById('addCategorySheet');
+      if (b) b.classList.add('active');
+      if (s) s.classList.add('active');
+      setTimeout(() => { if (input) input.focus(); }, 150);
+    }
+
+    function closeAddCategoryModal() {
+      const b = document.getElementById('addCategoryBackdrop');
+      const s = document.getElementById('addCategorySheet');
+      if (b) b.classList.remove('active');
+      if (s) s.classList.remove('active');
+    }
+
+    async function submitAddCategory() {
+      const input = document.getElementById('newCategoryNameInput');
+      const name = input ? input.value.trim() : '';
+      if (!name) {
+        alert('Please enter a category name');
+        return;
+      }
+      closeAddCategoryModal();
+      triggerHaptic('medium');
+
+      const lower = name.toLowerCase();
+      let icon = 'category';
+      let color = '#10B981';
+      let img = '';
+      if (lower.includes('travel') || lower.includes('tour') || lower.includes('trip') || lower.includes('flight')) {
+        icon = 'flight'; color = '#06B6D4';
+        img = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=120&q=80';
+      } else if (lower.includes('gym') || lower.includes('fit') || lower.includes('workout')) {
+        icon = 'fitness_center'; color = '#EC4899';
+        img = 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=120&q=80';
+      } else if (lower.includes('pet') || lower.includes('dog') || lower.includes('cat')) {
+        icon = 'pets'; color = '#F59E0B';
+        img = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=120&q=80';
+      } else if (lower.includes('game') || lower.includes('gaming')) {
+        icon = 'sports_esports'; color = '#8B5CF6';
+        img = 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=120&q=80';
+      } else if (lower.includes('rent') || lower.includes('tax') || lower.includes('bill')) {
+        icon = 'receipt_long'; color = '#3B82F6';
+        img = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=120&q=80';
+      }
+
+      const tempId = Date.now();
+      const newCat = {
+        id: tempId,
+        name: name,
+        type: APP_STATE.sheetType || 'EXPENSE',
+        icon: icon,
+        color_hex: color,
+        image_url: img,
+        is_default: 0,
+        subcategories: []
+      };
+
+      if (!APP_STATE.categories) APP_STATE.categories = { expense: [], income: [] };
+      const pool = (APP_STATE.sheetType === 'INCOME') ? APP_STATE.categories.income : APP_STATE.categories.expense;
+      pool.push(newCat);
+      APP_STATE.sheetCategoryId = tempId;
+      APP_STATE.sheetSubcategoryId = null;
+
+      try {
+        localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
+      } catch (e) {}
+
+      populateSheetCategories();
+
+      try {
+        const res = await apiRequest('/categories', 'POST', {
+          name: name,
+          type: APP_STATE.sheetType || 'EXPENSE',
+          icon: icon,
+          color_hex: color
+        });
+        if (res && res.success && res.category) {
+          newCat.id = res.category.id;
+          if (APP_STATE.sheetCategoryId === tempId) {
+            APP_STATE.sheetCategoryId = res.category.id;
+          }
+          try {
+            localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
+          } catch (e) {}
+          populateSheetCategories();
+        }
+      } catch (err) {
+        console.warn('Persisting category error, kept optimistically:', err);
+      }
+    }
+
+    // Modal Control: Add Custom Subcategory (Task 2)
+    function openAddSubcategoryModal() {
+      triggerHaptic('light');
+      const pool = (APP_STATE.sheetType === 'INCOME') ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
+      const currentCat = pool.find(c => c.id === APP_STATE.sheetCategoryId);
+      const catName = currentCat ? (getCategoryVisualMeta(currentCat).displayName || currentCat.name) : 'Category';
+
+      const titleEl = document.getElementById('addSubcategoryModalTitle');
+      if (titleEl) titleEl.innerText = `Add to ${catName}`;
+
+      const input = document.getElementById('newSubcategoryNameInput');
+      if (input) input.value = '';
+      const b = document.getElementById('addSubcategoryBackdrop');
+      const s = document.getElementById('addSubcategorySheet');
+      if (b) b.classList.add('active');
+      if (s) s.classList.add('active');
+      setTimeout(() => { if (input) input.focus(); }, 150);
+    }
+
+    function closeAddSubcategoryModal() {
+      const b = document.getElementById('addSubcategoryBackdrop');
+      const s = document.getElementById('addSubcategorySheet');
+      if (b) b.classList.remove('active');
+      if (s) s.classList.remove('active');
+    }
+
+    async function submitAddSubcategory() {
+      const input = document.getElementById('newSubcategoryNameInput');
+      const name = input ? input.value.trim() : '';
+      if (!name) {
+        alert('Please enter a subcategory name');
+        return;
+      }
+      closeAddSubcategoryModal();
+      triggerHaptic('medium');
+
+      const pool = (APP_STATE.sheetType === 'INCOME') ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
+      const currentCat = pool.find(c => c.id === APP_STATE.sheetCategoryId);
+      if (!currentCat) return;
+
+      if (!Array.isArray(currentCat.subcategories)) currentCat.subcategories = [];
+      const tempId = Date.now();
+      const newSub = {
+        id: tempId,
+        category_id: currentCat.id,
+        name: name
+      };
+      currentCat.subcategories.push(newSub);
+      APP_STATE.sheetSubcategoryId = tempId;
+
+      try {
+        localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
+      } catch (e) {}
+
+      populateSheetCategories();
+
+      try {
+        const res = await apiRequest(`/categories/${currentCat.id}/subcategories`, 'POST', { name: name });
+        if (res && res.success && res.subcategory) {
+          newSub.id = res.subcategory.id;
+          if (APP_STATE.sheetSubcategoryId === tempId) {
+            APP_STATE.sheetSubcategoryId = res.subcategory.id;
+          }
+          try {
+            localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
+          } catch (e) {}
+          populateSheetCategories();
+        }
+      } catch (err) {
+        console.warn('Persisting subcategory error, kept optimistically:', err);
       }
     }
 

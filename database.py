@@ -492,6 +492,32 @@ def seed_default_categories():
     conn.commit()
     conn.close()
 
+def create_user_category(user_id, name, cat_type="EXPENSE", icon="category", color_hex="#10B981"):
+    """Inserts a custom category for the user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
+        VALUES (?, ?, ?, ?, ?, 0)
+    """, (user_id, name.strip(), cat_type.upper(), icon, color_hex))
+    cat_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return cat_id
+
+def create_subcategory(category_id, name):
+    """Inserts a new subcategory under an existing category."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO subcategories (category_id, name)
+        VALUES (?, ?)
+    """, (category_id, name.strip()))
+    sub_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return sub_id
+
 # ==================================================
 # Default Accounts & Legacy Migration
 # ==================================================

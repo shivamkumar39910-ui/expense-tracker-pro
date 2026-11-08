@@ -1159,18 +1159,20 @@ def set_budget():
                        (user_id, month, year, category_id))
         cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, ?, ?, ?, ?)",
                        (user_id, category_id, month, year, amount))
+        new_budget_id = cursor.lastrowid
     else:
         cursor.execute("DELETE FROM budgets WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)",
                        (user_id, month, year))
         cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, NULL, ?, ?, ?)",
                        (user_id, month, year, amount))
+        new_budget_id = cursor.lastrowid
     conn.commit()
     conn.close()
 
     # Trigger predictive evaluation immediately so user receives alert/status
     threading.Thread(target=database.generate_predictive_notifications, args=(user_id,), daemon=True).start()
 
-    return jsonify({"success": True, "message": "Budget set successfully"}), 200
+    return jsonify({"success": True, "message": "Budget set successfully", "budget_id": new_budget_id}), 200
 
 @api_v1.route('/budgets/<int:budget_id>', methods=['DELETE'])
 @token_required

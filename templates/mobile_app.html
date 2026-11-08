@@ -2030,9 +2030,7 @@
               <div class="tx-meta" id="profilePinStatus">PIN Protection Inactive</div>
             </div>
           </div>
-          <button class="segment-btn" id="profileSetPinBtn" style="background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:800; padding:6px 14px; border-radius:10px; border:none; box-shadow:0 2px 8px rgba(79,70,229,0.35); display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
-            <span class="material-icons-round" style="font-size:13px;">shield</span> Set PIN
-          </button>
+          <button class="segment-btn" id="profileSetPinBtn" style="background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:2px 7px; border-radius:5px; border:none; display:inline-block; width:fit-content; line-height:1.2; letter-spacing:0.2px; cursor:pointer;">Set PIN</button>
         </div>
 
         <div class="tx-item" onclick="togglePrivacyMode()" style="cursor:pointer;">
@@ -5351,13 +5349,51 @@
       });
     }
 
+    // Safe Category Extraction Helpers (Supports Array or {expense:[], income:[]})
+    function getExpenseCategoryList() {
+      if (!APP_STATE.categories) return [];
+      if (Array.isArray(APP_STATE.categories)) {
+        return APP_STATE.categories.filter(c => !c.type || c.type === 'EXPENSE');
+      }
+      if (Array.isArray(APP_STATE.categories.expense)) {
+        return APP_STATE.categories.expense;
+      }
+      return [];
+    }
+
+    function getAllCategoryList() {
+      if (!APP_STATE.categories) return [];
+      if (Array.isArray(APP_STATE.categories)) {
+        return APP_STATE.categories;
+      }
+      const exp = Array.isArray(APP_STATE.categories.expense) ? APP_STATE.categories.expense : [];
+      const inc = Array.isArray(APP_STATE.categories.income) ? APP_STATE.categories.income : [];
+      return [ ...exp, ...inc ];
+    }
+
     function openCategoryLimitsModal() {
       triggerHaptic('light');
-      const sel = document.getElementById('catLimitCategorySelect');
-      if (sel) {
+      if (typeof hideFloatingAiBtn === 'function') hideFloatingAiBtn();
+
+      function populateSelect() {
+        const sel = document.getElementById('catLimitCategorySelect');
+        if (!sel) return;
         sel.innerHTML = '<option value="">-- Choose Category --</option>';
-        (APP_STATE.categories || []).forEach(c => {
+        const list = getExpenseCategoryList();
+        list.forEach(c => {
           sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+      }
+
+      populateSelect();
+
+      // If categories are empty or not yet loaded, load asynchronously and repopulate
+      if (getExpenseCategoryList().length === 0) {
+        apiRequest('/categories').then(res => {
+          if (res && res.success && res.categories) {
+            APP_STATE.categories = res.categories;
+            populateSelect();
+          }
         });
       }
 
@@ -5366,13 +5402,28 @@
 
       renderCategoryLimitsModalList();
 
-      document.getElementById('categoryLimitsModalBackdrop').classList.add('active');
-      document.getElementById('categoryLimitsModalSheet').classList.add('active');
+      // If budgets are missing, load asynchronously and render
+      if (!APP_STATE.budgets || !APP_STATE.budgets.category_budgets) {
+        apiRequest('/budgets').then(res => {
+          if (res && res.success && res.data) {
+            APP_STATE.budgets = res.data;
+            renderCategoryLimitsModalList();
+          }
+        });
+      }
+
+      const bd = document.getElementById('categoryLimitsModalBackdrop');
+      const sheet = document.getElementById('categoryLimitsModalSheet');
+      if (bd) bd.classList.add('active');
+      if (sheet) sheet.classList.add('active');
     }
 
     function closeCategoryLimitsModal() {
-      document.getElementById('categoryLimitsModalBackdrop').classList.remove('active');
-      document.getElementById('categoryLimitsModalSheet').classList.remove('active');
+      const bd = document.getElementById('categoryLimitsModalBackdrop');
+      const sheet = document.getElementById('categoryLimitsModalSheet');
+      if (bd) bd.classList.remove('active');
+      if (sheet) sheet.classList.remove('active');
+      if (typeof showFloatingAiBtn === 'function') showFloatingAiBtn();
     }
 
     function setCatLimitAmount(val) {
@@ -5458,7 +5509,9 @@
 
       // 0ms Optimistic UI update
       triggerHaptic('success');
-      const cat = (APP_STATE.categories || []).find(c => String(c.id) === String(catId)) || { name: 'Category', icon: 'tag', color: '#8B5CF6' };
+      const allCats = getAllCategoryList();
+      const cat = allCats.find(c => String(c.id) === String(catId)) || { name: 'Category', icon: 'tag', color: '#8B5CF6' };
+
       if (!APP_STATE.budgets) APP_STATE.budgets = { category_budgets: [] };
       if (!APP_STATE.budgets.category_budgets) APP_STATE.budgets.category_budgets = [];
 
@@ -5474,8 +5527,8 @@
           id: tempId,
           category_id: parseInt(catId),
           category_name: cat.name,
-          category_icon: cat.icon,
-          category_color: cat.color,
+          category_icon: cat.icon || 'tag',
+          category_color: cat.color_hex || cat.color || '#8B5CF6',
           budget_limit: amount,
           spent: 0,
           remaining: amount,
@@ -8015,14 +8068,14 @@
           pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : s.has_pin ? 'PIN Set (Disabled)' : 'Not Set';
         }
         if (pinBtn) {
+          pinBtn.style.padding = '2px 7px';
+          pinBtn.style.boxShadow = 'none';
           if (s.is_pin_enabled) {
             pinBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
-            pinBtn.style.boxShadow = '0 2px 8px rgba(16,185,129,0.35)';
-            pinBtn.innerHTML = '<span class="material-icons-round" style="font-size:13px;">lock</span> Active';
+            pinBtn.innerText = 'Active';
           } else {
             pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
-            pinBtn.style.boxShadow = '0 2px 8px rgba(79,70,229,0.35)';
-            pinBtn.innerHTML = '<span class="material-icons-round" style="font-size:13px;">shield</span> Set PIN';
+            pinBtn.innerText = 'Set PIN';
           }
         }
 

@@ -2030,7 +2030,7 @@
               <div class="tx-meta" id="profilePinStatus">PIN Protection Inactive</div>
             </div>
           </div>
-          <button class="segment-btn" id="profileSetPinBtn" style="background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:2px 7px; border-radius:5px; border:none; display:inline-block; width:fit-content; line-height:1.2; letter-spacing:0.2px; cursor:pointer;">Set PIN</button>
+          <button type="button" id="profileSetPinBtn" style="flex:0 0 auto; width:auto; max-width:fit-content; background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; border:none; line-height:1.2; letter-spacing:0.2px; cursor:pointer; display:inline-block; text-align:center;">Set PIN</button>
         </div>
 
         <div class="tx-item" onclick="togglePrivacyMode()" style="cursor:pointer;">
@@ -8068,7 +8068,10 @@
           pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : s.has_pin ? 'PIN Set (Disabled)' : 'Not Set';
         }
         if (pinBtn) {
-          pinBtn.style.padding = '2px 7px';
+          pinBtn.style.flex = '0 0 auto';
+          pinBtn.style.width = 'auto';
+          pinBtn.style.maxWidth = 'fit-content';
+          pinBtn.style.padding = '4px 9px';
           pinBtn.style.boxShadow = 'none';
           if (s.is_pin_enabled) {
             pinBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';

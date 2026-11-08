@@ -2030,8 +2030,8 @@
               <div class="tx-meta" id="profilePinStatus">PIN Protection Inactive</div>
             </div>
           </div>
-          <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-sapphire); font-size:11px; padding:5px 12px; border-radius:8px;">
-            Set PIN
+          <button class="segment-btn" id="profileSetPinBtn" style="background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:800; padding:6px 14px; border-radius:10px; border:none; box-shadow:0 2px 8px rgba(79,70,229,0.35); display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+            <span class="material-icons-round" style="font-size:13px;">shield</span> Set PIN
           </button>
         </div>
 
@@ -4773,14 +4773,61 @@
     }
 
     // ----------------------------------------------------
+    // ULTRA-FAST GLOBAL TOAST NOTIFICATION (0ms Latency)
+    // ----------------------------------------------------
+    function showToast(msg, type = 'info') {
+      let toastEl = document.getElementById('globalAppToast');
+      if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.id = 'globalAppToast';
+        toastEl.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.18);color:#FFF;padding:10px 18px;border-radius:22px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;z-index:999999;opacity:0;pointer-events:none;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);max-width:90vw;white-space:nowrap;';
+        document.body.appendChild(toastEl);
+      }
+      const icon = type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'info'));
+      const iconColor = type === 'success' ? '#10B981' : (type === 'error' ? '#EF4444' : (type === 'warning' ? '#F59E0B' : '#38BDF8'));
+      toastEl.innerHTML = `<span class="material-icons-round" style="color:${iconColor}; font-size:18px;">${icon}</span><span>${msg}</span>`;
+      toastEl.style.opacity = '1';
+      toastEl.style.transform = 'translateX(-50%) translateY(0)';
+      clearTimeout(toastEl._timer);
+      toastEl._timer = setTimeout(() => {
+        toastEl.style.opacity = '0';
+        toastEl.style.transform = 'translateX(-50%) translateY(20px)';
+      }, 2600);
+    }
+
+    // ----------------------------------------------------
     // PHASE 11: FINANCIAL GOALS & SAVINGS VAULT (ISOLATED)
     // ----------------------------------------------------
     let userGoals = [];
+    try {
+      const cached = localStorage.getItem('cached_goals');
+      if (cached) userGoals = JSON.parse(cached);
+    } catch (e) {}
+
+    function openSavingsGoalsModal() {
+      triggerHaptic('light');
+      if (typeof hideFloatingAiBtn === 'function') hideFloatingAiBtn();
+      renderSavingsGoalsModalList(userGoals);
+      const bd = document.getElementById('savingsGoalsModalBackdrop');
+      const sheet = document.getElementById('savingsGoalsModalSheet');
+      if (bd) bd.classList.add('active');
+      if (sheet) sheet.classList.add('active');
+      loadGoals();
+    }
+
+    function closeSavingsGoalsModal() {
+      const bd = document.getElementById('savingsGoalsModalBackdrop');
+      const sheet = document.getElementById('savingsGoalsModalSheet');
+      if (bd) bd.classList.remove('active');
+      if (sheet) sheet.classList.remove('active');
+      if (typeof showFloatingAiBtn === 'function') showFloatingAiBtn();
+    }
 
     async function loadGoals() {
       const res = await apiRequest('/goals');
       if (res && res.success) {
         userGoals = res.goals || [];
+        try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
         renderGoals(userGoals);
         renderSavingsGoalsModalList(userGoals);
       }
@@ -4815,40 +4862,40 @@
         item.innerHTML = `
           <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
             <div style="display:flex; align-items:center; gap:10px;">
-              <div class="tx-icon-box" style="background:${g.color_hex};">
+              <div class="tx-icon-box" style="background:${g.color_hex || '#10B981'};">
                 <span class="material-icons-round">${g.icon || 'savings'}</span>
               </div>
               <div>
                 <div class="tx-title" style="font-size:15px; font-weight:700;">${g.title}</div>
-                <div class="tx-meta">Target: ₹${g.target_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})} ${daysBadge}</div>
+                <div class="tx-meta">Target: ₹${(g.target_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})} ${daysBadge}</div>
               </div>
             </div>
             <div style="text-align:right;">
-              <div class="tx-amount" style="color:var(--color-emerald); font-size:16px;">₹${g.current_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+              <div class="tx-amount" style="color:var(--color-emerald); font-size:16px;">₹${(g.current_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
               <div class="tx-meta" style="font-weight:700; color:${g.is_completed ? 'var(--color-emerald)' : 'var(--text-secondary)'};">
-                ${g.is_completed ? '✅ 100% Achieved!' : `${g.progress_pct}% funded`}
+                ${g.is_completed ? '🎉 100% Achieved!' : `${g.progress_pct}% funded`}
               </div>
             </div>
           </div>
 
           <!-- Progress Bar -->
-          <div style="width:100%; background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden;">
-            <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${g.color_hex}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
+          <div style="width:100%; background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; width:100%;">
+            <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${g.color_hex || '#10B981'}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
           </div>
 
           <!-- Actions Row -->
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:2px;">
             <div style="font-size:11px; color:var(--text-muted);">
-              ${g.remaining_amount > 0 ? `₹${g.remaining_amount.toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
+              ${g.remaining_amount > 0 ? `₹${(g.remaining_amount || 0).toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalDepositModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.remaining_amount})">
+              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
                 + Deposit
               </button>
-              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalWithdrawModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.current_amount})">
-                − Withdraw
+              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
+                ↑ Withdraw
               </button>
-              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteGoal(${g.id})" title="Delete Goal">
+              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteGoal('${g.id}')" title="Delete Goal">
                 <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
               </button>
             </div>
@@ -4934,16 +4981,16 @@
           <!-- Action Buttons (Deposit / Withdraw / Delete) -->
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
             <div style="font-size:11px; color:var(--text-muted);">
-              ${g.remaining_amount > 0 ? `₹${g.remaining_amount.toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
+              ${g.remaining_amount > 0 ? `₹${(g.remaining_amount || 0).toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalDepositModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.remaining_amount})">
+              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
                 + Deposit
               </button>
-              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalWithdrawModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.current_amount})">
-                − Withdraw
+              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
+                ↑ Withdraw
               </button>
-              <button class="btn-icon-header" style="width:30px; height:30px;" onclick="deleteGoal(${g.id})" title="Delete Goal">
+              <button class="btn-icon-header" style="width:30px; height:30px;" onclick="deleteGoal('${g.id}')" title="Delete Goal">
                 <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
               </button>
             </div>
@@ -4973,35 +5020,60 @@
     }
 
     async function submitNewGoal() {
-      const title = document.getElementById('goalInputTitle').value.trim();
-      const target = parseFloat(document.getElementById('goalInputTarget').value);
-      const current = parseFloat(document.getElementById('goalInputCurrent').value) || 0;
+      const title = (document.getElementById('goalInputTitle')?.value || '').trim();
+      const target = parseFloat(document.getElementById('goalInputTarget')?.value);
+      const current = parseFloat(document.getElementById('goalInputCurrent')?.value) || 0;
       const startDate = document.getElementById('goalInputStartDate')?.value || new Date().toISOString().split('T')[0];
-      const targetDate = document.getElementById('goalInputDate').value;
+      const targetDate = document.getElementById('goalInputDate')?.value || null;
 
       if (!title || !target || target <= 0) {
-        alert('Please enter a goal title and target amount.');
+        showToast('Please enter a goal title and valid target amount', 'warning');
         return;
       }
 
-      const res = await apiRequest('/goals', 'POST', {
+      // 0ms Optimistic UI update
+      closeNewGoalModal();
+      triggerHaptic('success');
+
+      const tempId = 'temp_' + Date.now();
+      const newGoal = {
+        id: tempId,
+        title: title,
+        target_amount: target,
+        current_amount: current,
+        remaining_amount: Math.max(0, target - current),
+        progress_pct: Math.min(100, Math.round((current / target) * 100)),
+        is_completed: current >= target,
+        start_date: startDate,
+        target_date: targetDate,
+        days_left: targetDate ? Math.ceil((new Date(targetDate) - new Date()) / (1000 * 60 * 60 * 24)) : null,
+        icon: 'savings',
+        color_hex: '#10B981'
+      };
+
+      userGoals.unshift(newGoal);
+      renderGoals(userGoals);
+      renderSavingsGoalsModalList(userGoals);
+      showToast(`🎯 Goal "${title}" created!`, 'success');
+
+      if (newGoal.is_completed) {
+        showCelebrationModal(title, `Target completed on creation with ₹${current.toLocaleString('en-IN')}!`);
+      }
+
+      // Background persistence
+      apiRequest('/goals', 'POST', {
         title,
         target_amount: target,
         current_amount: current,
         start_date: startDate,
         target_date: targetDate || null
-      });
-
-      if (res && res.success) {
-        closeNewGoalModal();
-        await loadGoals();
-        loadNotifications();
-        if (current >= target) {
-          showCelebrationModal(title, `Target completed on creation with ₹${current.toLocaleString('en-IN')}!`);
+      }).then(res => {
+        if (res && res.success && res.goal) {
+          const idx = userGoals.findIndex(g => g.id === tempId);
+          if (idx !== -1) userGoals[idx] = res.goal;
+          try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
         }
-      } else {
-        alert(res ? res.error : 'Failed to create goal');
-      }
+      });
     }
 
     function openGoalDepositModal(goalId, title, remaining) {
@@ -5040,27 +5112,45 @@
       const note = document.getElementById('depositGoalNote')?.value.trim();
 
       if (!amount || amount <= 0) {
-        alert('Please enter a valid deposit amount.');
+        showToast('Please enter a valid deposit amount', 'warning');
         return;
       }
 
-      const res = await apiRequest(`/goals/${goalId}/deposit`, 'POST', {
+      // 0ms Optimistic UI update
+      closeGoalDepositModal();
+      triggerHaptic('success');
+
+      const g = userGoals.find(x => String(x.id) === String(goalId));
+      let reachedTargetNow = false;
+      if (g) {
+        const prevCompleted = g.is_completed;
+        g.current_amount = (g.current_amount || 0) + amount;
+        g.remaining_amount = Math.max(0, (g.target_amount || 0) - g.current_amount);
+        g.progress_pct = Math.min(100, Math.round((g.current_amount / (g.target_amount || 1)) * 100));
+        if (g.current_amount >= g.target_amount) {
+          g.is_completed = true;
+          if (!prevCompleted) reachedTargetNow = true;
+        }
+        renderGoals(userGoals);
+        renderSavingsGoalsModalList(userGoals);
+        showToast(`₹${amount.toLocaleString('en-IN')} deposited into ${g.title}!`, 'success');
+        if (reachedTargetNow) {
+          showCelebrationModal(g.title, `You have reached your savings target of ₹${(g.target_amount || 0).toLocaleString('en-IN')}! Fantastic achievement!`);
+        }
+      }
+
+      // Background sync: completely isolated, never affects transactions/expenses
+      apiRequest(`/goals/${goalId}/deposit`, 'POST', {
         amount,
         payment_method: method,
         note: note || undefined
-      });
-
-      if (res && res.success) {
-        closeGoalDepositModal();
-        await loadGoals();
-        loadNotifications();
-
-        if (res.goal?.target_completed_now || (res.goal && res.goal.is_completed)) {
-          showCelebrationModal(res.goal.title || 'Goal', `You have reached your savings target of ₹${(res.goal.target_amount || 0).toLocaleString('en-IN')}! Fantastic achievement!`);
+      }).then(res => {
+        if (res && res.success && res.goal) {
+          const idx = userGoals.findIndex(x => String(x.id) === String(goalId));
+          if (idx !== -1) userGoals[idx] = res.goal;
+          try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
         }
-      } else {
-        alert(res ? res.error : 'Failed to deposit savings.');
-      }
+      });
     }
 
     function openGoalWithdrawModal(goalId, title, currentAmount) {
@@ -5099,22 +5189,42 @@
       const note = document.getElementById('withdrawGoalNote')?.value.trim();
 
       if (!amount || amount <= 0) {
-        alert('Please enter a valid withdrawal amount.');
+        showToast('Please enter a valid withdrawal amount', 'warning');
         return;
       }
 
-      const res = await apiRequest(`/goals/${goalId}/withdraw`, 'POST', {
+      const g = userGoals.find(x => String(x.id) === String(goalId));
+      if (g && amount > (g.current_amount || 0)) {
+        showToast('Withdrawal exceeds current saved amount (₹' + (g.current_amount || 0).toLocaleString('en-IN') + ')', 'error');
+        return;
+      }
+
+      // 0ms Optimistic UI update
+      closeGoalWithdrawModal();
+      triggerHaptic('light');
+
+      if (g) {
+        g.current_amount = Math.max(0, (g.current_amount || 0) - amount);
+        g.remaining_amount = Math.max(0, (g.target_amount || 0) - g.current_amount);
+        g.progress_pct = Math.min(100, Math.round((g.current_amount / (g.target_amount || 1)) * 100));
+        if (g.current_amount < g.target_amount) g.is_completed = false;
+        renderGoals(userGoals);
+        renderSavingsGoalsModalList(userGoals);
+        showToast(`₹${amount.toLocaleString('en-IN')} withdrawn from ${g.title}`, 'info');
+      }
+
+      // Background sync: completely isolated, never affects transactions/expenses
+      apiRequest(`/goals/${goalId}/withdraw`, 'POST', {
         amount,
         payment_method: method,
         note: note || undefined
+      }).then(res => {
+        if (res && res.success && res.goal) {
+          const idx = userGoals.findIndex(x => String(x.id) === String(goalId));
+          if (idx !== -1) userGoals[idx] = res.goal;
+          try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
+        }
       });
-
-      if (res && res.success) {
-        closeGoalWithdrawModal();
-        await loadGoals();
-      } else {
-        alert(res ? res.error : 'Failed to withdraw savings.');
-      }
     }
 
     function showCelebrationModal(title, msg) {
@@ -5133,18 +5243,24 @@
 
     async function deleteGoal(goalId) {
       if (!confirm('Are you sure you want to delete this financial goal?')) return;
-      const res = await apiRequest(`/goals/${goalId}`, 'DELETE');
-      if (res && res.success) {
-        loadGoals();
-      }
+      triggerHaptic('medium');
+      userGoals = userGoals.filter(x => String(x.id) !== String(goalId));
+      renderGoals(userGoals);
+      renderSavingsGoalsModalList(userGoals);
+      showToast('Savings goal deleted', 'info');
+
+      apiRequest(`/goals/${goalId}`, 'DELETE').then(() => {
+        try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
+      });
     }
 
     // ----------------------------------------------------
-    // MONTHLY BUDGET & CATEGORY LIMIT MODAL HANDLERS
+    // ULTRA-FAST MONTHLY BUDGET & CATEGORY LIMIT HANDLERS (0ms Latency)
     // ----------------------------------------------------
     function openMonthlyBudgetModal() {
-      const curSpend = APP_STATE.forecast?.mtd_actual_spend || 0;
-      const curBudget = APP_STATE.forecast?.monthly_budget || 0;
+      triggerHaptic('light');
+      const curSpend = APP_STATE.budgets?.total_spent || APP_STATE.forecast?.mtd_actual_spend || 0;
+      const curBudget = APP_STATE.budgets?.overall_budget || APP_STATE.forecast?.monthly_budget || 0;
       
       const spentEl = document.getElementById('mbModalSpentDisplay');
       if (spentEl) spentEl.innerText = '₹' + curSpend.toLocaleString('en-IN', {minimumFractionDigits: 2});
@@ -5173,46 +5289,75 @@
       const inputEl = document.getElementById('monthlyBudgetModalInput');
       const val = parseFloat(inputEl?.value);
       if (!val || val <= 0) {
-        alert('Please enter a valid monthly budget amount (greater than 0).');
+        showToast('Please enter a valid monthly budget amount (greater than 0)', 'warning');
         return;
       }
 
-      const res = await apiRequest('/budgets', 'POST', {
+      // 0ms Instant Optimistic Close & State Update
+      closeMonthlyBudgetModal();
+      triggerHaptic('success');
+
+      if (!APP_STATE.budgets) APP_STATE.budgets = {};
+      if (!APP_STATE.forecast) APP_STATE.forecast = {};
+      APP_STATE.budgets.overall_budget = val;
+      APP_STATE.forecast.monthly_budget = val;
+      const spent = APP_STATE.budgets.total_spent || APP_STATE.forecast.mtd_actual_spend || 0;
+      APP_STATE.budgets.remaining = Math.max(0, val - spent);
+      const utilPct = val > 0 ? Math.round((spent / val) * 100) : 0;
+      APP_STATE.budgets.utilization_pct = utilPct;
+      APP_STATE.budgets.is_exceeded = spent > val;
+
+      // Update UI elements instantly across Home, Analytics, Profile
+      const homeLimit = document.getElementById('homeBudgetLimitDisplay');
+      if (homeLimit) homeLimit.innerText = '₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2});
+      const homeRem = document.getElementById('homeBudgetRemainingDisplay');
+      if (homeRem) homeRem.innerText = '₹' + Math.max(0, val - spent).toLocaleString('en-IN', {minimumFractionDigits: 2});
+      const homeBar = document.getElementById('homeBudgetProgressBar');
+      if (homeBar) {
+        homeBar.style.width = Math.min(100, utilPct) + '%';
+        homeBar.style.background = spent > val ? 'var(--color-ruby)' : 'var(--color-emerald)';
+      }
+      const homeBadge = document.getElementById('homeBudgetPercentBadge');
+      if (homeBadge) {
+        homeBadge.innerText = Math.min(100, utilPct) + '% Used';
+        homeBadge.style.color = spent > val ? 'var(--color-ruby)' : 'var(--color-emerald)';
+        homeBadge.style.background = spent > val ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+      }
+      const profileMbBadge = document.getElementById('profileMonthlyBudgetBadge');
+      if (profileMbBadge) profileMbBadge.innerText = '₹' + val.toLocaleString('en-IN');
+      const profileMbSub = document.getElementById('profileMonthlyBudgetSubtitle');
+      if (profileMbSub) profileMbSub.innerText = `₹${spent.toLocaleString('en-IN')} of ₹${val.toLocaleString('en-IN')} (${utilPct}% used)`;
+
+      // Feedback Toast
+      showToast(`Monthly budget set to ₹${val.toLocaleString('en-IN')}!`, 'success');
+
+      if (spent >= val) {
+        setTimeout(() => {
+          showToast(`⚠️ Alert: Current spending (₹${spent.toLocaleString('en-IN')}) exceeds your budget!`, 'warning');
+        }, 1200);
+      } else if (utilPct >= 80) {
+        setTimeout(() => {
+          showToast(`⚡ Notice: You have used ${utilPct}% of your monthly budget.`, 'info');
+        }, 1200);
+      }
+
+      // Background API Persistence
+      apiRequest('/budgets', 'POST', {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         amount: val
-      });
-
-      if (res && res.success) {
-        closeMonthlyBudgetModal();
-        await initializeAppData();
+      }).then(() => {
         loadNotifications();
-
-        // Update profile badge
-        const badge = document.getElementById('profileMonthlyBudgetBadge');
-        if (badge) badge.innerText = '₹' + val.toLocaleString('en-IN');
-
-        const spent = APP_STATE.forecast?.mtd_actual_spend || 0;
-        if (spent >= val) {
-          alert(`⚠️ Alert: Your current spending (₹${spent.toLocaleString('en-IN')}) has exceeded your new monthly budget of ₹${val.toLocaleString('en-IN')}!`);
-        } else if ((spent / val) >= 0.8) {
-          alert(`⚡ Notice: You have already consumed ${Math.round((spent/val)*100)}% of your monthly budget (₹${spent.toLocaleString('en-IN')} of ₹${val.toLocaleString('en-IN')}).`);
-        }
-      } else {
-        alert(res ? res.error : 'Failed to save monthly budget.');
-      }
+      });
     }
 
     function openCategoryLimitsModal() {
+      triggerHaptic('light');
       const sel = document.getElementById('catLimitCategorySelect');
       if (sel) {
-        sel.innerHTML = '';
-        const cats = APP_STATE.categories?.expense || [];
-        cats.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.innerText = c.name;
-          sel.appendChild(opt);
+        sel.innerHTML = '<option value="">-- Choose Category --</option>';
+        (APP_STATE.categories || []).forEach(c => {
+          sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
         });
       }
 
@@ -5242,10 +5387,10 @@
 
       const catBudgets = APP_STATE.budgets?.category_budgets || [];
       const countEl = document.getElementById('catLimitsActiveCount');
-      if (countEl) countEl.innerText = `${catBudgets.length} Limits Active`;
+      if (countEl) countEl.innerText = `${catBudgets.length} Limit${catBudgets.length === 1 ? '' : 's'}`;
 
-      const badge = document.getElementById('profileCategoryLimitBadge');
-      if (badge) badge.innerText = `${catBudgets.length} Active`;
+      const profileBadge = document.getElementById('profileCategoryLimitBadge');
+      if (profileBadge) profileBadge.innerText = `${catBudgets.length} Active`;
 
       if (catBudgets.length === 0) {
         container.innerHTML = `
@@ -5283,7 +5428,7 @@
                 </div>
                 <div class="tx-meta" style="font-size:10px;">${cb.is_exceeded ? 'Exceeded' : `₹${(cb.remaining || 0).toLocaleString('en-IN')} left`}</div>
               </div>
-              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteCategoryLimit(${cb.id})" title="Remove Limit">
+              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteCategoryLimit('${cb.id}')" title="Remove Limit">
                 <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
               </button>
             </div>
@@ -5303,41 +5448,82 @@
       const amount = parseFloat(input?.value);
 
       if (!catId) {
-        alert('Please select a category.');
+        showToast('Please select a category first', 'warning');
         return;
       }
       if (!amount || amount <= 0) {
-        alert('Please enter a valid monthly spending limit.');
+        showToast('Please enter a valid monthly spending limit', 'warning');
         return;
       }
 
-      const res = await apiRequest('/budgets', 'POST', {
+      // 0ms Optimistic UI update
+      triggerHaptic('success');
+      const cat = (APP_STATE.categories || []).find(c => String(c.id) === String(catId)) || { name: 'Category', icon: 'tag', color: '#8B5CF6' };
+      if (!APP_STATE.budgets) APP_STATE.budgets = { category_budgets: [] };
+      if (!APP_STATE.budgets.category_budgets) APP_STATE.budgets.category_budgets = [];
+
+      let existing = APP_STATE.budgets.category_budgets.find(cb => String(cb.category_id) === String(catId));
+      let tempId = 'temp_' + Date.now();
+      if (existing) {
+        existing.budget_limit = amount;
+        existing.remaining = Math.max(0, amount - (existing.spent || 0));
+        existing.utilization_pct = Math.round(((existing.spent || 0) / amount) * 100);
+        existing.is_exceeded = (existing.spent || 0) > amount;
+      } else {
+        existing = {
+          id: tempId,
+          category_id: parseInt(catId),
+          category_name: cat.name,
+          category_icon: cat.icon,
+          category_color: cat.color,
+          budget_limit: amount,
+          spent: 0,
+          remaining: amount,
+          utilization_pct: 0,
+          is_exceeded: false
+        };
+        APP_STATE.budgets.category_budgets.unshift(existing);
+      }
+
+      input.value = '';
+      renderCategoryLimitsModalList();
+      if (typeof renderCategoryBudgets === 'function') {
+        renderCategoryBudgets(APP_STATE.budgets.category_budgets);
+      }
+      showToast(`Limit for ${cat.name} set to ₹${amount.toLocaleString('en-IN')}!`, 'success');
+
+      // Background sync
+      apiRequest('/budgets', 'POST', {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         amount: amount,
         category_id: parseInt(catId)
-      });
-
-      if (res && res.success) {
-        input.value = '';
-        await initializeAppData();
-        renderCategoryLimitsModalList();
+      }).then(res => {
+        if (res && res.budget_id && existing) {
+          existing.id = res.budget_id;
+        }
         loadNotifications();
-      } else {
-        alert(res ? res.error : 'Failed to save category limit');
-      }
+      });
     }
 
     async function deleteCategoryLimit(budgetId) {
       if (!confirm('Remove this category spending limit?')) return;
-      const res = await apiRequest(`/budgets/${budgetId}`, 'DELETE');
-      if (res && res.success) {
-        await initializeAppData();
+      triggerHaptic('light');
+
+      // 0ms Optimistic update
+      if (APP_STATE.budgets && APP_STATE.budgets.category_budgets) {
+        APP_STATE.budgets.category_budgets = APP_STATE.budgets.category_budgets.filter(cb => String(cb.id) !== String(budgetId));
         renderCategoryLimitsModalList();
-      } else {
-        alert(res ? res.error : 'Failed to delete budget limit');
+        if (typeof renderCategoryBudgets === 'function') {
+          renderCategoryBudgets(APP_STATE.budgets.category_budgets);
+        }
       }
+      showToast('Category limit removed', 'info');
+
+      // Background sync
+      apiRequest(`/budgets/${budgetId}`, 'DELETE');
     }
+
 
     // ----------------------------------------------------
     // PHASE 11: VISUAL CHARTS (DONUT & 6M TRENDS)
@@ -7824,8 +8010,20 @@
         APP_STATE.isPinEnabled = s.is_pin_enabled;
 
         const pinStatus = document.getElementById('profilePinStatus');
+        const pinBtn = document.getElementById('profileSetPinBtn');
         if (pinStatus) {
           pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : s.has_pin ? 'PIN Set (Disabled)' : 'Not Set';
+        }
+        if (pinBtn) {
+          if (s.is_pin_enabled) {
+            pinBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+            pinBtn.style.boxShadow = '0 2px 8px rgba(16,185,129,0.35)';
+            pinBtn.innerHTML = '<span class="material-icons-round" style="font-size:13px;">lock</span> Active';
+          } else {
+            pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
+            pinBtn.style.boxShadow = '0 2px 8px rgba(79,70,229,0.35)';
+            pinBtn.innerHTML = '<span class="material-icons-round" style="font-size:13px;">shield</span> Set PIN';
+          }
         }
 
         if (s.is_pin_enabled) {

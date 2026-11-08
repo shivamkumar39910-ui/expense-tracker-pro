@@ -1,4 +1,7 @@
 import json
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 from app_web import app
 import database
 
@@ -191,6 +194,32 @@ def run_tests():
     print("15b. POST /api/v1/goals/contribute:", r_contrib.status_code, r_contrib.json.get("message"))
     assert r_contrib.status_code == 200
     assert r_contrib.json["goal"]["new_current_amount"] == 15000.0
+
+    # 15c. Deposit via /goals/<id>/deposit with UPI and verify Expense Isolation
+    exp_before = client.get('/api/v1/command-center/summary', headers=headers).json["data"]["cashflow"]["expenses"]
+    r_dep = client.post(f'/api/v1/goals/{goal_id}/deposit', headers=headers, json={
+        "amount": 2000.0,
+        "payment_method": "UPI",
+        "note": "Savings bonus"
+    })
+    assert r_dep.status_code == 200
+    assert r_dep.json["goal"]["new_current_amount"] == 17000.0
+    print("15c. POST /api/v1/goals/deposit (UPI):", r_dep.status_code, "New Balance:", r_dep.json["goal"]["new_current_amount"])
+
+    # 15d. Withdraw via /goals/<id>/withdraw with Cash and verify Expense Isolation
+    r_with = client.post(f'/api/v1/goals/{goal_id}/withdraw', headers=headers, json={
+        "amount": 1000.0,
+        "payment_method": "Cash",
+        "note": "Emergency use"
+    })
+    assert r_with.status_code == 200
+    assert r_with.json["goal"]["new_current_amount"] == 16000.0
+    print("15d. POST /api/v1/goals/withdraw (Cash):", r_with.status_code, "New Balance:", r_with.json["goal"]["new_current_amount"])
+
+    # Verify Expense Isolation: total expense MUST be identical before and after!
+    exp_after = client.get('/api/v1/command-center/summary', headers=headers).json["data"]["cashflow"]["expenses"]
+    assert exp_before == exp_after, f"Goal operations corrupted expenses: before={exp_before}, after={exp_after}"
+    print("15e. Isolated Vault Guarantee Verified: Total Expenses remained exactly Rs.", exp_after)
 
     r_goals_list = client.get('/api/v1/goals', headers=headers)
     assert r_goals_list.status_code == 200

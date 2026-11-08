@@ -1167,7 +1167,24 @@ def set_budget():
     conn.commit()
     conn.close()
 
+    # Trigger predictive evaluation immediately so user receives alert/status
+    threading.Thread(target=database.generate_predictive_notifications, args=(user_id,), daemon=True).start()
+
     return jsonify({"success": True, "message": "Budget set successfully"}), 200
+
+@api_v1.route('/budgets/<int:budget_id>', methods=['DELETE'])
+@token_required
+def delete_budget_entry(budget_id):
+    user_id = request.user["id"]
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM budgets WHERE id = ? AND user_id = ?", (budget_id, user_id))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    if affected > 0:
+        return jsonify({"success": True, "message": "Category budget limit removed"}), 200
+    return jsonify({"success": False, "error": "Budget entry not found"}), 404
 
 def calculate_next_recurrence_date(current_date_str: str, frequency: str = "MONTHLY", due_day: int = 1) -> str:
     """Calculates next recurrence date advancing weekly, monthly, or yearly."""
@@ -1803,12 +1820,20 @@ def handle_goals():
     user_id = request.user["id"]
     if request.method == 'GET':
         goals = database.get_financial_goals(user_id)
-        return jsonify({"success": True, "goals": goals}), 200
+        total_saved = sum(float(g.get("current_amount") or 0) for g in goals)
+        total_target = sum(float(g.get("target_amount") or 0) for g in goals)
+        return jsonify({
+            "success": True, 
+            "goals": goals,
+            "total_saved": total_saved,
+            "total_target": total_target
+        }), 200
 
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
     target = float(data.get("target_amount", 0.0))
     current = float(data.get("current_amount", 0.0))
+    start_date = data.get("start_date") or date.today().strftime("%Y-%m-%d")
     target_date = data.get("target_date")
     color_hex = data.get("color_hex", "#10B981")
     icon = data.get("icon", "savings")
@@ -1816,17 +1841,62 @@ def handle_goals():
     if not title or target <= 0:
         return jsonify({"success": False, "error": "Goal title and positive target required"}), 400
 
-    conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO financial_goals (user_id, title, target_amount, current_amount, target_date, color_hex, icon)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (user_id, title, target, current, target_date, color_hex, icon))
-    goal_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
+    goal_id = database.create_financial_goal(
+        user_id=user_id,
+        title=title,
+        target_amount=target,
+        current_amount=current,
+        start_date=start_date,
+        target_date=target_date,
+        color_hex=color_hex,
+        icon=icon
+    )
 
     return jsonify({"success": True, "goal_id": goal_id, "message": "Goal created successfully"}), 201
+
+@api_v1.route('/goals/<int:goal_id>/deposit', methods=['POST'])
+@token_required
+def deposit_goal(goal_id):
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    amount = float(data.get("amount", 0.0))
+    payment_method = (data.get("payment_method") or "UPI").strip()
+    note = data.get("note")
+
+    if amount <= 0:
+        return jsonify({"success": False, "error": "Deposit amount must be greater than zero"}), 400
+
+    result, err = database.deposit_to_goal(user_id, goal_id, amount, payment_method, note)
+    if err:
+        return jsonify({"success": False, "error": err}), 404
+
+    return jsonify({
+        "success": True, 
+        "goal": result, 
+        "message": f"Deposited ₹{amount:,.2f} via {payment_method} into {result.get('title', 'goal')}!"
+    }), 200
+
+@api_v1.route('/goals/<int:goal_id>/withdraw', methods=['POST'])
+@token_required
+def withdraw_goal(goal_id):
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    amount = float(data.get("amount", 0.0))
+    payment_method = (data.get("payment_method") or "Cash").strip()
+    note = data.get("note")
+
+    if amount <= 0:
+        return jsonify({"success": False, "error": "Withdrawal amount must be greater than zero"}), 400
+
+    result, err = database.withdraw_from_goal(user_id, goal_id, amount, payment_method, note)
+    if err:
+        return jsonify({"success": False, "error": err}), 400
+
+    return jsonify({
+        "success": True, 
+        "goal": result, 
+        "message": f"Withdrew ₹{amount:,.2f} via {payment_method} from {result.get('title', 'goal')}!"
+    }), 200
 
 @api_v1.route('/goals/<int:goal_id>/contribute', methods=['POST'])
 @token_required
@@ -1834,16 +1904,17 @@ def contribute_goal(goal_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
     amount = float(data.get("amount", 0.0))
-    account_id = data.get("account_id")
+    payment_method = data.get("payment_method") or "UPI"
+    note = data.get("note") or "Quick deposit"
 
     if amount <= 0:
-        return jsonify({"success": False, "error": "Contribution amount must be greater than zero"}), 400
+        return jsonify({"success": False, "error": "Deposit amount must be greater than zero"}), 400
 
-    result, err = database.contribute_to_goal(user_id, goal_id, amount, account_id)
+    result, err = database.deposit_to_goal(user_id, goal_id, amount, payment_method, note)
     if err:
         return jsonify({"success": False, "error": err}), 404
 
-    return jsonify({"success": True, "goal": result, "message": f"Contributed Rs. {amount:,.2f} to goal!"}), 200
+    return jsonify({"success": True, "goal": result, "message": f"Saved ₹{amount:,.2f} to goal!"}), 200
 
 @api_v1.route('/goals/<int:goal_id>', methods=['DELETE'])
 @token_required

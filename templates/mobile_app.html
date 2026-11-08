@@ -1932,32 +1932,60 @@
 
 <div id="profileAccountsList" style="display:none;"></div>
 
-        <!-- SECTION 2: Budgets, Bills & Goals Shortcuts -->
+        <!-- SECTION 2: Budgets, Category Limits & Savings Goals -->
         <div class="section-header-row">
           <div class="section-title">🎯 Budgets & Financial Planning</div>
         </div>
-        <div class="tx-item" onclick="switchTab('tab-budgets')" style="cursor:pointer;">
+
+        <!-- 1st: Monthly Budget -->
+        <div class="tx-item" onclick="openMonthlyBudgetModal()" style="cursor:pointer;">
           <div class="tx-left">
-            <div class="tx-icon-box" style="background:var(--color-sapphire);"><span class="material-icons-round">pie_chart</span></div>
+            <div class="tx-icon-box" style="background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);">
+              <span class="material-icons-round">account_balance_wallet</span>
+            </div>
             <div>
-              <div class="tx-title">Monthly Budgets & Category Limits</div>
-              <div class="tx-meta">Set spending caps & track daily pace</div>
+              <div class="tx-title" style="font-size:14px; font-weight:700;">Monthly Budget</div>
+              <div class="tx-meta" id="profileMonthlyBudgetSubtitle">Set monthly spending limit & AI over-limit alerts</div>
             </div>
           </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="profileMonthlyBudgetBadge" style="font-size:11px; font-weight:800; color:var(--color-sapphire); background:rgba(59,130,246,0.12); padding:3px 8px; border-radius:10px;">Set Budget</span>
+            <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          </div>
         </div>
 
-
-
-        <div class="tx-item" onclick="switchTab('tab-budgets')" style="cursor:pointer; margin-bottom:18px;">
+        <!-- 2nd: Category Limit -->
+        <div class="tx-item" onclick="openCategoryLimitsModal()" style="cursor:pointer;">
           <div class="tx-left">
-            <div class="tx-icon-box" style="background:var(--color-emerald);"><span class="material-icons-round">savings</span></div>
+            <div class="tx-icon-box" style="background:linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);">
+              <span class="material-icons-round">pie_chart</span>
+            </div>
             <div>
-              <div class="tx-title">Savings Goals & Targets</div>
-              <div class="tx-meta">Emergency fund, vacation & investments</div>
+              <div class="tx-title" style="font-size:14px; font-weight:700;">Category Limit</div>
+              <div class="tx-meta">Set limits per category with smart AI warnings</div>
             </div>
           </div>
-          <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="profileCategoryLimitBadge" style="font-size:11px; font-weight:800; color:#A78BFA; background:rgba(139,92,246,0.12); padding:3px 8px; border-radius:10px;">Configure</span>
+            <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          </div>
+        </div>
+
+        <!-- 3rd: Savings Goals & Targets -->
+        <div class="tx-item" onclick="openSavingsGoalsModal()" style="cursor:pointer; margin-bottom:18px;">
+          <div class="tx-left">
+            <div class="tx-icon-box" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%);">
+              <span class="material-icons-round">savings</span>
+            </div>
+            <div>
+              <div class="tx-title" style="font-size:14px; font-weight:700;">Savings Goals & Targets</div>
+              <div class="tx-meta">Emergency funds, targets, deposits & withdrawals</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="profileGoalsBadge" style="font-size:11px; font-weight:800; color:var(--color-emerald); background:rgba(16,185,129,0.12); padding:3px 8px; border-radius:10px;">Active Goals</span>
+            <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          </div>
         </div>
 
         <!-- SECTION 3: Reports & Statements -->
@@ -2460,44 +2488,306 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- CREATE FINANCIAL GOAL MODAL (PHASE 11)         -->
+    <!-- 1. SET MONTHLY BUDGET MODAL SHEET             -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="monthlyBudgetModalBackdrop" onclick="closeMonthlyBudgetModal()"></div>
+    <div class="bottom-sheet" id="monthlyBudgetModalSheet">
+      <div class="sheet-handle"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="tx-icon-box" style="background:linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); width:36px; height:36px;">
+            <span class="material-icons-round" style="color:#FFF; font-size:20px;">account_balance_wallet</span>
+          </div>
+          <div>
+            <div class="tx-title" style="font-size:16px;">Set Monthly Budget</div>
+            <div class="tx-meta">Overall spending cap for current month</div>
+          </div>
+        </div>
+        <div class="btn-icon-header" onclick="closeMonthlyBudgetModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+
+      <!-- Current Status Summary Box -->
+      <div class="fintech-card" style="padding:14px; margin-bottom:14px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:12px; color:var(--text-secondary);">Current Month Spent:</span>
+          <span id="mbModalSpentDisplay" style="font-size:14px; font-weight:800; color:var(--text-primary);">₹0.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:var(--text-secondary);">Current Active Limit:</span>
+          <span id="mbModalCurrentLimitDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire);">₹0.00</span>
+        </div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">ENTER MONTHLY BUDGET LIMIT (₹)</div>
+      <div style="position:relative; margin-bottom:12px;">
+        <span style="position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:20px; font-weight:800; color:var(--color-sapphire);">₹</span>
+        <input type="number" class="form-input-pill" id="monthlyBudgetModalInput" placeholder="e.g. 25000" style="padding-left:36px; font-size:20px; font-weight:800; text-align:left;">
+      </div>
+
+      <!-- Preset Quick Amount Chips -->
+      <div style="display:flex; gap:8px; margin-bottom:14px; overflow-x:auto;">
+        <button type="button" class="acc-pill" onclick="setMbModalAmount(10000)" style="font-size:12px; padding:6px 12px; cursor:pointer;">₹10,000</button>
+        <button type="button" class="acc-pill" onclick="setMbModalAmount(25000)" style="font-size:12px; padding:6px 12px; cursor:pointer;">₹25,000</button>
+        <button type="button" class="acc-pill" onclick="setMbModalAmount(50000)" style="font-size:12px; padding:6px 12px; cursor:pointer;">₹50,000</button>
+        <button type="button" class="acc-pill" onclick="setMbModalAmount(100000)" style="font-size:12px; padding:6px 12px; cursor:pointer;">₹1,00,000</button>
+      </div>
+
+      <!-- AI Smart Monitoring Banner -->
+      <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2); border-radius:14px; padding:10px 12px; margin-bottom:16px;">
+        <span class="material-icons-round" style="color:#06B6D4; font-size:20px; margin-top:1px;">smart_toy</span>
+        <div style="font-size:11px; line-height:1.45; color:var(--text-secondary);">
+          <strong style="color:var(--text-primary);">AI Pacing Alerts:</strong> Our AI will monitor your daily expense velocity and automatically notify you with smart alerts if spending nears or crosses this monthly budget.
+        </div>
+      </div>
+
+      <button class="btn-submit-sheet" onclick="submitMonthlyBudgetModal()">Save Monthly Budget</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 2. CATEGORY LIMIT MODAL SHEET                  -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="categoryLimitsModalBackdrop" onclick="closeCategoryLimitsModal()"></div>
+    <div class="bottom-sheet" id="categoryLimitsModalSheet" style="max-height:86vh; display:flex; flex-direction:column;">
+      <div class="sheet-handle"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="tx-icon-box" style="background:linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); width:36px; height:36px;">
+            <span class="material-icons-round" style="color:#FFF; font-size:20px;">pie_chart</span>
+          </div>
+          <div>
+            <div class="tx-title" style="font-size:16px;">Category Spending Limits</div>
+            <div class="tx-meta">AI-monitored category caps</div>
+          </div>
+        </div>
+        <div class="btn-icon-header" onclick="closeCategoryLimitsModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+
+      <!-- Scrollable content area -->
+      <div style="overflow-y:auto; flex:1; padding-right:2px;">
+        <!-- Form to Add/Set Limit -->
+        <div class="fintech-card" style="padding:14px; margin-bottom:16px;">
+          <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">1. SELECT CATEGORY</div>
+          <select class="form-input-pill" id="catLimitCategorySelect" style="margin-bottom:12px; cursor:pointer;">
+            <!-- Dynamically populated categories -->
+          </select>
+
+          <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">2. MONTHLY LIMIT AMOUNT (₹)</div>
+          <div style="position:relative; margin-bottom:10px;">
+            <span style="position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:18px; font-weight:800; color:#8B5CF6;">₹</span>
+            <input type="number" class="form-input-pill" id="catLimitAmountInput" placeholder="e.g. 5000" style="padding-left:36px; font-size:18px; font-weight:800;">
+          </div>
+
+          <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;">
+            <button type="button" class="acc-pill" onclick="setCatLimitAmount(2000)" style="font-size:11px; padding:4px 10px; cursor:pointer;">₹2,000</button>
+            <button type="button" class="acc-pill" onclick="setCatLimitAmount(5000)" style="font-size:11px; padding:4px 10px; cursor:pointer;">₹5,000</button>
+            <button type="button" class="acc-pill" onclick="setCatLimitAmount(10000)" style="font-size:11px; padding:4px 10px; cursor:pointer;">₹10,000</button>
+            <button type="button" class="acc-pill" onclick="setCatLimitAmount(20000)" style="font-size:11px; padding:4px 10px; cursor:pointer;">₹20,000</button>
+          </div>
+
+          <button class="btn-submit-sheet" style="padding:10px; font-size:13px; background:linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);" onclick="submitCategoryLimitModal()">
+            Save Category Limit
+          </button>
+        </div>
+
+        <!-- Active Category Limits Section -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Active Category Limits</div>
+          <span id="catLimitsActiveCount" style="font-size:11px; color:var(--text-muted); font-weight:700;">0 Limits</span>
+        </div>
+
+        <div id="catLimitsModalList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
+          <!-- Rendered via renderCategoryLimitsModalList() -->
+        </div>
+
+        <!-- AI Category Warning Note -->
+        <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px;">
+          <span class="material-icons-round" style="color:#A78BFA; font-size:20px; margin-top:1px;">psychology</span>
+          <div style="font-size:11px; line-height:1.45; color:var(--text-secondary);">
+            <strong style="color:var(--text-primary);">AI Guardrails:</strong> Whenever any category crosses 85% or exceeds limit, you will receive real-time notifications with personalized spending recommendations.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 3. SAVINGS GOALS & TARGETS DEDICATED SHEET    -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="savingsGoalsModalBackdrop" onclick="closeSavingsGoalsModal()"></div>
+    <div class="bottom-sheet" id="savingsGoalsModalSheet" style="max-height:88vh; display:flex; flex-direction:column;">
+      <div class="sheet-handle"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="tx-icon-box" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); width:36px; height:36px;">
+            <span class="material-icons-round" style="color:#FFF; font-size:20px;">savings</span>
+          </div>
+          <div>
+            <div class="tx-title" style="font-size:16px;">Savings Goals & Targets</div>
+            <div class="tx-meta">Isolated Savings Vault</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:10px; font-weight:800;" onclick="openNewGoalModal()">
+            + Set New Goal
+          </button>
+          <div class="btn-icon-header" onclick="closeSavingsGoalsModal()" style="width:32px; height:32px;">
+            <span class="material-icons-round" style="font-size:18px;">close</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Isolation Guarantee Banner -->
+      <div style="display:flex; gap:8px; align-items:center; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:8px 12px; margin-bottom:12px; flex-shrink:0;">
+        <span class="material-icons-round" style="color:var(--color-emerald); font-size:18px;">verified_user</span>
+        <div style="font-size:11px; color:var(--text-secondary); line-height:1.35;">
+          <strong>Isolated Vault:</strong> Deposits & withdrawals here do <em>not</em> affect your Total Expenses.
+        </div>
+      </div>
+
+      <!-- Total Saved Banner Card -->
+      <div class="fintech-card" style="padding:12px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700;">TOTAL ACCUMULATED SAVINGS</div>
+          <div id="sgTotalSavedDisplay" style="font-size:22px; font-weight:800; color:var(--color-emerald);">₹0.00</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700;">ACTIVE TARGETS</div>
+          <div id="sgTotalTargetsDisplay" style="font-size:15px; font-weight:800; color:var(--text-primary);">0 Goals</div>
+        </div>
+      </div>
+
+      <!-- Goals List Stream -->
+      <div id="savingsGoalsModalList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:12px; padding-bottom:12px;">
+        <!-- Dynamically rendered via renderSavingsGoalsModalList() -->
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- CREATE FINANCIAL GOAL MODAL                    -->
     <!-- ============================================== -->
     <div class="sheet-backdrop" id="newGoalBackdrop" onclick="closeNewGoalModal()"></div>
     <div class="bottom-sheet" id="newGoalSheet">
       <div class="sheet-handle"></div>
       
-      <div class="tx-title" style="font-size:18px; margin-bottom:14px; text-align:center;">🎯 Set Financial Goal</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="material-icons-round" style="color:var(--color-emerald); font-size:24px;">flag</span>
+          <div class="tx-title" style="font-size:17px;">Set Financial Goal & Target</div>
+        </div>
+        <div class="btn-icon-header" onclick="closeNewGoalModal()" style="width:30px; height:30px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
 
-      <input type="text" class="form-input-pill" placeholder="Goal Name (e.g. Emergency Fund, New Laptop)" id="goalInputTitle">
-      <input type="number" class="form-input-pill" placeholder="Target Amount (₹)" id="goalInputTarget">
-      <input type="number" class="form-input-pill" placeholder="Initial Saved Amount (₹, optional)" id="goalInputCurrent" value="0">
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">GOAL / FUND NAME</div>
+      <input type="text" class="form-input-pill" placeholder="e.g. Emergency Fund, New Laptop, Goa Trip" id="goalInputTitle" style="margin-bottom:10px;">
       
-      <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">TARGET DATE</div>
-      <input type="date" class="form-input-pill" id="goalInputDate">
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">TARGET AMOUNT (₹)</div>
+      <input type="number" class="form-input-pill" placeholder="e.g. 50000" id="goalInputTarget" style="margin-bottom:10px;">
+      
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">INITIAL DEPOSIT (₹, OPTIONAL)</div>
+      <input type="number" class="form-input-pill" placeholder="0" id="goalInputCurrent" value="0" style="margin-bottom:10px;">
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">START DATE</div>
+          <input type="date" class="form-input-pill" id="goalInputStartDate">
+        </div>
+        <div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">END / TARGET DATE</div>
+          <input type="date" class="form-input-pill" id="goalInputDate">
+        </div>
+      </div>
 
-      <button class="btn-submit-sheet" onclick="submitNewGoal()">Create Goal</button>
+      <button class="btn-submit-sheet" onclick="submitNewGoal()">Create Savings Goal</button>
     </div>
 
     <!-- ============================================== -->
-    <!-- CONTRIBUTE TO GOAL MODAL (PHASE 11)            -->
+    <!-- GOAL DEPOSIT MODAL SHEET                       -->
     <!-- ============================================== -->
-    <div class="sheet-backdrop" id="contributeGoalBackdrop" onclick="closeGoalContributeModal()"></div>
-    <div class="bottom-sheet" id="contributeGoalSheet">
+    <div class="sheet-backdrop" id="goalDepositBackdrop" onclick="closeGoalDepositModal()"></div>
+    <div class="bottom-sheet" id="goalDepositSheet">
       <div class="sheet-handle"></div>
       
       <div style="text-align:center; margin-bottom:14px;">
-        <span class="material-icons-round" style="font-size:36px; color:var(--color-emerald);">savings</span>
-        <div class="tx-title" id="contribGoalTitle" style="font-size:17px; margin-top:4px;">Emergency Fund</div>
-        <div class="tx-meta" id="contribGoalRemaining">Remaining: ₹0.00</div>
+        <div style="width:48px; height:48px; border-radius:50%; background:rgba(16,185,129,0.15); color:var(--color-emerald); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto;">
+          <span class="material-icons-round" style="font-size:28px;">add_circle</span>
+        </div>
+        <div class="tx-title" id="depositGoalTitle" style="font-size:17px;">Goal Name</div>
+        <div class="tx-meta" id="depositGoalRemaining">Remaining: ₹0.00</div>
       </div>
 
-      <input type="hidden" id="contribGoalId">
-      <input type="number" class="form-input-pill" placeholder="Deposit Amount (₹)" id="contribGoalAmount" style="font-size:18px; font-weight:700; text-align:center;">
+      <input type="hidden" id="depositGoalId">
       
-      <div style="font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">DEDUCT FROM ACCOUNT</div>
-      <select class="form-input-pill" id="contribAccountSelect"></select>
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">DEPOSIT AMOUNT (₹)</div>
+      <input type="number" class="form-input-pill" placeholder="Enter amount to save" id="depositGoalAmount" style="font-size:18px; font-weight:700; text-align:center; margin-bottom:12px;">
 
-      <button class="btn-submit-sheet" onclick="submitGoalContribution()">Deposit Savings</button>
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">PAYMENT METHOD</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+        <button type="button" class="segment-btn active" id="btnDepMethodUPI" onclick="selectDepositMethod('UPI')" style="padding:8px 4px; font-size:12px; font-weight:700;">UPI</button>
+        <button type="button" class="segment-btn" id="btnDepMethodCash" onclick="selectDepositMethod('Cash')" style="padding:8px 4px; font-size:12px; font-weight:700;">Cash</button>
+        <button type="button" class="segment-btn" id="btnDepMethodCards" onclick="selectDepositMethod('Cards')" style="padding:8px 4px; font-size:12px; font-weight:700;">Cards</button>
+      </div>
+      <input type="hidden" id="depositSelectedMethod" value="UPI">
+
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">NOTE (OPTIONAL)</div>
+      <input type="text" class="form-input-pill" placeholder="e.g. Monthly savings contribution" id="depositGoalNote" style="margin-bottom:16px;">
+
+      <button class="btn-submit-sheet" onclick="submitGoalDeposit()">Deposit to Goal</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- GOAL WITHDRAW MODAL SHEET                      -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="goalWithdrawBackdrop" onclick="closeGoalWithdrawModal()"></div>
+    <div class="bottom-sheet" id="goalWithdrawSheet">
+      <div class="sheet-handle"></div>
+      
+      <div style="text-align:center; margin-bottom:14px;">
+        <div style="width:48px; height:48px; border-radius:50%; background:rgba(239,68,68,0.15); color:var(--color-ruby); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto;">
+          <span class="material-icons-round" style="font-size:28px;">remove_circle</span>
+        </div>
+        <div class="tx-title" id="withdrawGoalTitle" style="font-size:17px;">Goal Name</div>
+        <div class="tx-meta" id="withdrawGoalCurrent">Current Saved: ₹0.00</div>
+      </div>
+
+      <input type="hidden" id="withdrawGoalId">
+      
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">WITHDRAW AMOUNT (₹)</div>
+      <input type="number" class="form-input-pill" placeholder="Enter amount to withdraw" id="withdrawGoalAmount" style="font-size:18px; font-weight:700; text-align:center; margin-bottom:12px;">
+
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:6px;">PAYMENT METHOD / DESTINATION</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+        <button type="button" class="segment-btn active" id="btnWithMethodCash" onclick="selectWithdrawMethod('Cash')" style="padding:8px 4px; font-size:12px; font-weight:700;">Cash</button>
+        <button type="button" class="segment-btn" id="btnWithMethodUPI" onclick="selectWithdrawMethod('UPI')" style="padding:8px 4px; font-size:12px; font-weight:700;">UPI</button>
+        <button type="button" class="segment-btn" id="btnWithMethodCards" onclick="selectWithdrawMethod('Cards')" style="padding:8px 4px; font-size:12px; font-weight:700;">Cards</button>
+      </div>
+      <input type="hidden" id="withdrawSelectedMethod" value="Cash">
+
+      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">REASON / NOTE (OPTIONAL)</div>
+      <input type="text" class="form-input-pill" placeholder="e.g. Emergency medical use" id="withdrawGoalNote" style="margin-bottom:16px;">
+
+      <button class="btn-submit-sheet" style="background:var(--color-ruby);" onclick="submitGoalWithdraw()">Withdraw from Goal</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- CELEBRATION MODAL (TARGET COMPLETED!)          -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="goalCelebrationBackdrop" onclick="closeCelebrationModal()"></div>
+    <div class="bottom-sheet" id="goalCelebrationModal" style="text-align:center; padding:24px 18px;">
+      <div style="font-size:54px; margin-bottom:10px; animation: bounce 1s infinite alternate;">🎉</div>
+      <div style="font-size:20px; font-weight:800; color:var(--color-emerald); margin-bottom:6px;">Congratulations!</div>
+      <div style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:8px;" id="celebrationGoalTitle">Your Target is Completed!</div>
+      <div style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;" id="celebrationGoalMsg">
+        You have successfully saved the target amount! Fantastic milestone in your financial journey!
+      </div>
+      <button class="btn-submit-sheet" onclick="closeCelebrationModal()">Awesome! Let's Continue</button>
     </div>
 
     <!-- ============================================== -->
@@ -3817,8 +4107,23 @@
         }
 
         // Render Category Budgets
+        APP_STATE.budgets = b;
         if (b.category_budgets) {
           renderCategoryBudgets(b.category_budgets);
+        }
+
+        // Sync Profile Tab Budgets Badges
+        const profileMbBadge = document.getElementById('profileMonthlyBudgetBadge');
+        if (profileMbBadge) {
+          profileMbBadge.innerText = (b.overall_budget > 0) ? `₹${(b.overall_budget).toLocaleString('en-IN')}` : 'Set Budget';
+        }
+        const profileMbSub = document.getElementById('profileMonthlyBudgetSubtitle');
+        if (profileMbSub && b.overall_budget > 0) {
+          profileMbSub.innerText = `₹${(b.total_spent || 0).toLocaleString('en-IN')} of ₹${(b.overall_budget).toLocaleString('en-IN')} (${Math.round(b.utilization_pct || 0)}% used)`;
+        }
+        const profileCatBadge = document.getElementById('profileCategoryLimitBadge');
+        if (profileCatBadge && b.category_budgets) {
+          profileCatBadge.innerText = `${b.category_budgets.length} Active`;
         }
       }
 
@@ -4468,7 +4773,7 @@
     }
 
     // ----------------------------------------------------
-    // PHASE 11: FINANCIAL GOALS DEEPENING
+    // PHASE 11: FINANCIAL GOALS & SAVINGS VAULT (ISOLATED)
     // ----------------------------------------------------
     let userGoals = [];
 
@@ -4477,6 +4782,7 @@
       if (res && res.success) {
         userGoals = res.goals || [];
         renderGoals(userGoals);
+        renderSavingsGoalsModalList(userGoals);
       }
     }
 
@@ -4533,15 +4839,111 @@
           <!-- Actions Row -->
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:2px;">
             <div style="font-size:11px; color:var(--text-muted);">
-              ${g.remaining_amount > 0 ? `₹${g.remaining_amount.toLocaleString('en-IN')} remaining` : 'Target reached!'}
+              ${g.remaining_amount > 0 ? `₹${g.remaining_amount.toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              ${!g.is_completed ? `
-                <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalContributeModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.remaining_amount})">
-                  + Save Money
-                </button>
-              ` : ''}
+              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalDepositModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.remaining_amount})">
+                + Deposit
+              </button>
+              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalWithdrawModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.current_amount})">
+                − Withdraw
+              </button>
               <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteGoal(${g.id})" title="Delete Goal">
+                <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderSavingsGoalsModalList(goals) {
+      const container = document.getElementById('savingsGoalsModalList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const totalSaved = (goals || []).reduce((s, g) => s + (g.current_amount || 0), 0);
+      const activeCount = (goals || []).filter(g => !g.is_completed).length;
+
+      const totalSavedEl = document.getElementById('sgTotalSavedDisplay');
+      if (totalSavedEl) totalSavedEl.innerText = '₹' + totalSaved.toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+      const totalTargetsEl = document.getElementById('sgTotalTargetsDisplay');
+      if (totalTargetsEl) totalTargetsEl.innerText = `${(goals || []).length} Goals (${activeCount} Active)`;
+
+      const badge = document.getElementById('profileGoalsBadge');
+      if (badge) badge.innerText = `${activeCount} Active`;
+
+      if (!goals || goals.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:30px 14px; color:var(--text-muted); font-size:13px; background:var(--bg-card-subtle); border-radius:var(--radius-lg); border:1px dashed var(--border-card);">
+            🎯 No savings goals created yet.<br>Tap <strong>'+ Set New Goal'</strong> above to start saving for emergency funds, gadgets, or travel!
+          </div>
+        `;
+        return;
+      }
+
+      goals.forEach(g => {
+        const item = document.createElement('div');
+        item.className = 'fintech-card';
+        item.style.padding = '14px';
+        item.style.display = 'flex';
+        item.style.flexDirection = 'column';
+        item.style.gap = '10px';
+
+        const daysBadge = g.days_left !== null && g.days_left !== undefined 
+          ? `<span style="font-size:10px; color:${g.days_left <= 0 ? 'var(--color-ruby)' : 'var(--color-sapphire)'}; font-weight:700; background:rgba(59,130,246,0.1); padding:2px 6px; border-radius:6px;">${g.days_left > 0 ? g.days_left + ' days left' : 'Due/Past'}</span>` 
+          : '';
+
+        const dateRangeStr = `Start: ${g.start_date || 'Today'} • Target: ${g.target_date || 'Ongoing'}`;
+
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="tx-icon-box" style="background:${g.color_hex || '#10B981'}; width:40px; height:40px;">
+                <span class="material-icons-round" style="color:#FFF; font-size:20px;">${g.icon || 'savings'}</span>
+              </div>
+              <div>
+                <div style="font-size:15px; font-weight:800; color:var(--text-primary);">${g.title}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${dateRangeStr}</div>
+              </div>
+            </div>
+            <div>${daysBadge}</div>
+          </div>
+
+          <!-- Amounts Grid -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:2px;">
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); font-weight:700;">SAVED</div>
+              <div style="font-size:18px; font-weight:800; color:var(--color-emerald);">₹${(g.current_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:10px; color:var(--text-muted); font-weight:700;">TARGET: ₹${(g.target_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+              <div style="font-size:12px; font-weight:800; color:${g.is_completed ? 'var(--color-emerald)' : 'var(--text-secondary)'};">
+                ${g.is_completed ? '🎉 100% Achieved!' : `${g.progress_pct}% funded`}
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div style="width:100%; background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden;">
+            <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${g.color_hex || '#10B981'}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
+          </div>
+
+          <!-- Action Buttons (Deposit / Withdraw / Delete) -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <div style="font-size:11px; color:var(--text-muted);">
+              ${g.remaining_amount > 0 ? `₹${g.remaining_amount.toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalDepositModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.remaining_amount})">
+                + Deposit
+              </button>
+              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalWithdrawModal(${g.id}, '${g.title.replace(/'/g, "\\'")}', ${g.current_amount})">
+                − Withdraw
+              </button>
+              <button class="btn-icon-header" style="width:30px; height:30px;" onclick="deleteGoal(${g.id})" title="Delete Goal">
                 <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
               </button>
             </div>
@@ -4555,7 +4957,12 @@
       document.getElementById('goalInputTitle').value = '';
       document.getElementById('goalInputTarget').value = '';
       document.getElementById('goalInputCurrent').value = '0';
-      document.getElementById('goalInputDate').value = '';
+      const todayStr = new Date().toISOString().split('T')[0];
+      const startEl = document.getElementById('goalInputStartDate');
+      if (startEl) startEl.value = todayStr;
+      const dateEl = document.getElementById('goalInputDate');
+      if (dateEl) dateEl.value = '';
+      
       document.getElementById('newGoalBackdrop').classList.add('active');
       document.getElementById('newGoalSheet').classList.add('active');
     }
@@ -4569,6 +4976,7 @@
       const title = document.getElementById('goalInputTitle').value.trim();
       const target = parseFloat(document.getElementById('goalInputTarget').value);
       const current = parseFloat(document.getElementById('goalInputCurrent').value) || 0;
+      const startDate = document.getElementById('goalInputStartDate')?.value || new Date().toISOString().split('T')[0];
       const targetDate = document.getElementById('goalInputDate').value;
 
       if (!title || !target || target <= 0) {
@@ -4580,6 +4988,7 @@
         title,
         target_amount: target,
         current_amount: current,
+        start_date: startDate,
         target_date: targetDate || null
       });
 
@@ -4587,64 +4996,139 @@
         closeNewGoalModal();
         await loadGoals();
         loadNotifications();
+        if (current >= target) {
+          showCelebrationModal(title, `Target completed on creation with ₹${current.toLocaleString('en-IN')}!`);
+        }
       } else {
         alert(res ? res.error : 'Failed to create goal');
       }
     }
 
-    function openGoalContributeModal(goalId, title, remaining) {
-      document.getElementById('contribGoalId').value = goalId;
-      document.getElementById('contribGoalTitle').innerText = title;
-      document.getElementById('contribGoalRemaining').innerText = `Remaining: ₹${remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('contribGoalAmount').value = '';
+    function openGoalDepositModal(goalId, title, remaining) {
+      document.getElementById('depositGoalId').value = goalId;
+      document.getElementById('depositGoalTitle').innerText = title;
+      document.getElementById('depositGoalRemaining').innerText = `Remaining: ₹${(remaining || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('depositGoalAmount').value = '';
+      document.getElementById('depositGoalNote').value = '';
+      selectDepositMethod('UPI');
 
-      // Populate Accounts
-      const sel = document.getElementById('contribAccountSelect');
-      sel.innerHTML = '';
-      APP_STATE.accounts.forEach(acc => {
-        const opt = document.createElement('option');
-        opt.value = acc.id;
-        opt.innerText = `${acc.name} (₹${acc.current_balance.toLocaleString('en-IN')})`;
-        sel.appendChild(opt);
+      document.getElementById('goalDepositBackdrop').classList.add('active');
+      document.getElementById('goalDepositSheet').classList.add('active');
+    }
+
+    function closeGoalDepositModal() {
+      document.getElementById('goalDepositBackdrop').classList.remove('active');
+      document.getElementById('goalDepositSheet').classList.remove('active');
+    }
+
+    function selectDepositMethod(method) {
+      const selInput = document.getElementById('depositSelectedMethod');
+      if (selInput) selInput.value = method;
+      ['UPI', 'Cash', 'Cards'].forEach(m => {
+        const btn = document.getElementById(`btnDepMethod${m}`);
+        if (btn) {
+          if (m === method) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
       });
-
-      document.getElementById('contributeGoalBackdrop').classList.add('active');
-      document.getElementById('contributeGoalSheet').classList.add('active');
     }
 
-    function closeGoalContributeModal() {
-      document.getElementById('contributeGoalBackdrop').classList.remove('active');
-      document.getElementById('contributeGoalSheet').classList.remove('active');
-    }
-
-    async function submitGoalContribution() {
-      const goalId = document.getElementById('contribGoalId').value;
-      const amount = parseFloat(document.getElementById('contribGoalAmount').value);
-      const accountId = document.getElementById('contribAccountSelect').value;
+    async function submitGoalDeposit() {
+      const goalId = document.getElementById('depositGoalId').value;
+      const amount = parseFloat(document.getElementById('depositGoalAmount').value);
+      const method = document.getElementById('depositSelectedMethod')?.value || 'UPI';
+      const note = document.getElementById('depositGoalNote')?.value.trim();
 
       if (!amount || amount <= 0) {
-        alert('Please enter a valid contribution amount.');
+        alert('Please enter a valid deposit amount.');
         return;
       }
 
-      const res = await apiRequest(`/goals/${goalId}/contribute`, 'POST', {
+      const res = await apiRequest(`/goals/${goalId}/deposit`, 'POST', {
         amount,
-        account_id: accountId ? parseInt(accountId) : null
+        payment_method: method,
+        note: note || undefined
       });
 
       if (res && res.success) {
-        closeGoalContributeModal();
-        await Promise.all([
-          loadGoals(),
-          loadAccountsAndNetWorth(),
-          refreshDashboardData(),
-          loadTransactions(),
-          loadNotifications(),
-          loadVisualCharts()
-        ]);
+        closeGoalDepositModal();
+        await loadGoals();
+        loadNotifications();
+
+        if (res.goal?.target_completed_now || (res.goal && res.goal.is_completed)) {
+          showCelebrationModal(res.goal.title || 'Goal', `You have reached your savings target of ₹${(res.goal.target_amount || 0).toLocaleString('en-IN')}! Fantastic achievement!`);
+        }
       } else {
-        alert(res ? res.error : 'Failed to contribute to goal');
+        alert(res ? res.error : 'Failed to deposit savings.');
       }
+    }
+
+    function openGoalWithdrawModal(goalId, title, currentAmount) {
+      document.getElementById('withdrawGoalId').value = goalId;
+      document.getElementById('withdrawGoalTitle').innerText = title;
+      document.getElementById('withdrawGoalCurrent').innerText = `Current Saved: ₹${(currentAmount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('withdrawGoalAmount').value = '';
+      document.getElementById('withdrawGoalNote').value = '';
+      selectWithdrawMethod('Cash');
+
+      document.getElementById('goalWithdrawBackdrop').classList.add('active');
+      document.getElementById('goalWithdrawSheet').classList.add('active');
+    }
+
+    function closeGoalWithdrawModal() {
+      document.getElementById('goalWithdrawBackdrop').classList.remove('active');
+      document.getElementById('goalWithdrawSheet').classList.remove('active');
+    }
+
+    function selectWithdrawMethod(method) {
+      const selInput = document.getElementById('withdrawSelectedMethod');
+      if (selInput) selInput.value = method;
+      ['Cash', 'UPI', 'Cards'].forEach(m => {
+        const btn = document.getElementById(`btnWithMethod${m}`);
+        if (btn) {
+          if (m === method) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+    }
+
+    async function submitGoalWithdraw() {
+      const goalId = document.getElementById('withdrawGoalId').value;
+      const amount = parseFloat(document.getElementById('withdrawGoalAmount').value);
+      const method = document.getElementById('withdrawSelectedMethod')?.value || 'Cash';
+      const note = document.getElementById('withdrawGoalNote')?.value.trim();
+
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid withdrawal amount.');
+        return;
+      }
+
+      const res = await apiRequest(`/goals/${goalId}/withdraw`, 'POST', {
+        amount,
+        payment_method: method,
+        note: note || undefined
+      });
+
+      if (res && res.success) {
+        closeGoalWithdrawModal();
+        await loadGoals();
+      } else {
+        alert(res ? res.error : 'Failed to withdraw savings.');
+      }
+    }
+
+    function showCelebrationModal(title, msg) {
+      const titleEl = document.getElementById('celebrationGoalTitle');
+      const msgEl = document.getElementById('celebrationGoalMsg');
+      if (titleEl) titleEl.innerText = `Target Completed: ${title}`;
+      if (msgEl) msgEl.innerText = msg || 'You have successfully achieved your target savings amount!';
+      document.getElementById('goalCelebrationBackdrop').classList.add('active');
+      document.getElementById('goalCelebrationModal').classList.add('active');
+    }
+
+    function closeCelebrationModal() {
+      document.getElementById('goalCelebrationBackdrop').classList.remove('active');
+      document.getElementById('goalCelebrationModal').classList.remove('active');
     }
 
     async function deleteGoal(goalId) {
@@ -4652,6 +5136,206 @@
       const res = await apiRequest(`/goals/${goalId}`, 'DELETE');
       if (res && res.success) {
         loadGoals();
+      }
+    }
+
+    // ----------------------------------------------------
+    // MONTHLY BUDGET & CATEGORY LIMIT MODAL HANDLERS
+    // ----------------------------------------------------
+    function openMonthlyBudgetModal() {
+      const curSpend = APP_STATE.forecast?.mtd_actual_spend || 0;
+      const curBudget = APP_STATE.forecast?.monthly_budget || 0;
+      
+      const spentEl = document.getElementById('mbModalSpentDisplay');
+      if (spentEl) spentEl.innerText = '₹' + curSpend.toLocaleString('en-IN', {minimumFractionDigits: 2});
+      
+      const limitEl = document.getElementById('mbModalCurrentLimitDisplay');
+      if (limitEl) limitEl.innerText = curBudget > 0 ? ('₹' + curBudget.toLocaleString('en-IN', {minimumFractionDigits: 2})) : 'Not Set';
+      
+      const inputEl = document.getElementById('monthlyBudgetModalInput');
+      if (inputEl) inputEl.value = curBudget > 0 ? curBudget : '';
+
+      document.getElementById('monthlyBudgetModalBackdrop').classList.add('active');
+      document.getElementById('monthlyBudgetModalSheet').classList.add('active');
+    }
+
+    function closeMonthlyBudgetModal() {
+      document.getElementById('monthlyBudgetModalBackdrop').classList.remove('active');
+      document.getElementById('monthlyBudgetModalSheet').classList.remove('active');
+    }
+
+    function setMbModalAmount(val) {
+      const inputEl = document.getElementById('monthlyBudgetModalInput');
+      if (inputEl) inputEl.value = val;
+    }
+
+    async function submitMonthlyBudgetModal() {
+      const inputEl = document.getElementById('monthlyBudgetModalInput');
+      const val = parseFloat(inputEl?.value);
+      if (!val || val <= 0) {
+        alert('Please enter a valid monthly budget amount (greater than 0).');
+        return;
+      }
+
+      const res = await apiRequest('/budgets', 'POST', {
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        amount: val
+      });
+
+      if (res && res.success) {
+        closeMonthlyBudgetModal();
+        await initializeAppData();
+        loadNotifications();
+
+        // Update profile badge
+        const badge = document.getElementById('profileMonthlyBudgetBadge');
+        if (badge) badge.innerText = '₹' + val.toLocaleString('en-IN');
+
+        const spent = APP_STATE.forecast?.mtd_actual_spend || 0;
+        if (spent >= val) {
+          alert(`⚠️ Alert: Your current spending (₹${spent.toLocaleString('en-IN')}) has exceeded your new monthly budget of ₹${val.toLocaleString('en-IN')}!`);
+        } else if ((spent / val) >= 0.8) {
+          alert(`⚡ Notice: You have already consumed ${Math.round((spent/val)*100)}% of your monthly budget (₹${spent.toLocaleString('en-IN')} of ₹${val.toLocaleString('en-IN')}).`);
+        }
+      } else {
+        alert(res ? res.error : 'Failed to save monthly budget.');
+      }
+    }
+
+    function openCategoryLimitsModal() {
+      const sel = document.getElementById('catLimitCategorySelect');
+      if (sel) {
+        sel.innerHTML = '';
+        const cats = APP_STATE.categories?.expense || [];
+        cats.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.innerText = c.name;
+          sel.appendChild(opt);
+        });
+      }
+
+      const input = document.getElementById('catLimitAmountInput');
+      if (input) input.value = '';
+
+      renderCategoryLimitsModalList();
+
+      document.getElementById('categoryLimitsModalBackdrop').classList.add('active');
+      document.getElementById('categoryLimitsModalSheet').classList.add('active');
+    }
+
+    function closeCategoryLimitsModal() {
+      document.getElementById('categoryLimitsModalBackdrop').classList.remove('active');
+      document.getElementById('categoryLimitsModalSheet').classList.remove('active');
+    }
+
+    function setCatLimitAmount(val) {
+      const input = document.getElementById('catLimitAmountInput');
+      if (input) input.value = val;
+    }
+
+    function renderCategoryLimitsModalList() {
+      const container = document.getElementById('catLimitsModalList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const catBudgets = APP_STATE.budgets?.category_budgets || [];
+      const countEl = document.getElementById('catLimitsActiveCount');
+      if (countEl) countEl.innerText = `${catBudgets.length} Limits Active`;
+
+      const badge = document.getElementById('profileCategoryLimitBadge');
+      if (badge) badge.innerText = `${catBudgets.length} Active`;
+
+      if (catBudgets.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:18px 10px; color:var(--text-muted); font-size:12px; background:var(--bg-card-subtle); border-radius:var(--radius-lg); border:1px dashed var(--border-card);">
+            🎯 No category spending limits set yet.<br>Choose a category above and set a cap.
+          </div>
+        `;
+        return;
+      }
+
+      catBudgets.forEach(cb => {
+        const item = document.createElement('div');
+        item.className = 'tx-item';
+        item.style.flexDirection = 'column';
+        item.style.alignItems = 'flex-start';
+        item.style.gap = '8px';
+        const progressWidth = Math.min(100, cb.utilization_pct || 0);
+        const barColor = cb.is_exceeded ? 'var(--color-ruby)' : ((cb.utilization_pct >= 85) ? 'var(--color-amber)' : 'var(--color-emerald)');
+
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="tx-icon-box" style="background:${cb.category_color || '#8B5CF6'}; width:36px; height:36px;">
+                <span class="material-icons-round" style="font-size:18px;">${cb.category_icon || 'tag'}</span>
+              </div>
+              <div>
+                <div class="tx-title" style="font-size:14px; font-weight:700;">${cb.category_name}</div>
+                <div class="tx-meta">Spent ₹${(cb.spent || 0).toLocaleString('en-IN')} of ₹${(cb.budget_limit || 0).toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="text-align:right;">
+                <div class="tx-amount" style="font-size:13px; font-weight:800; color:${barColor};">
+                  ${cb.utilization_pct}%
+                </div>
+                <div class="tx-meta" style="font-size:10px;">${cb.is_exceeded ? 'Exceeded' : `₹${(cb.remaining || 0).toLocaleString('en-IN')} left`}</div>
+              </div>
+              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteCategoryLimit(${cb.id})" title="Remove Limit">
+                <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
+              </button>
+            </div>
+          </div>
+          <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
+            <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:width 0.4s ease;"></div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    async function submitCategoryLimitModal() {
+      const sel = document.getElementById('catLimitCategorySelect');
+      const input = document.getElementById('catLimitAmountInput');
+      const catId = sel?.value;
+      const amount = parseFloat(input?.value);
+
+      if (!catId) {
+        alert('Please select a category.');
+        return;
+      }
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid monthly spending limit.');
+        return;
+      }
+
+      const res = await apiRequest('/budgets', 'POST', {
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        amount: amount,
+        category_id: parseInt(catId)
+      });
+
+      if (res && res.success) {
+        input.value = '';
+        await initializeAppData();
+        renderCategoryLimitsModalList();
+        loadNotifications();
+      } else {
+        alert(res ? res.error : 'Failed to save category limit');
+      }
+    }
+
+    async function deleteCategoryLimit(budgetId) {
+      if (!confirm('Remove this category spending limit?')) return;
+      const res = await apiRequest(`/budgets/${budgetId}`, 'DELETE');
+      if (res && res.success) {
+        await initializeAppData();
+        renderCategoryLimitsModalList();
+      } else {
+        alert(res ? res.error : 'Failed to delete budget limit');
       }
     }
 
@@ -6883,17 +7567,7 @@
     }
 
     async function promptSetBudget() {
-      const cur = APP_STATE.forecast?.monthly_budget || 25000;
-      const val = prompt('Set Overall Monthly Budget Target (₹):', cur);
-      if (!val) return;
-      const res = await apiRequest('/budgets', 'POST', {
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-        amount: parseFloat(val)
-      });
-      if (res && res.success) {
-        await initializeAppData();
-      }
+      openMonthlyBudgetModal();
     }
 
     // ----------------------------------------------------
@@ -6901,73 +7575,53 @@
     // ----------------------------------------------------
     function renderCategoryBudgets(catBudgets) {
       const container = document.getElementById('categoryBudgetsContainer');
-      if (!container) return;
-      container.innerHTML = '';
-      if (!catBudgets || catBudgets.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:16px;">No category limits set yet. Tap "+ Set Limit" above.</div>';
-        return;
+      if (container) {
+        container.innerHTML = '';
+        if (!catBudgets || catBudgets.length === 0) {
+          container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:16px;">No category limits set yet. Tap "+ Set Limit" above.</div>';
+        } else {
+          catBudgets.forEach(cb => {
+            const item = document.createElement('div');
+            item.className = 'tx-item';
+            item.style.flexDirection = 'column';
+            item.style.alignItems = 'flex-start';
+            item.style.gap = '8px';
+            const progressWidth = Math.min(100, cb.utilization_pct || 0);
+            const barColor = cb.is_exceeded ? 'var(--color-ruby)' : ((cb.utilization_pct >= 85) ? 'var(--color-amber)' : 'var(--color-emerald)');
+
+            item.innerHTML = `
+              <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div class="tx-icon-box" style="background:${cb.category_color || '#8B5CF6'}; width:36px; height:36px;">
+                    <span class="material-icons-round" style="font-size:18px;">${cb.category_icon || 'tag'}</span>
+                  </div>
+                  <div>
+                    <div class="tx-title" style="font-size:13px; font-weight:700;">${cb.category_name}</div>
+                    <div class="tx-meta">Spent ₹${(cb.spent || 0).toLocaleString('en-IN')} of ₹${(cb.budget_limit || 0).toLocaleString('en-IN')}</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="tx-amount" style="font-size:13px; font-weight:800; color:${barColor};">
+                    ${cb.utilization_pct}%
+                  </div>
+                  <div class="tx-meta">${cb.is_exceeded ? 'Exceeded' : `₹${(cb.remaining || 0).toLocaleString('en-IN')} left`}</div>
+                </div>
+              </div>
+              <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
+                <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:width 0.4s ease;"></div>
+              </div>
+            `;
+            container.appendChild(item);
+          });
+        }
       }
 
-      catBudgets.forEach(cb => {
-        const item = document.createElement('div');
-        item.className = 'tx-item';
-        item.style.flexDirection = 'column';
-        item.style.alignItems = 'flex-start';
-        item.style.gap = '8px';
-        const progressWidth = Math.min(100, cb.utilization_pct);
-        const barColor = cb.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
-
-        item.innerHTML = `
-          <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <div class="tx-icon-box" style="background:${cb.category_color}; width:36px; height:36px;">
-                <span class="material-icons-round" style="font-size:18px;">${cb.category_icon}</span>
-              </div>
-              <div>
-                <div class="tx-title" style="font-size:13px;">${cb.category_name}</div>
-                <div class="tx-meta">Spent ₹${cb.spent.toLocaleString('en-IN')} of ₹${cb.budget_limit.toLocaleString('en-IN')}</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div class="tx-amount" style="font-size:13px; color:${cb.is_exceeded ? 'var(--color-ruby)' : 'var(--color-emerald)'};">
-                ${cb.utilization_pct}%
-              </div>
-              <div class="tx-meta">${cb.is_exceeded ? 'Exceeded' : `₹${cb.remaining.toLocaleString('en-IN')} left`}</div>
-            </div>
-          </div>
-          <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
-            <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px;"></div>
-          </div>
-        `;
-        container.appendChild(item);
-      });
+      // Also sync modal list and profile badge
+      renderCategoryLimitsModalList();
     }
 
     async function promptSetCategoryBudget() {
-      if (!APP_STATE.categories.expense || APP_STATE.categories.expense.length === 0) {
-        alert('Categories loading. Please try again.');
-        return;
-      }
-      let catListStr = APP_STATE.categories.expense.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
-      const choice = prompt(`Select Category by number:\n${catListStr}`);
-      if (!choice) return;
-      const idx = parseInt(choice) - 1;
-      const cat = APP_STATE.categories.expense[idx];
-      if (!cat) { alert('Invalid choice'); return; }
-
-      const amountStr = prompt(`Set monthly spending limit for ${cat.name} (₹):`, '5000');
-      if (!amountStr) return;
-
-      const res = await apiRequest('/budgets', 'POST', {
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-        amount: parseFloat(amountStr),
-        category_id: cat.id
-      });
-
-      if (res && res.success) {
-        await initializeAppData();
-      }
+      openCategoryLimitsModal();
     }
 
     // ----------------------------------------------------

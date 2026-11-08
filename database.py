@@ -219,6 +219,27 @@ def create_database():
         )
     """)
 
+    cursor.execute("PRAGMA table_info(financial_goals)")
+    goal_cols = [row[1] for row in cursor.fetchall()]
+    if 'start_date' not in goal_cols:
+        cursor.execute("ALTER TABLE financial_goals ADD COLUMN start_date TEXT")
+
+    # 9b. Isolated Goal Transactions Table (Savings Vault - Does not affect Total Expenses)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS goal_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            goal_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('DEPOSIT', 'WITHDRAWAL')),
+            amount REAL NOT NULL,
+            payment_method TEXT DEFAULT 'UPI',
+            note TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (goal_id) REFERENCES financial_goals(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
     # 10. Notifications Table (Phase 10: Predictive Warning & Notification Alert System)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
@@ -1128,8 +1149,36 @@ def generate_predictive_notifications(user_id):
     except Exception:
         pass
 
+    # 5. Check Savings Goals & Targets (Celebrations & Weekly Reminders)
+    try:
+        goals = get_financial_goals(user_id)
+        for g in goals:
+            if g.get("is_completed"):
+                create_notification(
+                    user_id=user_id,
+                    notif_type="SUCCESS",
+                    title=f"🎉 Target Completed: {g['title']}",
+                    message=f"Congratulations! You reached your savings target for '{g['title']}' of ₹{g['target_amount']:,.2f}! Excellent discipline!",
+                    action_route="tab-profile"
+                )
+            else:
+                rem = g.get("remaining_amount", 0)
+                curr = g.get("current_amount", 0)
+                tgt = g.get("target_amount", 0)
+                days_left = g.get("days_left")
+                days_txt = f" with {days_left} days left" if days_left is not None and days_left > 0 else ""
+                create_notification(
+                    user_id=user_id,
+                    notif_type="INFO",
+                    title=f"🎯 Target Reminder: {g['title']}",
+                    message=f"Please focus on your target '{g['title']}'! You have saved ₹{curr:,.2f} of ₹{tgt:,.2f} (₹{rem:,.2f} to go{days_txt}). Keep adding to your savings!",
+                    action_route="tab-profile"
+                )
+    except Exception:
+        pass
+
 # ==================================================
-# Phase 11: Financial Goals Deepening
+# Phase 11: Financial Goals & Savings Vault
 # ==================================================
 
 def get_financial_goals(user_id):
@@ -1144,17 +1193,26 @@ def get_financial_goals(user_id):
     conn.close()
 
     goals = []
+    today_d = date.today()
     for r in rows:
         target = float(r["target_amount"] or 0)
         curr = float(r["current_amount"] or 0)
         pct = round((curr / target * 100), 1) if target > 0 else 0.0
         rem = max(0.0, round(target - curr, 2))
 
+        start_date = None
+        if "start_date" in r.keys() and r["start_date"]:
+            start_date = r["start_date"]
+        elif r["created_at"]:
+            start_date = str(r["created_at"])[:10]
+        else:
+            start_date = today_d.strftime("%Y-%m-%d")
+
         days_left = None
         if r["target_date"]:
             try:
-                td = datetime.strptime(r["target_date"], "%Y-%m-%d").date()
-                days_left = (td - date.today()).days
+                td = datetime.strptime(str(r["target_date"])[:10], "%Y-%m-%d").date()
+                days_left = (td - today_d).days
             except Exception:
                 pass
 
@@ -1163,6 +1221,7 @@ def get_financial_goals(user_id):
             "title": r["title"],
             "target_amount": target,
             "current_amount": curr,
+            "start_date": start_date,
             "target_date": r["target_date"],
             "days_left": days_left,
             "color_hex": r["color_hex"] or "#10B981",
@@ -1173,9 +1232,47 @@ def get_financial_goals(user_id):
         })
     return goals
 
-def contribute_to_goal(user_id, goal_id, amount, account_id=None):
+def create_financial_goal(user_id, title, target_amount, current_amount=0.0, start_date=None, target_date=None, color_hex='#10B981', icon='savings'):
     """
-    Contributes money to a goal. Optionally deducts from specified account balance and logs transaction.
+    Creates a new financial savings goal with start & end dates.
+    Initial deposit is recorded in isolated goal_transactions, NEVER in regular expenses.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    today_str = date.today().strftime("%Y-%m-%d")
+    s_date = start_date or today_str
+    is_completed = 1 if (current_amount >= target_amount and target_amount > 0) else 0
+
+    cursor.execute("""
+        INSERT INTO financial_goals (user_id, title, target_amount, current_amount, start_date, target_date, color_hex, icon, is_completed)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, title, target_amount, current_amount, s_date, target_date, color_hex, icon, is_completed))
+    goal_id = cursor.lastrowid
+
+    if current_amount > 0:
+        cursor.execute("""
+            INSERT INTO goal_transactions (goal_id, user_id, type, amount, payment_method, note)
+            VALUES (?, ?, 'DEPOSIT', ?, 'UPI', 'Initial deposit')
+        """, (goal_id, user_id, current_amount))
+
+    conn.commit()
+    conn.close()
+
+    if is_completed:
+        create_notification(
+            user_id=user_id,
+            notif_type="SUCCESS",
+            title=f"🎉 Target Completed: {title}",
+            message=f"Congratulations! You reached your savings target for '{title}' of ₹{target_amount:,.2f}!",
+            action_route="tab-profile"
+        )
+
+    return goal_id
+
+def deposit_to_goal(user_id, goal_id, amount, payment_method='UPI', note=None):
+    """
+    Deposits funds into a goal. 
+    ISOLATION GUARANTEE: Does NOT touch transactions table or Total Expenses.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1186,48 +1283,127 @@ def contribute_to_goal(user_id, goal_id, amount, account_id=None):
         conn.close()
         return None, "Goal not found"
 
-    new_curr = float(goal["current_amount"] or 0) + amount
+    new_curr = round(float(goal["current_amount"] or 0) + amount, 2)
     target = float(goal["target_amount"] or 0)
-    is_completed = 1 if new_curr >= target else 0
+    is_completed = 1 if (new_curr >= target and target > 0) else 0
+    was_completed = bool(goal["is_completed"])
 
     cursor.execute("""
         UPDATE financial_goals 
         SET current_amount = ?, is_completed = ?
         WHERE id = ? AND user_id = ?
     """, (new_curr, is_completed, goal_id, user_id))
+
+    cursor.execute("""
+        INSERT INTO goal_transactions (goal_id, user_id, type, amount, payment_method, note)
+        VALUES (?, ?, 'DEPOSIT', ?, ?, ?)
+    """, (goal_id, user_id, amount, payment_method or 'UPI', note or f"Deposit to {goal['title']}"))
+
     conn.commit()
     conn.close()
 
-    if account_id:
-        record_transaction(
-            user_id=user_id,
-            account_id=account_id,
-            transaction_type='EXPENSE',
-            amount=amount,
-            date=date.today().strftime("%Y-%m-%d"),
-            note=f"Goal Contribution: {goal['title']}",
-            tag="#goal"
-        )
-
-    if is_completed and not goal["is_completed"]:
+    # Trigger celebration notification if target achieved
+    target_completed_now = False
+    if is_completed and not was_completed:
+        target_completed_now = True
         create_notification(
             user_id=user_id,
             notif_type="SUCCESS",
-            title="Goal Achieved! 🎉",
-            message=f"Congratulations! You reached your target of Rs. {target:,.2f} for '{goal['title']}'!",
-            action_route="tab-budgets"
+            title=f"🎉 Target Completed: {goal['title']}",
+            message=f"Congratulations! Your target for '{goal['title']}' is completed! Total saved: ₹{new_curr:,.2f} of ₹{target:,.2f}. Outstanding job!",
+            action_route="tab-profile"
         )
 
     return {
         "id": goal_id,
+        "title": goal["title"],
         "new_current_amount": new_curr,
         "target_amount": target,
-        "is_completed": bool(is_completed)
+        "is_completed": bool(is_completed),
+        "target_completed_now": target_completed_now,
+        "remaining_amount": max(0.0, round(target - new_curr, 2)),
+        "progress_pct": min(100.0, round((new_curr / target * 100), 1)) if target > 0 else 100.0
     }, None
+
+def withdraw_from_goal(user_id, goal_id, amount, payment_method='Cash', note=None):
+    """
+    Withdraws funds from a savings goal.
+    ISOLATION GUARANTEE: Does NOT touch transactions table or Total Expenses.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
+    goal = cursor.fetchone()
+    if not goal:
+        conn.close()
+        return None, "Goal not found"
+
+    curr_amount = float(goal["current_amount"] or 0)
+    if amount > curr_amount:
+        conn.close()
+        return None, f"Withdrawal amount (₹{amount:,.2f}) cannot exceed current savings balance (₹{curr_amount:,.2f})"
+
+    new_curr = max(0.0, round(curr_amount - amount, 2))
+    target = float(goal["target_amount"] or 0)
+    is_completed = 1 if (new_curr >= target and target > 0) else 0
+
+    cursor.execute("""
+        UPDATE financial_goals 
+        SET current_amount = ?, is_completed = ?
+        WHERE id = ? AND user_id = ?
+    """, (new_curr, is_completed, goal_id, user_id))
+
+    cursor.execute("""
+        INSERT INTO goal_transactions (goal_id, user_id, type, amount, payment_method, note)
+        VALUES (?, ?, 'WITHDRAWAL', ?, ?, ?)
+    """, (goal_id, user_id, amount, payment_method or 'Cash', note or f"Withdrawal from {goal['title']}"))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": goal_id,
+        "title": goal["title"],
+        "new_current_amount": new_curr,
+        "target_amount": target,
+        "is_completed": bool(is_completed),
+        "remaining_amount": max(0.0, round(target - new_curr, 2)),
+        "progress_pct": min(100.0, round((new_curr / target * 100), 1)) if target > 0 else 100.0
+    }, None
+
+def contribute_to_goal(user_id, goal_id, amount, account_id=None):
+    """
+    Backward-compatible contribution wrapper using isolated deposit logic.
+    """
+    res, err = deposit_to_goal(user_id, goal_id, amount, payment_method='UPI', note="Quick deposit")
+    return res, err
+
+def get_goal_transactions(user_id, goal_id=None, limit=50):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = """
+        SELECT gt.*, fg.title as goal_title 
+        FROM goal_transactions gt
+        JOIN financial_goals fg ON gt.goal_id = fg.id
+        WHERE gt.user_id = ?
+    """
+    params = [user_id]
+    if goal_id:
+        query += " AND gt.goal_id = ?"
+        params.append(goal_id)
+    query += " ORDER BY gt.id DESC LIMIT ?"
+    params.append(limit)
+
+    cursor.execute(query, params)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
 
 def delete_financial_goal(user_id, goal_id):
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("DELETE FROM goal_transactions WHERE goal_id = ? AND user_id = ?", (goal_id, user_id))
     cursor.execute("DELETE FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
     affected = cursor.rowcount
     conn.commit()

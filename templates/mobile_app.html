@@ -1717,7 +1717,7 @@
           <div class="segment-btn" id="txFilterIncome" onclick="setTxFilter('INCOME')">Income</div>
         </div>
 
-        <input type="text" class="form-input-pill" placeholder="🔍 Search by merchant, category or note..." id="txSearchInput" oninput="applyTxSearch()">
+        <input type="text" class="form-input-pill" placeholder="🔍 Search by amount, merchant, category or note..." id="txSearchInput" oninput="applyTxSearch()">
 
         <div id="allTxList">
           <!-- Rendered dynamically -->
@@ -5786,15 +5786,14 @@
         const expenseHeight = expAmount > 0 ? Math.max(8, (expAmount / maxVal) * (chartHeight - 22)) : 4;
         const expenseY = chartHeight - expenseHeight;
 
-        if (d.is_today) {
-          const grad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
-          grad.addColorStop(0, '#06B6D4');
-          grad.addColorStop(1, '#0284C7');
-          ctx.fillStyle = grad;
-        } else if (expAmount > 0) {
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#4F46E5' : '#6366F1';
+        // SAME DARK BLUE COLOR FOR ALL BARS (Per user request)
+        if (expAmount > 0) {
+          const darkBlueGrad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
+          darkBlueGrad.addColorStop(0, '#1D4ED8'); // Deep vibrant dark blue top
+          darkBlueGrad.addColorStop(1, '#1E3A8A'); // Navy dark blue bottom
+          ctx.fillStyle = darkBlueGrad;
         } else {
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#E2E8F0' : 'rgba(255,255,255,0.08)';
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(30, 58, 138, 0.12)' : 'rgba(30, 58, 138, 0.25)';
         }
 
         const radius = Math.min(5, barWidth / 2);
@@ -5809,14 +5808,14 @@
         ctx.fill();
 
         if (expAmount > 0) {
-          ctx.fillStyle = d.is_today ? '#0284C7' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#E2E8F0');
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#1E3A8A' : '#93C5FD';
           ctx.font = 'bold 8px sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
           ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
         }
 
-        ctx.fillStyle = d.is_today ? '#06B6D4' : ((APP_STATE.appTheme === 'theme-light') ? '#334155' : '#94A3B8');
+        ctx.fillStyle = d.is_today ? '#3B82F6' : ((APP_STATE.appTheme === 'theme-light') ? '#334155' : '#94A3B8');
         ctx.font = d.is_today ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(d.day, barX + (barWidth / 2), h - 6);
@@ -6312,16 +6311,49 @@
       const targetId = type === 'ALL' ? 'txFilterAll' : (type === 'EXPENSE' ? 'txFilterExpense' : 'txFilterIncome');
       const targetEl = document.getElementById(targetId);
       if (targetEl) targetEl.classList.add('active');
-      renderTransactionsList(APP_STATE.transactions);
+      applyTxSearch();
     }
 
     function applyTxSearch() {
-      const q = document.getElementById('txSearchInput').value.toLowerCase();
-      const filtered = APP_STATE.transactions.filter(t => 
-        (t.note && t.note.toLowerCase().includes(q)) ||
-        (t.category_name && t.category_name.toLowerCase().includes(q)) ||
-        (t.account_name && t.account_name.toLowerCase().includes(q))
-      );
+      const input = document.getElementById('txSearchInput');
+      const q = (input?.value || '').toLowerCase().trim();
+      
+      if (!q) {
+        renderTransactionsList(APP_STATE.transactions);
+        return;
+      }
+
+      // Extract numeric string if user typed amount (e.g. "500", "500.00", "₹500")
+      const rawNum = q.replace(/[^0-9.]/g, '');
+
+      const filtered = (APP_STATE.transactions || []).filter(t => {
+        // Text field matching: note, category, subcategory, account, tag, merchant
+        const matchNote = t.note && t.note.toLowerCase().includes(q);
+        const matchCat = t.category_name && t.category_name.toLowerCase().includes(q);
+        const matchSubCat = t.subcategory_name && t.subcategory_name.toLowerCase().includes(q);
+        const matchAcc = t.account_name && t.account_name.toLowerCase().includes(q);
+        const matchTag = t.tag && t.tag.toLowerCase().includes(q);
+        const matchMerchant = (t.merchant || t.merchant_name) && String(t.merchant || t.merchant_name).toLowerCase().includes(q);
+
+        // Amount matching: allows searching by amount number or currency formatting
+        let matchAmount = false;
+        if (t.amount !== undefined && t.amount !== null) {
+          const numVal = parseFloat(t.amount);
+          const amtStr = String(t.amount);
+          const amtFixed = numVal.toFixed(2);
+          const amtFormatted = numVal.toLocaleString('en-IN');
+          const amtFormattedFixed = numVal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+          matchAmount = amtStr.includes(q) ||
+                        amtFixed.includes(q) ||
+                        amtFormatted.includes(q) ||
+                        amtFormattedFixed.includes(q) ||
+                        (rawNum.length > 0 && (amtStr.includes(rawNum) || amtFixed.includes(rawNum)));
+        }
+
+        return matchNote || matchCat || matchSubCat || matchAcc || matchTag || matchMerchant || matchAmount;
+      });
+
       renderTransactionsList(filtered);
     }
 

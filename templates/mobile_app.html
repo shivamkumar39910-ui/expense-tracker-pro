@@ -5064,6 +5064,141 @@
       // 3. INSTANT 0ms MULTI-SCREEN SYNC
       syncAllScreensOptimistically(txToDelete, false);
 
+      if (Array.isArray(APP_STATE.accounts)) {
+        const acc = APP_STATE.accounts.find(a => a.id === accId);
+        if (acc) {
+          if (type === 'EXPENSE') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
+          else if (type === 'INCOME') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+          renderAccountPillsAndNetWorth();
+        }
+      }
+
+      if (typeof showToast === 'function') {
+        showToast('Transaction deleted & balance restored', 'success');
+      }
+
+      // 4. Send background DELETE call without freezing UI
+      try {
+        const res = await apiRequest(`/transactions/${txId}`, 'DELETE');
+        if (!res || !res.success) {
+          if (typeof showToast === 'function') {
+            showToast(res?.error || 'Failed to delete transaction. Reverting...', 'error');
+          }
+          await initializeAppData(true);
+        }
+      } catch (err) {
+        console.error('Delete transaction network error:', err);
+      }
+    }
+
+    async function promptEditActiveTx() {
+      if (!ACTIVE_TX) return;
+      const newAmount = prompt('Enter new amount (₹):', ACTIVE_TX.amount);
+      if (!newAmount) return;
+      const newNote = prompt('Enter new note/description:', ACTIVE_TX.note || '');
+
+      const payload = {
+        account_id: ACTIVE_TX.account_id,
+        target_account_id: ACTIVE_TX.target_account_id,
+        category_id: ACTIVE_TX.category_id,
+        subcategory_id: ACTIVE_TX.subcategory_id,
+        transaction_type: ACTIVE_TX.transaction_type,
+        amount: parseFloat(newAmount),
+        date: ACTIVE_TX.date,
+        note: newNote,
+        tag: ACTIVE_TX.tag
+      };
+
+      const res = await apiRequest(`/transactions/${ACTIVE_TX.id}`, 'PUT', payload);
+      if (res && res.success) {
+        closeTxDetailModal();
+        await initializeAppData();
+      } else {
+        alert(res?.error || 'Failed to update transaction');
+      }
+    }
+
+    // ----------------------------------------------------
+    // ACCOUNT STATEMENT & BALANCE RECONCILE (PHASE 4)
+    // ----------------------------------------------------
+    let ACTIVE_ACCOUNT_ID = null;
+
+    async function openAccountStatement(accId) {
+      ACTIVE_ACCOUNT_ID = accId;
+      const res = await apiRequest(`/accounts/${accId}`);
+      if (!res || !res.success) {
+        alert('Could not load account details');
+        return;
+      }
+
+      const acc = res.account;
+      document.getElementById('accModalTitle').innerText = acc.name;
+      document.getElementById('accModalTypeBadge').innerText = `${acc.account_type} WALLET`;
+      document.getElementById('accModalIconBox').style.background = acc.color_hex || '#10B981';
+      document.getElementById('accModalIcon').innerText = acc.icon || 'wallet';
+      document.getElementById('accModalBalance').innerText = `₹${acc.current_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('accModalInflow').innerText = `₹${acc.total_inflow.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('accModalOutflow').innerText = `₹${acc.total_outflow.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      const creditSec = document.getElementById('accModalCreditSection');
+      if (acc.account_type === 'CREDIT_CARD') {
+        creditSec.style.display = 'block';
+        const limit = acc.credit_limit || 0;
+        const available = Math.max(0, limit + acc.current_balance);
+        document.getElementById('accModalCreditLimit').innerText = `₹${limit.toLocaleString('en-IN')}`;
+        document.getElementById('accModalAvailableCredit').innerText = `₹${available.toLocaleString('en-IN')}`;
+      } else {
+        creditSec.style.display = 'none';
+      }
+
+      const txContainer = document.getElementById('accModalTxList');
+      txContainer.innerHTML = '';
+      if (!acc.transactions || acc.transactions.length === 0) {
+        txContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">No transactions recorded for this wallet yet.</div>';
+      } else {
+        acc.transactions.forEach(t => txContainer.appendChild(createTxElement(t)));
+      }
+
+      document.getElementById('accountSheetBackdrop').classList.add('active');
+      document.getElementById('accountStatementSheet').classList.add('active');
+    }
+
+    function closeAccountStatementSheet() {
+      document.getElementById('accountSheetBackdrop').classList.remove('active');
+      document.getElementById('accountStatementSheet').classList.remove('active');
+      ACTIVE_ACCOUNT_ID = null;
+    }
+
+    async function triggerAccountReconcile() {
+      if (!ACTIVE_ACCOUNT_ID) return;
+      const actual = prompt('Enter your actual real-world balance for this account (₹):');
+      if (actual === null || actual.trim() === '') return;
+
+      const res = await apiRequest(`/accounts/${ACTIVE_ACCOUNT_ID}/reconcile`, 'POST', {
+        actual_balance: parseFloat(actual)
+      });
+
+      if (res && res.success) {
+        alert(`Account successfully reconciled! New Balance: ₹${res.data.new_balance}`);
+        closeAccountStatementSheet();
+        await initializeAppData();
+      } else {
+        alert(res?.error || 'Failed to reconcile balance');
+      }
+    }
+
+    function setTxFilter(type) {
+      APP_STATE.activeTxFilter = type;
+      ['All', 'Expense', 'Income'].forEach(t => {
+        const el = document.getElementById(`txFilter${t}`);
+        if (el) el.classList.remove('active');
+      });
+      const targetId = type === 'ALL' ? 'txFilterAll' : (type === 'EXPENSE' ? 'txFilterExpense' : 'txFilterIncome');
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) targetEl.classList.add('active');
+      renderTransactionsList(APP_STATE.transactions);
+    }
+
     function applyTxSearch() {
       const q = document.getElementById('txSearchInput').value.toLowerCase();
       const filtered = APP_STATE.transactions.filter(t => 

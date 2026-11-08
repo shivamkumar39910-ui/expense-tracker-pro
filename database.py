@@ -499,28 +499,46 @@ def seed_default_accounts_and_migrate_legacy():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # 1. Migrate legacy account names to standard 3 payment channels (Cash, UPI, Cards)
+    cursor.execute("UPDATE accounts SET name = 'Cash', icon = 'payments' WHERE name = 'Cash in Hand'")
+    cursor.execute("UPDATE accounts SET name = 'UPI', icon = 'qr_code_scanner' WHERE name = 'Main Bank Account'")
+    cursor.execute("UPDATE accounts SET name = 'Cards', icon = 'credit_card', color_hex = '#8B5CF6' WHERE account_type = 'CREDIT_CARD' OR name LIKE '%Credit Card%'")
+
     # Fetch all registered users
     cursor.execute("SELECT id FROM users")
     users = cursor.fetchall()
 
     for user in users:
         user_id = user["id"]
-        # Ensure user has default accounts: Cash and Primary Bank
+        # Ensure user has default accounts: Cash, UPI, and Cards
         cursor.execute("SELECT count(*) FROM accounts WHERE user_id = ?", (user_id,))
         if cursor.fetchone()[0] == 0:
             cursor.execute("""
                 INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
-                VALUES (?, 'Cash in Hand', 'CASH', 0.0, 0.0, '#10B981', 'payments')
+                VALUES (?, 'Cash', 'CASH', 0.0, 0.0, '#10B981', 'payments')
             """, (user_id,))
             cash_account_id = cursor.lastrowid
 
             cursor.execute("""
                 INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
-                VALUES (?, 'Main Bank Account', 'BANK', 0.0, 0.0, '#3B82F6', 'account_balance')
+                VALUES (?, 'UPI', 'BANK', 0.0, 0.0, '#3B82F6', 'qr_code_scanner')
+            """, (user_id,))
+
+            cursor.execute("""
+                INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
+                VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
             """, (user_id,))
         else:
             cursor.execute("SELECT id FROM accounts WHERE user_id = ? ORDER BY id ASC LIMIT 1", (user_id,))
             cash_account_id = cursor.fetchone()["id"]
+
+            # Ensure 'Cards' account exists for every existing user
+            cursor.execute("SELECT count(*) FROM accounts WHERE user_id = ? AND name = 'Cards'", (user_id,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("""
+                    INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
+                    VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
+                """, (user_id,))
 
         # Migrate legacy expenses into transactions if not yet migrated
         cursor.execute("SELECT count(*) FROM transactions WHERE user_id = ?", (user_id,))
@@ -566,16 +584,20 @@ def seed_default_accounts_and_migrate_legacy():
 # ==================================================
 
 def create_user_default_data(user_id):
-    """Creates initial accounts for newly registered users."""
+    """Creates initial accounts for newly registered users: Cash, UPI, and Cards."""
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
-        VALUES (?, 'Cash in Hand', 'CASH', 0.0, 0.0, '#10B981', 'payments')
+        VALUES (?, 'Cash', 'CASH', 0.0, 0.0, '#10B981', 'payments')
     """, (user_id,))
     cursor.execute("""
         INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
-        VALUES (?, 'Main Bank Account', 'BANK', 0.0, 0.0, '#3B82F6', 'account_balance')
+        VALUES (?, 'UPI', 'BANK', 0.0, 0.0, '#3B82F6', 'qr_code_scanner')
+    """, (user_id,))
+    cursor.execute("""
+        INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
+        VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
     """, (user_id,))
     conn.commit()
     conn.close()

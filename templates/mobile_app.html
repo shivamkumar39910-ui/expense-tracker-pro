@@ -684,6 +684,8 @@
     }
 
     /* Automatically Hide Floating AI Button whenever ANY sheet or modal is open */
+    body.sheet-open #floatingAiBotBtn,
+    body.chat-open #floatingAiBotBtn,
     body:has(.bottom-sheet.active) #floatingAiBotBtn,
     body:has(.sheet-backdrop.active) #floatingAiBotBtn,
     body:has(.auth-overlay:not(.hidden)) #floatingAiBotBtn,
@@ -711,6 +713,16 @@
       opacity: 1;
       pointer-events: auto;
     }
+    
+    #quickEntrySheet {
+      max-height: 96vh;
+      overflow-y: hidden !important;
+      padding: 12px 18px 16px 18px;
+    }
+    #quickEntrySheet.details-expanded {
+      overflow-y: auto !important;
+    }
+
     .bottom-sheet {
       position: absolute;
       bottom: 0;
@@ -1587,11 +1599,10 @@
         </div>
 
         <!-- Filter Segmented Tabs -->
-        <div class="segmented-control" style="margin-bottom:12px;">
+        <div class="segmented-control" style="margin-bottom:12px; display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
           <div class="segment-btn active" id="txFilterAll" onclick="setTxFilter('ALL')">All</div>
           <div class="segment-btn" id="txFilterExpense" onclick="setTxFilter('EXPENSE')">Expense</div>
           <div class="segment-btn" id="txFilterIncome" onclick="setTxFilter('INCOME')">Income</div>
-          <div class="segment-btn" id="txFilterTransfer" onclick="setTxFilter('TRANSFER')">Transfer</div>
         </div>
 
         <input type="text" class="form-input-pill" placeholder="🔍 Search by merchant, category or note..." id="txSearchInput" oninput="applyTxSearch()">
@@ -1676,10 +1687,10 @@
           </div>
           <div style="flex:1;">
             <div class="user-name" style="font-size:18px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
-              <span>🤖 AI Assistant & Forecast</span>
-              <span style="font-size:10px; background:rgba(139,92,246,0.25); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">SMART</span>
+              <span>Insights</span>
+              <span style="font-size:10px; background:rgba(6,182,212,0.25); color:#06B6D4; border:1px solid rgba(6,182,212,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">INTELLIGENCE</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & MONTH-END RUNWAY</div>
+            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & WEEKLY EXPENSE INTELLIGENCE</div>
           </div>
           <div class="btn-icon-header" onclick="refreshForecastData()" title="Recalculate AI Forecast">
             <span class="material-icons-round">refresh</span>
@@ -1723,24 +1734,17 @@
           </p>
         </div>
 
-        <!-- 2. Next Month Early Forecast Card -->
+        <!-- 2. Weekly Daily Expense Trend (Mon - Sun) -->
         <div class="fintech-card" style="padding:16px; margin-bottom:16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span class="material-icons-round" style="color:#A78BFA; font-size:20px;">event_repeat</span>
-              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Next Month AI Projection</div>
+              <span class="material-icons-round" style="color:#06B6D4; font-size:20px;">bar_chart</span>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Weekly Expense History</div>
             </div>
-            <span style="font-size:10px; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 8px; border-radius:10px; font-weight:700;">WMA Model</span>
+            <div style="font-size:10px; background:rgba(6,182,212,0.15); color:#06B6D4; border:1px solid rgba(6,182,212,0.3); padding:3px 8px; border-radius:10px; font-weight:800;" id="weeklyTotalSpendBadge">₹0.00 This Week</div>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div>
-              <div style="font-size:10px; color:var(--text-muted);">Historical Weighted Baseline</div>
-              <div style="font-size:22px; font-weight:800; color:var(--text-primary);" id="fcWmaBaseline">₹0.00</div>
-            </div>
-            <div style="font-size:11px; color:#10B981; font-weight:700; text-align:right;">
-              <div>🟢 3-6 Month Baseline</div>
-              <div>Multi-Factor Weighted</div>
-            </div>
+          <div style="width:100%; height:140px;">
+            <canvas id="weeklyDailyBarCanvas" width="300" height="140" style="width:100%; height:140px;"></canvas>
           </div>
         </div>
 
@@ -1981,9 +1985,9 @@
       </div>
 
       <!-- AI Advisor Tab -->
-      <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="AI Advisor & Forecast">
-        <span class="material-icons-round">auto_awesome</span>
-        <span>AI Advisor</span>
+      <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="Insights">
+        <span class="material-icons-round">insights</span>
+        <span>Insights</span>
       </div>
 
       <!-- Hub: Profile, Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
@@ -2069,104 +2073,98 @@
     <div class="bottom-sheet" id="quickEntrySheet">
       <div class="sheet-handle"></div>
 
-      <!-- Sheet Top Bar with Back Button -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <!-- Sheet Top Bar with Back Button (SMS & Scan removed per user request) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <div class="btn-icon-header" onclick="closeQuickEntrySheet()" title="Back / Cancel">
             <span class="material-icons-round">arrow_back</span>
           </div>
-          <div style="font-size:16px; font-weight:800; color:#FFF;">Record Transaction</div>
+          <div style="font-size:15px; font-weight:800; color:#FFF;">Record Transaction</div>
         </div>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="segment-btn" onclick="openSmsParserModal()" style="background:linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(59, 130, 246, 0.25)); border:1px solid rgba(16, 185, 129, 0.45); color:#FFF; font-size:11px; font-weight:800; padding:6px 10px; border-radius:12px; display:flex; align-items:center; gap:4px;" title="Import Bank SMS / UPI">
-            <span class="material-icons-round" style="font-size:16px; color:var(--color-emerald);">sms</span>
-            <span>SMS</span>
-          </button>
-          <button type="button" class="segment-btn" onclick="openReceiptScannerModal()" style="background:linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.25)); border:1px solid rgba(59, 130, 246, 0.45); color:#FFF; font-size:11px; font-weight:800; padding:6px 10px; border-radius:12px; display:flex; align-items:center; gap:4px;" title="Scan Receipt / Invoice">
-            <span class="material-icons-round" style="font-size:16px; color:var(--color-sapphire);">document_scanner</span>
-            <span>Scan</span>
-          </button>
+        <div class="btn-icon-header" onclick="closeQuickEntrySheet()" title="Close">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
         </div>
       </div>
 
-      <!-- Segmented Type Selector -->
-      <div class="segmented-control" style="margin-bottom:12px;">
-        <div class="segment-btn active expense" id="sheetSegExpense" onclick="setSheetTxType('EXPENSE')">Expense</div>
-        <div class="segment-btn" id="sheetSegIncome" onclick="setSheetTxType('INCOME')">Income</div>
-        <div class="segment-btn" id="sheetSegTransfer" onclick="setSheetTxType('TRANSFER')">Transfer</div>
+      <!-- Segmented Type Selector (Expense & Income Only - Transfer removed) -->
+      <div class="segmented-control" style="margin-bottom:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:3px;">
+        <div class="segment-btn active expense" id="sheetSegExpense" onclick="setSheetTxType('EXPENSE')" style="padding:6px 0; font-size:12px; font-weight:800;">Expense</div>
+        <div class="segment-btn" id="sheetSegIncome" onclick="setSheetTxType('INCOME')" style="padding:6px 0; font-size:12px; font-weight:800;">Income</div>
       </div>
 
       <!-- Amount Display with Keypad -->
-      <div class="keypad-display">
-        <span class="display-currency" id="keypadCurrencySymbol">₹</span>
-        <span class="display-val" id="keypadAmountDisplay">0</span>
+      <div class="keypad-display" style="padding:6px 12px; margin-bottom:8px; border-radius:12px;">
+        <span class="display-currency" id="keypadCurrencySymbol" style="font-size:20px;">₹</span>
+        <span class="display-val" id="keypadAmountDisplay" style="font-size:26px; font-weight:800;">0</span>
       </div>
 
-      <!-- Category Grid (Hidden for Transfers) -->
-      <div id="categoryGridWrapper">
-        <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">SELECT CATEGORY</div>
-        <div class="category-scroll-grid" id="sheetCategoryGrid">
+      <!-- Category Grid -->
+      <div id="categoryGridWrapper" style="margin-bottom:6px;">
+        <div style="font-size:10px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px; margin-bottom:3px;">SELECT CATEGORY</div>
+        <div class="category-scroll-grid" id="sheetCategoryGrid" style="gap:6px; padding:2px 0 4px 0; margin-bottom:0;">
           <!-- Filled dynamically -->
         </div>
-
-        <!-- Dynamic Subcategory Row (Phase 5) -->
-        <div id="subcategoryWrapper" style="display:none; margin-bottom:8px;">
+        <div id="subcategoryWrapper" style="display:none; margin-top:4px; margin-bottom:4px;">
           <div class="accounts-pill-row" id="sheetSubcategoryPills"></div>
         </div>
       </div>
 
-      <!-- Account Selector Pill Row -->
-      <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">PAYMENT ACCOUNT</div>
-      <div class="accounts-pill-row" id="sheetAccountPills" style="margin-bottom:10px;">
-        <!-- Filled dynamically -->
+      <!-- Payment Account / Method Selector (Cash, UPI, Cards) -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px; margin-bottom:4px;">PAYMENT METHOD</div>
+        <div class="accounts-pill-row" id="sheetAccountPills" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:0; overflow:visible;">
+          <!-- Filled dynamically with Cash, UPI, Cards -->
+        </div>
       </div>
 
-      <!-- Destination Account (Only for Transfers) -->
-      <div id="transferTargetRow" style="display:none; margin-bottom:10px;">
-        <div style="font-size:11px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">DESTINATION ACCOUNT</div>
+      <!-- Hidden legacy destination account wrapper for compatibility -->
+      <div id="transferTargetRow" style="display:none;">
         <div class="accounts-pill-row" id="sheetTargetAccountPills"></div>
       </div>
 
-      <!-- Touch Numeric Keypad -->
-      <div class="keypad-grid" style="margin-bottom:8px;">
-        <div class="key-btn" onclick="pressKey('1')">1</div>
-        <div class="key-btn" onclick="pressKey('2')">2</div>
-        <div class="key-btn" onclick="pressKey('3')">3</div>
-        <div class="key-btn" onclick="pressKey('4')">4</div>
-        <div class="key-btn" onclick="pressKey('5')">5</div>
-        <div class="key-btn" onclick="pressKey('6')">6</div>
-        <div class="key-btn" onclick="pressKey('7')">7</div>
-        <div class="key-btn" onclick="pressKey('8')">8</div>
-        <div class="key-btn" onclick="pressKey('9')">9</div>
-        <div class="key-btn" onclick="pressKey('.')">.</div>
-        <div class="key-btn" onclick="pressKey('0')">0</div>
-        <div class="key-btn" onclick="pressKey('DEL')"><span class="material-icons-round">backspace</span></div>
+      <!-- Touch Numeric Keypad (Compact 36px) -->
+      <div class="keypad-grid" style="grid-template-columns:repeat(3, 1fr); gap:5px; margin-bottom:6px;">
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('1')">1</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('2')">2</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('3')">3</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('4')">4</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('5')">5</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('6')">6</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('7')">7</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('8')">8</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('9')">9</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('.')">.</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('0')">0</div>
+        <div class="key-btn" style="height:36px; font-size:17px; border-radius:9px;" onclick="pressKey('DEL')"><span class="material-icons-round" style="font-size:18px;">backspace</span></div>
       </div>
 
       <!-- Collapsible Additional Details (Note, Tags, Date) -->
-      <div style="text-align:center; margin-bottom:10px;">
-        <button type="button" onclick="toggleQuickEntryDetails()" id="sheetDetailsToggleBtn" style="background:transparent; border:none; color:var(--color-sapphire); font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; padding:4px 8px;">
+      <div style="text-align:center; margin-bottom:6px;">
+        <button type="button" onclick="toggleQuickEntryDetails()" id="sheetDetailsToggleBtn" style="background:transparent; border:none; color:var(--color-sapphire); font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; padding:2px 8px;">
           <span class="material-icons-round" id="sheetDetailsToggleIcon" style="font-size:15px;">add_circle_outline</span>
           <span id="sheetDetailsToggleText">+ Add Note, Date & Tags</span>
         </button>
       </div>
 
-      <div id="sheetAdvancedDetails" style="display:none; background:rgba(255,255,255,0.03); border:1px solid var(--border-card); border-radius:14px; padding:10px; margin-bottom:12px;">
+      <div id="sheetAdvancedDetails" style="display:none; background:rgba(255,255,255,0.03); border:1px solid var(--border-card); border-radius:12px; padding:8px; margin-bottom:8px;">
         <!-- Quick Date Selector Pills -->
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div class="segment-btn active" id="datePillToday" style="font-size:11px; padding:6px 12px; background:var(--bg-card-subtle); color:var(--text-primary);" onclick="setSheetDate('TODAY')">Today</div>
-          <div class="segment-btn" id="datePillYesterday" style="font-size:11px; padding:6px 12px; color:var(--text-muted);" onclick="setSheetDate('YESTERDAY')">Yesterday</div>
-          <input type="date" id="sheetCustomDate" style="background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:10px; color:var(--text-primary); font-size:11px; padding:5px 8px; outline:none;" onchange="setSheetDate('CUSTOM')">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+          <div class="segment-btn active" id="datePillToday" style="font-size:10.5px; padding:4px 10px; background:var(--bg-card-subtle); color:var(--text-primary);" onclick="setSheetDate('TODAY')">Today</div>
+          <div class="segment-btn" id="datePillYesterday" style="font-size:10.5px; padding:4px 10px; color:var(--text-muted);" onclick="setSheetDate('YESTERDAY')">Yesterday</div>
+          <input type="date" id="sheetCustomDate" style="background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:8px; color:var(--text-primary); font-size:10.5px; padding:4px 6px; outline:none;" onchange="setSheetDate('CUSTOM')">
         </div>
 
         <!-- Optional Note & Tags -->
-        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:8px;">
-          <input type="text" class="form-input-pill" placeholder="Note / Description" id="sheetNoteInput" style="margin-bottom:0;">
-          <input type="text" class="form-input-pill" placeholder="#Tags (e.g. #tax)" id="sheetTagInput" style="margin-bottom:0;">
+        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:6px;">
+          <input type="text" class="form-input-pill" placeholder="Note / Description" id="sheetNoteInput" style="margin-bottom:0; font-size:11px; padding:6px 10px;">
+          <input type="text" class="form-input-pill" placeholder="#Tags (e.g. #tax)" id="sheetTagInput" style="margin-bottom:0; font-size:11px; padding:6px 10px;">
         </div>
       </div>
 
-      <button class="btn-submit-sheet" onclick="submitQuickTransaction()" style="margin-top:0;">Record Transaction</button>
+      <button class="btn-submit-sheet" onclick="submitQuickTransaction()" style="margin-top:0; padding:10px 16px; font-size:14px; font-weight:800; border-radius:12px; height:42px; display:flex; align-items:center; justify-content:center; gap:6px;">
+        <span class="material-icons-round" style="font-size:18px;">check_circle</span>
+        <span>Record Transaction</span>
+      </button>
     </div>
 
     <!-- ============================================== -->
@@ -3284,18 +3282,18 @@
           try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
         }
         if (targetId === 'tab-analytics') {
-          // Instantly trigger Donut sweep animation and 6M bar chart if data is in state
           if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
             renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
           }
           if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
             renderHistoryBarChart(APP_STATE.history6m);
           }
-          loadVisualCharts().catch(console.error);
-          try { renderTransactionsList(); } catch (e) { console.error('renderTransactionsList error:', e); }
+          try { renderTransactionsList(); } catch (e) {}
         }
         if (targetId === 'tab-ai') {
-          try { renderForecastDetails(APP_STATE.forecast); } catch (e) { console.error('renderForecastDetails error:', e); }
+          try { renderForecastDetails(APP_STATE.forecast); } catch (e) {}
+          try { renderTrajectoryChart(APP_STATE.forecast); } catch (e) {}
+          try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
         }
       } catch (err) {
         console.error('switchTab error:', err);
@@ -3481,6 +3479,12 @@
       if (Array.isArray(b.history_6m)) {
         APP_STATE.history6m = b.history_6m;
         renderHistoryBarChart(b.history_6m);
+      }
+      if (Array.isArray(b.weekly_daily)) {
+        APP_STATE.weeklyDaily = b.weekly_daily;
+        renderWeeklyDailyBarChart(b.weekly_daily);
+      } else {
+        renderWeeklyDailyBarChart();
       }
 
       // 9. Unread Notifications Count
@@ -4598,6 +4602,258 @@
       window._donutAnimId = requestAnimationFrame(animateDonut);
     }
 
+    
+    // ----------------------------------------------------
+    // WEEKLY DAILY EXPENSE TREND CHART (INSIGHTS TAB)
+    // ----------------------------------------------------
+    function renderWeeklyDailyBarChart(weeklyData = null) {
+      const canvas = document.getElementById('weeklyDailyBarCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      let weekDays = weeklyData;
+      if (!Array.isArray(weekDays) || weekDays.length === 0) {
+        const now = new Date();
+        const currentDayIndex = now.getDay();
+        const diffToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        weekDays = dayNames.map((name, idx) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + idx);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${yyyy}-${mm}-${dd}`;
+          return {
+            day: name,
+            date: dateStr,
+            is_today: (idx === (currentDayIndex === 0 ? 6 : currentDayIndex - 1)),
+            expenses: 0
+          };
+        });
+
+        if (Array.isArray(APP_STATE.transactions)) {
+          APP_STATE.transactions.forEach(t => {
+            if (t.transaction_type === 'EXPENSE' && t.date) {
+              const item = weekDays.find(w => w.date === t.date);
+              if (item) {
+                item.expenses += (parseFloat(t.amount) || 0);
+              }
+            }
+          });
+        }
+      }
+
+      let totalWeeklySpend = 0;
+      let maxVal = 500;
+      weekDays.forEach(d => {
+        totalWeeklySpend += (parseFloat(d.expenses) || 0);
+        if (d.expenses > maxVal) maxVal = d.expenses;
+      });
+
+      const badge = document.getElementById('weeklyTotalSpendBadge');
+      if (badge) {
+        badge.innerText = `₹${totalWeeklySpend.toLocaleString('en-IN', {minimumFractionDigits: 0})} This Week`;
+      }
+
+      const paddingBottom = 26;
+      const chartHeight = h - paddingBottom;
+      const barGroupWidth = w / weekDays.length;
+      const barWidth = Math.max(14, barGroupWidth - 14);
+
+      weekDays.forEach((d, idx) => {
+        const groupX = idx * barGroupWidth;
+        const barX = groupX + (barGroupWidth - barWidth) / 2;
+        const expAmount = parseFloat(d.expenses) || 0;
+        const expenseHeight = expAmount > 0 ? Math.max(8, (expAmount / maxVal) * (chartHeight - 22)) : 4;
+        const expenseY = chartHeight - expenseHeight;
+
+        if (d.is_today) {
+          const grad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
+          grad.addColorStop(0, '#06B6D4');
+          grad.addColorStop(1, '#0284C7');
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#6366F1' : (expAmount > 0 ? '#4F46E5' : 'rgba(255,255,255,0.08)');
+        }
+
+        const radius = Math.min(5, barWidth / 2);
+        ctx.beginPath();
+        ctx.moveTo(barX, chartHeight);
+        ctx.lineTo(barX, expenseY + radius);
+        ctx.quadraticCurveTo(barX, expenseY, barX + radius, expenseY);
+        ctx.lineTo(barX + barWidth - radius, expenseY);
+        ctx.quadraticCurveTo(barX + barWidth, expenseY, barX + barWidth, expenseY + radius);
+        ctx.lineTo(barX + barWidth, chartHeight);
+        ctx.closePath();
+        ctx.fill();
+
+        if (expAmount > 0) {
+          ctx.fillStyle = d.is_today ? '#38BDF8' : ((APP_STATE.appTheme === 'theme-light') ? '#1E293B' : '#CBD5E1');
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
+          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
+        }
+
+        ctx.fillStyle = d.is_today ? '#06B6D4' : ((APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8');
+        ctx.font = d.is_today ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.day, barX + (barWidth / 2), h - 6);
+      });
+    }
+
+    // ----------------------------------------------------
+    // ULTRA-FAST 0ms CROSS-SCREEN SYNCHRONIZATION ENGINE
+    // ----------------------------------------------------
+    function syncAllScreensOptimistically(tx, isAddition = true) {
+      if (!tx) return;
+      const amount = parseFloat(tx.amount) || 0;
+
+      // 1. In-memory transactions array update
+      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
+      if (isAddition) {
+        APP_STATE.transactions = [tx, ...APP_STATE.transactions.filter(t => t.id !== tx.id)];
+      } else {
+        APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== tx.id);
+      }
+
+      // 2. Compute current month's expenses & income
+      const now = new Date();
+      const currentYearMonth = now.toISOString().slice(0, 7);
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const daysElapsed = Math.max(1, now.getDate());
+
+      let currentMonthExpenses = 0;
+      let currentMonthIncome = 0;
+      const catTotals = {};
+
+      APP_STATE.transactions.forEach(t => {
+        if (!t.date || !t.date.startsWith(currentYearMonth)) return;
+        const amt = parseFloat(t.amount) || 0;
+        if (t.transaction_type === 'EXPENSE') {
+          currentMonthExpenses += amt;
+          const cName = t.category_name || 'Others';
+          if (!catTotals[cName]) {
+            catTotals[cName] = {
+              name: cName,
+              amount: 0,
+              color: t.category_color || '#6B7280',
+              icon: t.category_icon || 'category',
+              count: 0
+            };
+          }
+          catTotals[cName].amount += amt;
+          catTotals[cName].count += 1;
+        } else if (t.transaction_type === 'INCOME') {
+          currentMonthIncome += amt;
+        }
+      });
+
+      // 3. Update Home Screen (Total Expense, Budget Progress, Forecast, Recent Tx)
+      const homeExp = document.getElementById('homeTotalExpenseDisplay');
+      if (homeExp) {
+        setMaskableText('homeTotalExpenseDisplay', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      }
+
+      // Home Budget Card
+      const budgetLimitEl = document.getElementById('homeBudgetLimitDisplay');
+      const budgetLimit = budgetLimitEl ? (parseFloat(budgetLimitEl.innerText.replace(/[^0-9.]/g, '')) || 1000) : 1000;
+      const remaining = Math.max(0, budgetLimit - currentMonthExpenses);
+      const utilPct = budgetLimit > 0 ? Math.min(100, Math.round((currentMonthExpenses / budgetLimit) * 100)) : 0;
+      const isExceeded = currentMonthExpenses > budgetLimit;
+
+      const homeSpent = document.getElementById('homeBudgetSpentDisplay');
+      if (homeSpent) homeSpent.innerText = `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const homeRem = document.getElementById('homeBudgetRemainingDisplay');
+      if (homeRem) homeRem.innerText = `₹${remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const homeBar = document.getElementById('homeBudgetProgressBar');
+      if (homeBar) {
+        homeBar.style.width = `${utilPct}%`;
+        homeBar.style.background = isExceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+      }
+      const homeBadge = document.getElementById('homeBudgetPercentBadge');
+      if (homeBadge) {
+        homeBadge.innerText = `${utilPct}% Used`;
+        homeBadge.style.color = isExceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+        homeBadge.style.background = isExceeded ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+      }
+
+      // Home Recent Transactions
+      renderRecentTx(APP_STATE.transactions.slice(0, 5));
+
+      // Home Forecast Calculation
+      const dailyVelocity = currentMonthExpenses / daysElapsed;
+      const projectedMonthEnd = currentMonthExpenses + (dailyVelocity * (daysInMonth - daysElapsed));
+      if (!APP_STATE.forecast) {
+        APP_STATE.forecast = {
+          days_elapsed: daysElapsed,
+          total_days_in_month: daysInMonth,
+          monthly_budget: budgetLimit
+        };
+      }
+      APP_STATE.forecast.mtd_actual_spend = currentMonthExpenses;
+      APP_STATE.forecast.projected_month_end_spend = Math.round(projectedMonthEnd * 100) / 100;
+      APP_STATE.forecast.daily_run_rate = Math.round(dailyVelocity * 100) / 100;
+      APP_STATE.forecast.safe_daily_cap = daysInMonth > daysElapsed ? Math.max(0, (budgetLimit - currentMonthExpenses) / (daysInMonth - daysElapsed)) : 0;
+      updateForecastUI(APP_STATE.forecast);
+
+      // 4. Update Analytics Screen (Donut Chart, History Bar, All Transactions)
+      const slices = Object.values(catTotals).map(c => ({
+        ...c,
+        percentage: currentMonthExpenses > 0 ? Math.round((c.amount / currentMonthExpenses) * 1000) / 10 : 0
+      }));
+      slices.sort((a, b) => b.amount - a.amount);
+      APP_STATE.categoryBreakdown = slices;
+      APP_STATE.categoryTotalExpense = currentMonthExpenses;
+      renderDonutChart(slices, currentMonthExpenses);
+
+      // Update current month in 6M History
+      if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
+        const lastM = APP_STATE.history6m[APP_STATE.history6m.length - 1];
+        if (lastM) {
+          lastM.expenses = currentMonthExpenses;
+          renderHistoryBarChart(APP_STATE.history6m);
+        }
+      }
+
+      // Render All Transactions List
+      renderTransactionsList(APP_STATE.transactions);
+
+      // 5. Update Insights Screen (Tab 4)
+      renderTrajectoryChart(APP_STATE.forecast);
+      renderWeeklyDailyBarChart();
+      const fcMonthEnd = document.getElementById('fcMonthEndProjectedDisplay');
+      if (fcMonthEnd) fcMonthEnd.innerText = `₹${Math.round(projectedMonthEnd).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const fcSpend = document.getElementById('fcMtdSpend');
+      if (fcSpend) fcSpend.innerText = `₹${dailyVelocity.toFixed(1)}/day`;
+      const fcCap = document.getElementById('fcSafeDailyCap');
+      if (fcCap) fcCap.innerText = `₹${(APP_STATE.forecast.safe_daily_cap || 0).toFixed(1)}/day`;
+
+      // 6. Synchronize with localStorage
+      try {
+        const cached = localStorage.getItem('cached_bootstrap');
+        const bObj = cached ? JSON.parse(cached) : {};
+        bObj.transactions = APP_STATE.transactions.slice(0, 50);
+        bObj.recent_transactions = APP_STATE.transactions.slice(0, 5);
+        bObj.accounts = APP_STATE.accounts;
+        bObj.total_expense = currentMonthExpenses;
+        if (!bObj.cashflow) bObj.cashflow = {};
+        bObj.cashflow.expenses = currentMonthExpenses;
+        bObj.breakdown = slices;
+        bObj.forecast = APP_STATE.forecast;
+        localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
+      } catch (e) {}
+    }
+
     function renderHistoryBarChart(history) {
       const canvas = document.getElementById('historyBarCanvas');
       if (!canvas) return;
@@ -4805,166 +5061,8 @@
         setTimeout(() => el.remove(), 230);
       });
 
-      // 3. Remove from in-memory state
-      if (Array.isArray(APP_STATE.transactions)) {
-        APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== txId);
-      }
-
-      // 4. Instant mathematical balance and expense restoration in UI (0ms)
-      if (Array.isArray(APP_STATE.accounts)) {
-        const acc = APP_STATE.accounts.find(a => a.id === accId);
-        if (acc) {
-          if (type === 'EXPENSE') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
-          else if (type === 'INCOME') acc.current_balance = (parseFloat(acc.current_balance) || 0) - amount;
-        }
-      }
-      renderAccountPillsAndNetWorth();
-
-      if (type === 'EXPENSE') {
-        const homeExp = document.getElementById('homeTotalExpenseDisplay');
-        if (homeExp) {
-          const raw = homeExp.dataset.realVal || homeExp.innerText;
-          const currentTotal = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
-          const newTotal = Math.max(0, currentTotal - amount);
-          setMaskableText('homeTotalExpenseDisplay', `₹${newTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
-        }
-        if (Array.isArray(APP_STATE.categoryBreakdown)) {
-          APP_STATE.categoryTotalExpense = Math.max(0, (APP_STATE.categoryTotalExpense || 0) - amount);
-          const catItem = APP_STATE.categoryBreakdown.find(s => s.name === txToDelete.category_name);
-          if (catItem) {
-            catItem.amount = Math.max(0, catItem.amount - amount);
-          }
-          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
-        }
-      }
-
-      if (typeof showToast === 'function') {
-        showToast('Transaction deleted & balance restored', 'success');
-      }
-
-      // 5. Send background DELETE call without freezing UI
-      try {
-        const res = await apiRequest(`/transactions/${txId}`, 'DELETE');
-        if (!res || !res.success) {
-          if (typeof showToast === 'function') {
-            showToast(res?.error || 'Failed to delete transaction. Reverting...', 'error');
-          }
-          await initializeAppData(true);
-        } else {
-          // Quiet background sync without screen freeze
-          setTimeout(() => refreshDashboardData(), 400);
-        }
-      } catch (err) {
-        console.error('Delete transaction network error:', err);
-        await initializeAppData(true);
-      }
-    }
-
-    async function promptEditActiveTx() {
-      if (!ACTIVE_TX) return;
-      const newAmount = prompt('Enter new amount (₹):', ACTIVE_TX.amount);
-      if (!newAmount) return;
-      const newNote = prompt('Enter new note/description:', ACTIVE_TX.note || '');
-
-      const payload = {
-        account_id: ACTIVE_TX.account_id,
-        target_account_id: ACTIVE_TX.target_account_id,
-        category_id: ACTIVE_TX.category_id,
-        subcategory_id: ACTIVE_TX.subcategory_id,
-        transaction_type: ACTIVE_TX.transaction_type,
-        amount: parseFloat(newAmount),
-        date: ACTIVE_TX.date,
-        note: newNote,
-        tag: ACTIVE_TX.tag
-      };
-
-      const res = await apiRequest(`/transactions/${ACTIVE_TX.id}`, 'PUT', payload);
-      if (res && res.success) {
-        closeTxDetailModal();
-        await initializeAppData();
-      } else {
-        alert(res?.error || 'Failed to update transaction');
-      }
-    }
-
-    // ----------------------------------------------------
-    // ACCOUNT STATEMENT & BALANCE RECONCILE (PHASE 4)
-    // ----------------------------------------------------
-    let ACTIVE_ACCOUNT_ID = null;
-
-    async function openAccountStatement(accId) {
-      ACTIVE_ACCOUNT_ID = accId;
-      const res = await apiRequest(`/accounts/${accId}`);
-      if (!res || !res.success) {
-        alert('Could not load account details');
-        return;
-      }
-
-      const acc = res.account;
-      document.getElementById('accModalTitle').innerText = acc.name;
-      document.getElementById('accModalTypeBadge').innerText = `${acc.account_type} WALLET`;
-      document.getElementById('accModalIconBox').style.background = acc.color_hex || '#10B981';
-      document.getElementById('accModalIcon').innerText = acc.icon || 'wallet';
-      document.getElementById('accModalBalance').innerText = `₹${acc.current_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('accModalInflow').innerText = `₹${acc.total_inflow.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('accModalOutflow').innerText = `₹${acc.total_outflow.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-
-      const creditSec = document.getElementById('accModalCreditSection');
-      if (acc.account_type === 'CREDIT_CARD') {
-        creditSec.style.display = 'block';
-        const limit = acc.credit_limit || 0;
-        const available = Math.max(0, limit + acc.current_balance);
-        document.getElementById('accModalCreditLimit').innerText = `₹${limit.toLocaleString('en-IN')}`;
-        document.getElementById('accModalAvailableCredit').innerText = `₹${available.toLocaleString('en-IN')}`;
-      } else {
-        creditSec.style.display = 'none';
-      }
-
-      // Render statement transactions
-      const txContainer = document.getElementById('accModalTxList');
-      txContainer.innerHTML = '';
-      if (!acc.transactions || acc.transactions.length === 0) {
-        txContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px;">No transactions recorded for this wallet yet.</div>';
-      } else {
-        acc.transactions.forEach(t => txContainer.appendChild(createTxElement(t)));
-      }
-
-      document.getElementById('accountSheetBackdrop').classList.add('active');
-      document.getElementById('accountStatementSheet').classList.add('active');
-    }
-
-    function closeAccountStatementSheet() {
-      document.getElementById('accountSheetBackdrop').classList.remove('active');
-      document.getElementById('accountStatementSheet').classList.remove('active');
-      ACTIVE_ACCOUNT_ID = null;
-    }
-
-    async function triggerAccountReconcile() {
-      if (!ACTIVE_ACCOUNT_ID) return;
-      const actual = prompt('Enter your actual real-world balance for this account (₹):');
-      if (actual === null || actual.trim() === '') return;
-
-      const res = await apiRequest(`/accounts/${ACTIVE_ACCOUNT_ID}/reconcile`, 'POST', {
-        actual_balance: parseFloat(actual)
-      });
-
-      if (res && res.success) {
-        alert(`Account successfully reconciled! New Balance: ₹${res.data.new_balance}`);
-        closeAccountStatementSheet();
-        await initializeAppData();
-      } else {
-        alert(res?.error || 'Failed to reconcile balance');
-      }
-    }
-
-    function setTxFilter(type) {
-      APP_STATE.activeTxFilter = type;
-      ['All', 'Expense', 'Income', 'Transfer'].forEach(t => {
-        document.getElementById(`txFilter${t}`).classList.remove('active');
-      });
-      document.getElementById(`txFilter${type === 'ALL' ? 'All' : type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'}`).classList.add('active');
-      renderTransactionsList(APP_STATE.transactions);
-    }
+      // 3. INSTANT 0ms MULTI-SCREEN SYNC
+      syncAllScreensOptimistically(txToDelete, false);
 
     function applyTxSearch() {
       const q = document.getElementById('txSearchInput').value.toLowerCase();
@@ -5007,6 +5105,7 @@
     }
 
     function openQuickEntrySheet(type = 'EXPENSE') {
+      document.body.classList.add('sheet-open');
       hideFloatingAiBtn();
       setSheetTxType(type);
       APP_STATE.sheetAmount = '0';
@@ -5017,24 +5116,30 @@
       document.getElementById('sheetNoteInput').value = '';
       document.getElementById('sheetTagInput').value = '';
 
-      // Reset collapsible details to compact default
       const adv = document.getElementById('sheetAdvancedDetails');
       if (adv) adv.style.display = 'none';
+      const sheet = document.getElementById('quickEntrySheet');
+      if (sheet) sheet.classList.remove('details-expanded');
       const toggleText = document.getElementById('sheetDetailsToggleText');
       if (toggleText) toggleText.innerText = '+ Add Note, Date & Tags';
       const toggleIcon = document.getElementById('sheetDetailsToggleIcon');
       if (toggleIcon) toggleIcon.innerText = 'add_circle_outline';
 
       document.getElementById('sheetBackdrop').classList.add('active');
-      document.getElementById('quickEntrySheet').classList.add('active');
+      if (sheet) sheet.classList.add('active');
     }
 
     function toggleQuickEntryDetails() {
       triggerHaptic('light');
       const adv = document.getElementById('sheetAdvancedDetails');
+      const sheet = document.getElementById('quickEntrySheet');
       if (!adv) return;
       const isHidden = adv.style.display === 'none';
       adv.style.display = isHidden ? 'block' : 'none';
+      if (sheet) {
+        if (isHidden) sheet.classList.add('details-expanded');
+        else sheet.classList.remove('details-expanded');
+      }
       const toggleText = document.getElementById('sheetDetailsToggleText');
       if (toggleText) toggleText.innerText = isHidden ? '− Hide Details' : '+ Add Note, Date & Tags';
       const toggleIcon = document.getElementById('sheetDetailsToggleIcon');
@@ -5042,23 +5147,29 @@
     }
 
     function closeQuickEntrySheet() {
+      document.body.classList.remove('sheet-open');
       document.getElementById('sheetBackdrop').classList.remove('active');
-      document.getElementById('quickEntrySheet').classList.remove('active');
+      const sheet = document.getElementById('quickEntrySheet');
+      if (sheet) {
+        sheet.classList.remove('active', 'details-expanded');
+      }
       showFloatingAiBtn();
     }
 
     function setSheetTxType(type) {
       APP_STATE.sheetType = type;
-      ['Expense', 'Income', 'Transfer'].forEach(t => {
+      ['Expense', 'Income'].forEach(t => {
         const btn = document.getElementById(`sheetSeg${t}`);
-        btn.classList.remove('active', 'expense', 'income', 'transfer');
+        if (btn) btn.classList.remove('active', 'expense', 'income');
       });
-      const activeBtn = document.getElementById(`sheetSeg${type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'}`);
-      activeBtn.classList.add('active', type.toLowerCase());
+      const activeBtn = document.getElementById(`sheetSeg${type === 'EXPENSE' ? 'Expense' : 'Income'}`);
+      if (activeBtn) activeBtn.classList.add('active', type.toLowerCase());
 
       const isTransfer = type === 'TRANSFER';
-      document.getElementById('transferTargetRow').style.display = isTransfer ? 'block' : 'none';
-      document.getElementById('categoryGridWrapper').style.display = isTransfer ? 'none' : 'block';
+      const targetRow = document.getElementById('transferTargetRow');
+      if (targetRow) targetRow.style.display = isTransfer ? 'block' : 'none';
+      const catWrap = document.getElementById('categoryGridWrapper');
+      if (catWrap) catWrap.style.display = isTransfer ? 'none' : 'block';
       
       populateSheetCategories();
     }
@@ -5084,41 +5195,55 @@
 
     function populateSheetAccounts() {
       const container = document.getElementById('sheetAccountPills');
-      const targetContainer = document.getElementById('sheetTargetAccountPills');
+      if (!container) return;
       container.innerHTML = '';
-      targetContainer.innerHTML = '';
 
-      if (APP_STATE.accounts.length > 0 && !APP_STATE.sheetAccountId) {
-        APP_STATE.sheetAccountId = APP_STATE.accounts[0].id;
-      }
-      if (APP_STATE.accounts.length > 1 && !APP_STATE.sheetTargetAccountId) {
-        APP_STATE.sheetTargetAccountId = APP_STATE.accounts[1].id;
+      const standardAccounts = [
+        { name: 'Cash', icon: 'payments', color: '#10B981' },
+        { name: 'UPI', icon: 'qr_code_scanner', color: '#38BDF8' },
+        { name: 'Cards', icon: 'credit_card', color: '#A78BFA' }
+      ];
+
+      const displayAccounts = standardAccounts.map(std => {
+        const found = (APP_STATE.accounts || []).find(a => a.name.toLowerCase() === std.name.toLowerCase());
+        return {
+          id: found ? found.id : (std.name === 'Cash' ? 1 : std.name === 'UPI' ? 2 : 88),
+          name: std.name,
+          icon: found?.icon || std.icon,
+          color_hex: found?.color_hex || std.color
+        };
+      });
+
+      if (!APP_STATE.sheetAccountId && displayAccounts.length > 0) {
+        APP_STATE.sheetAccountId = displayAccounts[0].id;
       }
 
-      APP_STATE.accounts.forEach(acc => {
-        // Source Account
+      displayAccounts.forEach(acc => {
+        const isSel = acc.id === APP_STATE.sheetAccountId;
         const p = document.createElement('div');
-        p.className = `acc-pill ${acc.id === APP_STATE.sheetAccountId ? 'selected' : ''}`;
+        p.className = `acc-pill ${isSel ? 'selected' : ''}`;
         p.style.cursor = 'pointer';
-        if (acc.id === APP_STATE.sheetAccountId) p.style.borderColor = 'var(--color-emerald)';
-        p.innerHTML = `<span class="material-icons-round acc-pill-icon">${acc.icon}</span> <span class="acc-pill-name">${acc.name}</span>`;
+        p.style.padding = '6px 8px';
+        p.style.display = 'flex';
+        p.style.alignItems = 'center';
+        p.style.justifyContent = 'center';
+        p.style.gap = '5px';
+        p.style.borderRadius = '10px';
+        p.style.fontSize = '12px';
+        p.style.fontWeight = '700';
+        p.style.background = isSel ? 'rgba(59, 130, 246, 0.22)' : 'var(--bg-card-subtle)';
+        p.style.border = isSel ? '1.5px solid var(--color-sapphire)' : '1px solid var(--border-card)';
+        p.style.color = isSel ? '#FFF' : 'var(--text-secondary)';
+        p.style.transition = 'all 0.12s ease';
+
+        const iconColor = acc.name === 'Cash' ? '#10B981' : acc.name === 'UPI' ? '#38BDF8' : '#A78BFA';
+        p.innerHTML = `<span class="material-icons-round" style="font-size:15px; color:${iconColor};">${acc.icon || 'payments'}</span> <span>${acc.name}</span>`;
         p.onclick = () => {
+          triggerHaptic('light');
           APP_STATE.sheetAccountId = acc.id;
           populateSheetAccounts();
         };
         container.appendChild(p);
-
-        // Destination Account
-        const tp = document.createElement('div');
-        tp.className = `acc-pill ${acc.id === APP_STATE.sheetTargetAccountId ? 'selected' : ''}`;
-        tp.style.cursor = 'pointer';
-        if (acc.id === APP_STATE.sheetTargetAccountId) tp.style.borderColor = 'var(--color-sapphire)';
-        tp.innerHTML = `<span class="material-icons-round acc-pill-icon">${acc.icon}</span> <span class="acc-pill-name">${acc.name}</span>`;
-        tp.onclick = () => {
-          APP_STATE.sheetTargetAccountId = acc.id;
-          populateSheetAccounts();
-        };
-        targetContainer.appendChild(tp);
       });
     }
 
@@ -5205,16 +5330,12 @@
         payload.subcategory_id = APP_STATE.sheetSubcategoryId;
       }
 
-      // ========================================================
-      // 1. INSTANT 0ms OPTIMISTIC UI: Close sheet immediately!
-      // ========================================================
       triggerHaptic('medium');
       closeQuickEntrySheet();
 
-      // Find Account and Category names for instant realistic rendering
+      // Find Account and Category names
       const acc = (APP_STATE.accounts || []).find(a => a.id === payload.account_id);
-      const targetAcc = payload.target_account_id ? (APP_STATE.accounts || []).find(a => a.id === payload.target_account_id) : null;
-      let catName = 'Uncategorized';
+      let catName = 'Others';
       let catIcon = 'category';
       let catColor = '#6B7280';
       if (APP_STATE.categories) {
@@ -5235,8 +5356,6 @@
         note: payload.note,
         account_id: payload.account_id,
         account_name: acc ? acc.name : 'Account',
-        target_account_id: payload.target_account_id,
-        target_account_name: targetAcc ? targetAcc.name : null,
         category_id: payload.category_id,
         category_name: catName,
         category_icon: catIcon,
@@ -5244,89 +5363,14 @@
         is_optimistic: true
       };
 
-      // ========================================================
-      // 2. Instant Mathematical Updates (0ms)
-      // ========================================================
-      if (payload.transaction_type === 'EXPENSE') {
-        // A. Update Home Total Expense display instantly
-        const homeExp = document.getElementById('homeTotalExpenseDisplay');
-        if (homeExp) {
-          const raw = homeExp.dataset.realVal || homeExp.innerText;
-          const curExp = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
-          const newExp = curExp + amount;
-          setMaskableText('homeTotalExpenseDisplay', `₹${newExp.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
-        }
-        // B. Deduct balance from account instantly
-        if (acc) {
-          acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
-        }
-        // C. Update Donut Category Breakdown in 0ms
-        if (Array.isArray(APP_STATE.categoryBreakdown)) {
-          APP_STATE.categoryTotalExpense = (APP_STATE.categoryTotalExpense || 0) + amount;
-          let existingSlice = APP_STATE.categoryBreakdown.find(s => s.name === catName);
-          if (existingSlice) {
-            existingSlice.amount = (parseFloat(existingSlice.amount) || 0) + amount;
-          } else {
-            APP_STATE.categoryBreakdown.push({
-              name: catName,
-              amount: amount,
-              percentage: 0,
-              color: catColor,
-              icon: catIcon,
-              count: 1
-            });
-          }
-          APP_STATE.categoryBreakdown.forEach(s => {
-            s.percentage = Math.round((s.amount / APP_STATE.categoryTotalExpense) * 1000) / 10;
-          });
-          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
-        }
-      } else if (payload.transaction_type === 'INCOME') {
-        if (acc) {
-          acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
-        }
-        const incEl = document.getElementById('cfIncomeVal');
-        if (incEl) {
-          const raw = incEl.dataset.realVal || incEl.innerText;
-          const curInc = parseFloat(raw.replace(/[^0-9.]/g, '')) || 0;
-          setMaskableText('cfIncomeVal', `₹${(curInc + amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
-        }
-      } else if (payload.transaction_type === 'TRANSFER') {
-        if (acc) acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
-        if (targetAcc) targetAcc.current_balance = (parseFloat(targetAcc.current_balance) || 0) + amount;
+      // 0ms INSTANT MULTI-SCREEN SYNC
+      syncAllScreensOptimistically(tempTx, true);
+
+      if (acc) {
+        if (payload.transaction_type === 'EXPENSE') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+        else if (payload.transaction_type === 'INCOME') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
+        renderAccountPillsAndNetWorth();
       }
-
-      renderAccountPillsAndNetWorth();
-
-      // D. Prepend to Transactions lists in 0ms
-      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
-      APP_STATE.transactions.unshift(tempTx);
-      renderTransactionsList(APP_STATE.transactions);
-
-      const recentList = document.getElementById('homeRecentTxList');
-      if (recentList) {
-        const emptyNotice = recentList.querySelector('div[style*="text-align:center"]');
-        if (emptyNotice) emptyNotice.remove();
-        const newTxEl = createTxElement(tempTx, true);
-        recentList.insertBefore(newTxEl, recentList.firstChild);
-      }
-
-      // E. Update localStorage cache instantly
-      try {
-        const cached = localStorage.getItem('cached_bootstrap');
-        if (cached) {
-          const bObj = JSON.parse(cached);
-          bObj.transactions = APP_STATE.transactions.slice(0, 50);
-          bObj.recent_transactions = APP_STATE.transactions.slice(0, 5);
-          bObj.accounts = APP_STATE.accounts;
-          if (bObj.cashflow && payload.transaction_type === 'EXPENSE') {
-            bObj.cashflow.expenses = (bObj.cashflow.expenses || 0) + amount;
-          }
-          bObj.breakdown = APP_STATE.categoryBreakdown;
-          bObj.total_expense = APP_STATE.categoryTotalExpense;
-          localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
-        }
-      } catch (ce) {}
 
       if (typeof showToast === 'function') {
         showToast(`₹${amount.toLocaleString('en-IN')} recorded instantly!`, 'success');
@@ -7442,6 +7486,7 @@
 
     function openAiChatModal() {
       triggerHaptic('light');
+      document.body.classList.add('chat-open', 'sheet-open');
       hideFloatingAiBtn();
       const bd = document.getElementById('aiChatBackdrop');
       const sheet = document.getElementById('aiChatSheet');
@@ -7452,6 +7497,7 @@
     }
 
     function closeAiChatModal() {
+      document.body.classList.remove('chat-open', 'sheet-open');
       const bd = document.getElementById('aiChatBackdrop');
       const sheet = document.getElementById('aiChatSheet');
       if (bd) bd.classList.remove('active');
@@ -7472,7 +7518,7 @@
         }
       });
       window.addEventListener('DOMContentLoaded', () => {
-        globalSheetObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class', 'style'] });
+        globalSheetObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
       });
     } catch (obsErr) {
       console.warn('Sheet observer notice:', obsErr);

@@ -1651,7 +1651,6 @@ def get_app_bootstrap():
         GROUP BY SUBSTR(date, 1, 7), transaction_type
     """, (user_id, start_date_str))
     hist_rows = cursor.fetchall()
-    conn.close()
 
     monthly_totals = {}
     for r in hist_rows:
@@ -1684,6 +1683,30 @@ def get_app_bootstrap():
     # 9. Notifications count
     notifs = database.get_user_notifications(user_id, limit=5, unread_only=True)
 
+    # 10. Weekly Daily Trend (Current week Mon - Sun)
+    diff_to_monday = today.weekday()  # 0 is Mon, 6 is Sun
+    monday = today - timedelta(days=diff_to_monday)
+    sunday = monday + timedelta(days=6)
+    cursor.execute("""
+        SELECT date, SUM(amount) as daily_total
+        FROM transactions
+        WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date >= ? AND date <= ?
+        GROUP BY date
+    """, (user_id, monday.isoformat(), sunday.isoformat()))
+    daily_rows = {row["date"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
+    conn.close()
+    days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekly_daily = []
+    for i in range(7):
+        cur_d = monday + timedelta(days=i)
+        d_str = cur_d.isoformat()
+        weekly_daily.append({
+            "day": days_labels[i],
+            "date": d_str,
+            "expenses": daily_rows.get(d_str, 0.0),
+            "is_today": (cur_d == today)
+        })
+
     return jsonify({
         "success": True,
         "bootstrap": {
@@ -1699,6 +1722,7 @@ def get_app_bootstrap():
             "breakdown": breakdown,
             "total_expense": round(total_expense, 2),
             "history_6m": history_6m,
+            "weekly_daily": weekly_daily,
             "unread_notifications": len(notifs)
         }
     }), 200
@@ -1995,6 +2019,52 @@ def get_chart_history_6m():
     return jsonify({
         "success": True,
         "history": history
+    }), 200
+
+@api_v1.route('/charts/history-weekly', methods=['GET'])
+@token_required
+def get_chart_history_weekly():
+    """
+    Returns daily expense history for the current week (Monday to Sunday)
+    with day names (Mon, Tue, Wed, Thu, Fri, Sat, Sun).
+    """
+    user_id = request.user["id"]
+    today = date.today()
+    diff_to_monday = today.weekday()
+    monday = today - timedelta(days=diff_to_monday)
+    sunday = monday + timedelta(days=6)
+
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT date, SUM(amount) as daily_total
+        FROM transactions
+        WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date >= ? AND date <= ?
+        GROUP BY date
+    """, (user_id, monday.isoformat(), sunday.isoformat()))
+    daily_rows = {row["date"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
+    conn.close()
+    conn.close()
+
+    days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    history = []
+    total_week_expense = 0.0
+    for i in range(7):
+        cur_d = monday + timedelta(days=i)
+        d_str = cur_d.isoformat()
+        amt = daily_rows.get(d_str, 0.0)
+        total_week_expense += amt
+        history.append({
+            "day": days_labels[i],
+            "date": d_str,
+            "expenses": amt,
+            "is_today": (cur_d == today)
+        })
+
+    return jsonify({
+        "success": True,
+        "history": history,
+        "total_week_expense": total_week_expense
     }), 200
 
 # ==================================================

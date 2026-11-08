@@ -500,9 +500,9 @@ def seed_default_accounts_and_migrate_legacy():
     cursor = conn.cursor()
 
     # 1. Migrate legacy account names to standard 3 payment channels (Cash, UPI, Cards)
-    cursor.execute("UPDATE accounts SET name = 'Cash', icon = 'payments' WHERE name = 'Cash in Hand'")
-    cursor.execute("UPDATE accounts SET name = 'UPI', icon = 'qr_code_scanner' WHERE name = 'Main Bank Account'")
-    cursor.execute("UPDATE accounts SET name = 'Cards', icon = 'credit_card', color_hex = '#8B5CF6' WHERE account_type = 'CREDIT_CARD' OR name LIKE '%Credit Card%'")
+    cursor.execute("UPDATE accounts SET name = 'Cash', icon = 'payments' WHERE LOWER(name) LIKE '%cash%'")
+    cursor.execute("UPDATE accounts SET name = 'Cards', icon = 'credit_card', color_hex = '#8B5CF6' WHERE LOWER(name) LIKE '%card%' OR account_type = 'CREDIT_CARD'")
+    cursor.execute("UPDATE accounts SET name = 'UPI', icon = 'qr_code_scanner' WHERE name NOT IN ('Cash', 'Cards')")
 
     # Fetch all registered users
     cursor.execute("SELECT id FROM users")

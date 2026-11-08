@@ -1271,6 +1271,50 @@
       color: #1E1B4B !important;
     }
 
+    /* Hero AI Prediction Card Theme Rules */
+    .hero-prediction-card {
+      background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
+      border: 1px solid #4338CA;
+    }
+    body.theme-light .hero-prediction-card {
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%) !important;
+      border: 1px solid #C7D2FE !important;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08) !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .hero-prediction-card #fcMonthEndProjectedDisplay {
+      color: #1E1B4B !important;
+    }
+    body.theme-light .hero-prediction-card .cashflow-box {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .hero-prediction-card #fcExplanationText {
+      color: #334155 !important;
+    }
+    body.theme-light #fcSvgGuideLine {
+      stroke: rgba(15, 23, 42, 0.35) !important;
+    }
+
+    /* Acc-Pill Light Theme High Contrast */
+    body.theme-light .acc-pill:not(.card-net-worth .acc-pill) {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .acc-pill:not(.card-net-worth .acc-pill) .acc-pill-name {
+      color: #475569 !important;
+    }
+    body.theme-light .acc-pill:not(.card-net-worth .acc-pill) .acc-pill-balance {
+      color: #0F172A !important;
+    }
+    body.theme-light .acc-pill.selected {
+      background: #EFF6FF !important;
+      border-color: #2563EB !important;
+      color: #1D4ED8 !important;
+    }
+
     /* Safely map inline white text to dark text inside light cards ONLY */
     body.theme-light .fintech-card [style*="color:#FFF"],
     body.theme-light .fintech-card [style*="color: #FFF"],
@@ -1465,7 +1509,7 @@
         <div class="card-net-worth" style="background:linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border:1px solid rgba(99, 102, 241, 0.35); padding:18px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <div class="net-worth-label" style="margin-bottom:0; color:#A5B4FC; letter-spacing:0.5px; font-weight:800;">Total Expenses (This Month)</div>
-            <span class="material-icons-round" id="privacyToggleIcon" onclick="togglePrivacyMode()" style="font-size:18px; color:var(--text-muted); cursor:pointer;" title="Toggle Privacy Mask">visibility</span>
+            <span class="material-icons-round" id="privacyToggleIcon" onclick="togglePrivacyMode()" style="font-size:18px; color:rgba(255,255,255,0.85); cursor:pointer;" title="Toggle Privacy Mask">visibility</span>
           </div>
           <div class="net-worth-amount" id="homeTotalExpenseDisplay" style="color:#FFF; font-size:32px; font-weight:800; letter-spacing:-0.5px;">₹0.00</div>
           <!-- Hidden compatibility elements to avoid JS reference breaks -->
@@ -1690,7 +1734,7 @@
               <span>Insights</span>
               <span style="font-size:10px; background:rgba(6,182,212,0.25); color:#06B6D4; border:1px solid rgba(6,182,212,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">INTELLIGENCE</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & WEEKLY EXPENSE INTELLIGENCE</div>
+            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & DAILY EXPENSE INTELLIGENCE</div>
           </div>
           <div class="btn-icon-header" onclick="refreshForecastData()" title="Recalculate AI Forecast">
             <span class="material-icons-round">refresh</span>
@@ -1698,7 +1742,7 @@
         </div>
 
         <!-- 1. Hero AI Month-End Prediction Card -->
-        <div style="background:linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border:1px solid #4338CA; border-radius:20px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
+        <div class="fintech-card hero-prediction-card" style="border-radius:20px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
           <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(139,92,246,0.18); border-radius:50%; filter:blur(28px); pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1739,7 +1783,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="material-icons-round" style="color:#06B6D4; font-size:20px;">bar_chart</span>
-              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Weekly Expense History</div>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Daily Expense History</div>
             </div>
             <div style="font-size:10px; background:rgba(6,182,212,0.15); color:#06B6D4; border:1px solid rgba(6,182,212,0.3); padding:3px 8px; border-radius:10px; font-weight:800;" id="weeklyTotalSpendBadge">₹0.00 This Week</div>
           </div>
@@ -1974,8 +2018,8 @@
         <span class="material-icons-round">home</span>
         <span>Home</span>
       </div>
-      <div class="nav-tab" id="nav-tab-analytics" onclick="switchTab('tab-analytics')">
-        <span class="material-icons-round">insights</span>
+      <div class="nav-tab" id="nav-tab-analytics" onclick="switchTab('tab-analytics')" title="Analytics">
+        <span class="material-icons-round">pie_chart</span>
         <span>Analytics</span>
       </div>
       
@@ -1984,9 +2028,9 @@
         <span class="material-icons-round" style="font-size:32px;">add</span>
       </div>
 
-      <!-- AI Advisor Tab -->
+      <!-- Insights Tab -->
       <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="Insights">
-        <span class="material-icons-round">insights</span>
+        <span class="material-icons-round">auto_awesome</span>
         <span>Insights</span>
       </div>
 
@@ -2079,7 +2123,7 @@
           <div class="btn-icon-header" onclick="closeQuickEntrySheet()" title="Back / Cancel">
             <span class="material-icons-round">arrow_back</span>
           </div>
-          <div style="font-size:15px; font-weight:800; color:#FFF;">Record Transaction</div>
+          <div style="font-size:15px; font-weight:800; color:var(--text-primary);">Record Transaction</div>
         </div>
         <div class="btn-icon-header" onclick="closeQuickEntrySheet()" title="Close">
           <span class="material-icons-round" style="font-size:18px;">close</span>
@@ -2230,7 +2274,7 @@
         <div class="btn-icon-header" onclick="closeTxDetailModal()" title="Back">
           <span class="material-icons-round">arrow_back</span>
         </div>
-        <div style="font-size:16px; font-weight:800; color:#FFF;">Transaction Details</div>
+        <div style="font-size:16px; font-weight:800; color:var(--text-primary);">Transaction Details</div>
         <div style="width:36px;"></div>
       </div>
 
@@ -3208,6 +3252,16 @@
       applyAppTheme();
     }
 
+    function formatAccountName(name) {
+      if (!name) return 'Cash';
+      const lower = String(name).toLowerCase().trim();
+      if (lower.includes('cash')) return 'Cash';
+      if (lower.includes('card') || lower.includes('credit') || lower.includes('debit')) return 'Cards';
+      if (lower.includes('bank') || lower.includes('upi') || lower.includes('online') || lower.includes('vault') || lower.includes('account')) return 'UPI';
+      return 'Cash';
+    }
+    window.formatAccountName = formatAccountName;
+
     function applyAppTheme() {
       document.body.classList.remove('theme-oled', 'theme-midnight', 'theme-light');
       document.body.classList.add(APP_STATE.appTheme);
@@ -3216,9 +3270,19 @@
         icon.innerText = (APP_STATE.appTheme === 'theme-light') ? 'dark_mode' : 'light_mode';
       }
       try {
-        if (typeof renderCategoryChart === 'function') renderCategoryChart();
-        if (typeof renderCashflowHistoryChart === 'function') renderCashflowHistoryChart();
-      } catch (e) {}
+        if (Array.isArray(APP_STATE.categoryBreakdown)) {
+          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
+        }
+        if (Array.isArray(APP_STATE.history6m)) {
+          renderHistoryBarChart(APP_STATE.history6m);
+        }
+        renderWeeklyDailyBarChart();
+        if (APP_STATE.forecast) {
+          renderTrajectoryChart(APP_STATE.forecast);
+        }
+      } catch (e) {
+        console.warn('applyAppTheme re-render error:', e);
+      }
     }
 
     function triggerHaptic(type = 'light') {
@@ -3293,7 +3357,7 @@
         if (targetId === 'tab-ai') {
           try { renderForecastDetails(APP_STATE.forecast); } catch (e) {}
           try { renderTrajectoryChart(APP_STATE.forecast); } catch (e) {}
-          try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
+          try { renderWeeklyDailyBarChart(); } catch (e) {}
         }
       } catch (err) {
         console.error('switchTab error:', err);
@@ -3466,8 +3530,18 @@
 
       // 7. Full Transactions List for Analytics/Transactions Screen
       if (Array.isArray(b.transactions)) {
+        b.transactions.forEach(t => {
+          t.account_name = formatAccountName(t.account_name);
+          if (t.target_account_name) t.target_account_name = formatAccountName(t.target_account_name);
+        });
         APP_STATE.transactions = b.transactions;
         renderTransactionsList(b.transactions);
+      }
+      if (Array.isArray(b.recent_transactions)) {
+        b.recent_transactions.forEach(t => {
+          t.account_name = formatAccountName(t.account_name);
+          if (t.target_account_name) t.target_account_name = formatAccountName(t.target_account_name);
+        });
       }
 
       // 8. Analytics Visual Donut Chart & 6M Bar Chart
@@ -4606,7 +4680,7 @@
     // ----------------------------------------------------
     // WEEKLY DAILY EXPENSE TREND CHART (INSIGHTS TAB)
     // ----------------------------------------------------
-    function renderWeeklyDailyBarChart(weeklyData = null) {
+    function renderWeeklyDailyBarChart() {
       const canvas = document.getElementById('weeklyDailyBarCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -4615,42 +4689,42 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      let weekDays = weeklyData;
-      if (!Array.isArray(weekDays) || weekDays.length === 0) {
-        const now = new Date();
-        const currentDayIndex = now.getDay();
-        const diffToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const currentDayIndex = now.getDay();
+      const diffToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
 
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        weekDays = dayNames.map((name, idx) => {
-          const d = new Date(monday);
-          d.setDate(monday.getDate() + idx);
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          const dateStr = `${yyyy}-${mm}-${dd}`;
-          return {
-            day: name,
-            date: dateStr,
-            is_today: (idx === (currentDayIndex === 0 ? 6 : currentDayIndex - 1)),
-            expenses: 0
-          };
-        });
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const weekDays = dayNames.map((name, idx) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + idx);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        return {
+          day: name,
+          date: dateStr,
+          is_today: (idx === (currentDayIndex === 0 ? 6 : currentDayIndex - 1)),
+          expenses: 0
+        };
+      });
 
-        if (Array.isArray(APP_STATE.transactions)) {
-          APP_STATE.transactions.forEach(t => {
-            if (t.transaction_type === 'EXPENSE' && t.date) {
-              const item = weekDays.find(w => w.date === t.date);
-              if (item) {
-                item.expenses += (parseFloat(t.amount) || 0);
-              }
+      if (Array.isArray(APP_STATE.transactions)) {
+        APP_STATE.transactions.forEach(t => {
+          if (t.transaction_type === 'EXPENSE' && t.date) {
+            const txDate = String(t.date).slice(0, 10);
+            const item = weekDays.find(w => w.date === txDate);
+            if (item) {
+              item.expenses += (parseFloat(t.amount) || 0);
             }
-          });
-        }
+          }
+        });
       }
+
+      APP_STATE.weeklyDaily = weekDays;
 
       let totalWeeklySpend = 0;
       let maxVal = 500;
@@ -4681,8 +4755,10 @@
           grad.addColorStop(0, '#06B6D4');
           grad.addColorStop(1, '#0284C7');
           ctx.fillStyle = grad;
+        } else if (expAmount > 0) {
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#4F46E5' : '#6366F1';
         } else {
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#6366F1' : (expAmount > 0 ? '#4F46E5' : 'rgba(255,255,255,0.08)');
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#E2E8F0' : 'rgba(255,255,255,0.08)';
         }
 
         const radius = Math.min(5, barWidth / 2);
@@ -4697,14 +4773,14 @@
         ctx.fill();
 
         if (expAmount > 0) {
-          ctx.fillStyle = d.is_today ? '#38BDF8' : ((APP_STATE.appTheme === 'theme-light') ? '#1E293B' : '#CBD5E1');
+          ctx.fillStyle = d.is_today ? '#0284C7' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#E2E8F0');
           ctx.font = 'bold 8px sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
           ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
         }
 
-        ctx.fillStyle = d.is_today ? '#06B6D4' : ((APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8');
+        ctx.fillStyle = d.is_today ? '#06B6D4' : ((APP_STATE.appTheme === 'theme-light') ? '#334155' : '#94A3B8');
         ctx.font = d.is_today ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(d.day, barX + (barWidth / 2), h - 6);
@@ -4973,8 +5049,10 @@
       const icon = tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
       const bg = tx.category_color || (isTransfer ? '#3B82F6' : isIncome ? '#10B981' : '#64748B');
 
-      const title = isTransfer ? `Transfer: ${tx.account_name} ➔ ${tx.target_account_name || 'Account'}` : (tx.category_name || tx.note || 'Transaction');
-      const subtitle = `${tx.date} • ${tx.account_name || 'Wallet'}${tx.note && !isTransfer ? ` • ${tx.note}` : ''}`;
+      const accDisplay = formatAccountName(tx.account_name);
+      const targetAccDisplay = formatAccountName(tx.target_account_name);
+      const title = isTransfer ? `Transfer: ${accDisplay} ➔ ${targetAccDisplay}` : (tx.category_name || tx.note || 'Transaction');
+      const subtitle = `${tx.date} • ${accDisplay}${tx.note && !isTransfer ? ` • ${tx.note}` : ''}`;
 
       el.innerHTML = `
         <div class="tx-left">
@@ -5018,10 +5096,12 @@
       document.getElementById('txDetailIconBox').style.background = bg;
       document.getElementById('txDetailIcon').innerText = icon;
       document.getElementById('txDetailAmount').innerText = `${isExpense ? '-' : isIncome ? '+' : '⇄'}₹${tx.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('txDetailAmount').style.color = isIncome ? 'var(--color-emerald)' : isTransfer ? 'var(--color-sapphire)' : '#FFF';
-      document.getElementById('txDetailTitle').innerText = isTransfer ? `Transfer: ${tx.account_name} ➔ ${tx.target_account_name || 'Account'}` : (tx.category_name || 'Transaction');
+      document.getElementById('txDetailAmount').style.color = isIncome ? 'var(--color-emerald)' : isTransfer ? 'var(--color-sapphire)' : (APP_STATE.appTheme === 'theme-light' ? 'var(--color-ruby)' : 'var(--text-primary)');
+      const accDisplay = formatAccountName(tx.account_name);
+      const targetAccDisplay = formatAccountName(tx.target_account_name);
+      document.getElementById('txDetailTitle').innerText = isTransfer ? `Transfer: ${accDisplay} ➔ ${targetAccDisplay}` : (tx.category_name || 'Transaction');
       document.getElementById('txDetailDate').innerText = `${tx.date} • Recorded in ledger`;
-      document.getElementById('txDetailAccount').innerText = tx.account_name || 'Wallet';
+      document.getElementById('txDetailAccount').innerText = accDisplay;
       document.getElementById('txDetailType').innerText = tx.transaction_type;
       document.getElementById('txDetailType').style.color = isIncome ? 'var(--color-emerald)' : isTransfer ? 'var(--color-sapphire)' : 'var(--color-ruby)';
       document.getElementById('txDetailSubcategory').innerText = tx.subcategory_name || 'None';
@@ -5490,7 +5570,7 @@
         date: payload.date,
         note: payload.note,
         account_id: payload.account_id,
-        account_name: acc ? acc.name : 'Account',
+        account_name: formatAccountName(acc ? acc.name : 'Cash'),
         category_id: payload.category_id,
         category_name: catName,
         category_icon: catIcon,

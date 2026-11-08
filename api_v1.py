@@ -48,6 +48,18 @@ def generate_tokens(user_id):
     refresh_token = jwt.encode(refresh_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return access_token, refresh_token
 
+def normalize_account_name(name):
+    if not name:
+        return "Cash"
+    lower = str(name).lower().strip()
+    if "cash" in lower:
+        return "Cash"
+    if "card" in lower or "credit" in lower or "debit" in lower:
+        return "Cards"
+    if "bank" in lower or "upi" in lower or "online" in lower or "vault" in lower or "account" in lower:
+        return "UPI"
+    return "Cash"
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -899,6 +911,11 @@ def get_transactions():
     transactions = [dict(r) for r in cursor.fetchall()]
     conn.close()
 
+    for tx in transactions:
+        tx["account_name"] = normalize_account_name(tx.get("account_name"))
+        if tx.get("target_account_name"):
+            tx["target_account_name"] = normalize_account_name(tx.get("target_account_name"))
+
     return jsonify({"success": True, "count": len(transactions), "transactions": transactions}), 200
 
 @api_v1.route('/transactions', methods=['POST'])
@@ -1505,6 +1522,8 @@ def get_app_bootstrap():
 
     # 2. Accounts & Net Worth
     accounts = database.get_user_accounts(user_id)
+    for a in accounts:
+        a["name"] = normalize_account_name(a.get("name"))
     net_worth = database.get_net_worth_summary(user_id)
 
     # 3. Cashflow & Forecast
@@ -1554,6 +1573,10 @@ def get_app_bootstrap():
         ORDER BY t.date DESC, t.id DESC LIMIT 50
     """, (user_id,))
     tx_rows = [dict(r) for r in cursor.fetchall()]
+    for tx in tx_rows:
+        tx["account_name"] = normalize_account_name(tx.get("account_name"))
+        if tx.get("target_account_name"):
+            tx["target_account_name"] = normalize_account_name(tx.get("target_account_name"))
 
     # 6. Budgets with progress (matching /budgets payload)
     cursor.execute("""

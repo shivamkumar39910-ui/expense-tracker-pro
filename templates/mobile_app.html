@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Expense Tracker Pro 2.0 — Mobile Finance App</title>
   
   <!-- PWA & Mobile Meta Tags (Phase 15) -->
@@ -3574,7 +3577,9 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js').catch(err => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.2').then(reg => {
+        reg.update();
+      }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
         });
       }
@@ -6306,6 +6311,7 @@
                alt="${visual.displayName || tx.category_name || 'Category'}" 
                class="tx-img"
                loading="lazy" 
+               referrerpolicy="no-referrer"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
             <span class="material-icons-round" style="color:#FFF; font-size:20px;">${icon}</span>

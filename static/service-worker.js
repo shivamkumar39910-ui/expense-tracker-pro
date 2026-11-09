@@ -1,5 +1,5 @@
 // Service Worker for Expense Tracker Pro 2.0 (Phase 15 PWA)
-const CACHE_NAME = 'expense-pro-v2.0-cache';
+const CACHE_NAME = 'expense-pro-v2.2-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',
@@ -54,7 +54,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-While-Revalidate for app shell and static files
+  // For HTML navigation requests, use Network-First to ensure user always gets the latest deployed UI immediately
+  if (req.mode === 'navigate' || url.pathname === '/mobile' || url.pathname === '/app' || url.pathname === '/') {
+    event.respondWith(
+      fetch(req).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(req, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(req);
+      })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for static assets (icons, css, fonts)
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
       const fetchPromise = fetch(req).then((networkResponse) => {

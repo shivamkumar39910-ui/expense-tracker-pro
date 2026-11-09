@@ -970,6 +970,13 @@ def create_notification(user_id, notif_type, title, message, category_id=None, a
 def get_user_notifications(user_id, limit=30, unread_only=False):
     conn = get_db_connection()
     cursor = conn.cursor()
+    # Permanently purge nuisance 'Cash in Hand' low balance notifications
+    try:
+        cursor.execute("DELETE FROM notifications WHERE user_id = ? AND (title LIKE '%Cash in Hand%' OR (title LIKE '%Low Balance%' AND title LIKE '%Cash%'))", (user_id,))
+        conn.commit()
+    except Exception:
+        pass
+
     query = """
         SELECT n.*, c.name as category_name, c.icon as category_icon, c.color_hex as category_color
         FROM notifications n
@@ -1125,17 +1132,20 @@ def generate_predictive_notifications(user_id):
     except Exception:
         pass
 
-    # 4. Low Liquidity Warning
+    # 4. Low Liquidity Warning (Exclude CASH / Cash in Hand accounts per user request)
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
             SELECT name, current_balance, account_type 
             FROM accounts 
-            WHERE user_id = ? AND account_type IN ('CHECKING', 'SAVINGS', 'CASH', 'WALLET') AND is_active = 1
+            WHERE user_id = ? AND account_type IN ('CHECKING', 'SAVINGS', 'WALLET') AND is_active = 1
         """, (user_id,))
         accs = cursor.fetchall()
         for a in accs:
+            acc_name = (a["name"] or "").lower()
+            if "cash" in acc_name or a["account_type"] == "CASH":
+                continue
             bal = float(a["current_balance"] or 0)
             if bal < 500:
                 create_notification(

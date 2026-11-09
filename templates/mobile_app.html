@@ -1394,39 +1394,182 @@
       background: #EFF6FF !important;
       border-color: #BFDBFE !important;
       color: #2563EB !important;
+    }    /* Forecast Banner (Home Est. Month-END) - High Contrast Rules */
+    .forecast-banner {
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      border-radius: 18px;
+      color: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .forecast-banner .forecast-title,
+    .forecast-banner .forecast-title span,
+    .forecast-banner .forecast-title-text {
+      color: #FFFFFF;
+    }
+    .forecast-banner .forecast-big-val {
+      color: #FFFFFF;
+    }
+    .forecast-banner .forecast-advice-box,
+    #homeForecastAdviceBox {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .forecast-banner .forecast-text,
+    #forecastAdviceText {
+      color: #E2E8F0;
+    }
+    .forecast-banner .forecast-footer-link,
+    .forecast-banner .forecast-footer-link span {
+      color: #A78BFA;
     }
 
     body.theme-light .forecast-banner {
-      background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%) !important;
-      border: 1.5px solid #BFDBFE !important;
+      background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 100%) !important;
+      border: 1.5px solid #C7D2FE !important;
       color: #0F172A !important;
       box-shadow: 0 4px 14px rgba(99, 102, 241, 0.08) !important;
     }
-    body.theme-light .forecast-banner .forecast-title {
-      color: #1E40AF !important;
-    }
-    body.theme-light .forecast-banner .forecast-big-val {
+    body.theme-light .forecast-banner .forecast-title,
+    body.theme-light .forecast-banner .forecast-title span,
+    body.theme-light .forecast-banner .forecast-title-text,
+    body.theme-light #homeSmartForecastCard .forecast-title span {
       color: #1E1B4B !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light .forecast-banner .forecast-big-val,
+    body.theme-light #forecastProjectedVal {
+      color: #0F172A !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light .forecast-banner .forecast-advice-box,
+    body.theme-light #homeForecastAdviceBox {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .forecast-banner .forecast-text,
+    body.theme-light #forecastAdviceText {
+      color: #1E293B !important;
+      font-weight: 600 !important;
+    }
+    body.theme-light .forecast-banner .forecast-footer-link,
+    body.theme-light .forecast-banner .forecast-footer-link span,
+    body.theme-light #homeSmartForecastCard .forecast-footer-link,
+    body.theme-light #homeSmartForecastCard .forecast-footer-link span {
+      color: #4F46E5 !important;
+      font-weight: 700 !important;
     }
 
-    /* Hero AI Prediction Card Theme Rules */
+    /* Hero AI Prediction Card Theme Rules (Insights Screen Est. Month-END & Details) */
     .hero-prediction-card {
       background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
       border: 1px solid #4338CA;
+      color: #FFFFFF;
     }
+    .hero-prediction-card .fc-hero-title {
+      color: #A78BFA;
+    }
+    .hero-prediction-card #fcMonthEndProjectedDisplay {
+      color: #FFFFFF;
+    }
+    .hero-prediction-card .cashflow-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-prediction-card #fcTopDriverBox {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-prediction-card .fc-driver-name {
+      color: #FFFFFF;
+    }
+    .hero-prediction-card .fc-driver-pct {
+      color: #A78BFA;
+    }
+    .hero-prediction-card #fcAiSuggestionBox {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+    }
+    .hero-prediction-card .fc-spark-icon {
+      color: #A78BFA;
+    }
+    .hero-prediction-card #fcAiSuggestionText {
+      color: #E2E8F0;
+      font-weight: 500;
+    }
+    .hero-prediction-card #fcViewMoreBtn {
+      color: #A78BFA;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+    }
+
     body.theme-light .hero-prediction-card {
-      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%) !important;
-      border: 1px solid #C7D2FE !important;
+      background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 100%) !important;
+      border: 1.5px solid #C7D2FE !important;
       box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08) !important;
       color: #0F172A !important;
     }
+    body.theme-light .hero-prediction-card .fc-hero-title {
+      color: #3730A3 !important;
+      font-weight: 800 !important;
+    }
     body.theme-light .hero-prediction-card #fcMonthEndProjectedDisplay {
-      color: #1E1B4B !important;
+      color: #0F172A !important;
+      font-weight: 800 !important;
     }
     body.theme-light .hero-prediction-card .cashflow-box {
       background: #FFFFFF !important;
       border: 1px solid #CBD5E1 !important;
       box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .hero-prediction-card #fcMtdSpend {
+      color: #0284C7 !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light .hero-prediction-card #fcSafeDailyCap {
+      color: #059669 !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light .hero-prediction-card #fcTopDriverBox,
+    body.theme-light #fcTopDriverBox {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .hero-prediction-card .fc-driver-name,
+    body.theme-light #fcTopDriverName {
+      color: #0F172A !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light #fcTopDriverAmount {
+      color: #D97706 !important;
+      font-weight: 800 !important;
+    }
+    body.theme-light .hero-prediction-card .fc-driver-pct,
+    body.theme-light #fcTopDriverPct {
+      color: #4F46E5 !important;
+      font-weight: 700 !important;
+    }
+    body.theme-light .hero-prediction-card #fcAiSuggestionBox,
+    body.theme-light #fcAiSuggestionBox {
+      background: #EEF2FF !important;
+      border: 1.5px solid #C7D2FE !important;
+      box-shadow: 0 1px 4px rgba(99, 102, 241, 0.05) !important;
+    }
+    body.theme-light .hero-prediction-card .fc-spark-icon {
+      color: #4F46E5 !important;
+    }
+    body.theme-light .hero-prediction-card #fcAiSuggestionText,
+    body.theme-light #fcAiSuggestionText {
+      color: #1E293B !important;
+      font-weight: 600 !important;
+    }
+    body.theme-light .hero-prediction-card #fcViewMoreBtn,
+    body.theme-light #fcViewMoreBtn {
+      color: #3730A3 !important;
+      background: #E0E7FF !important;
+      border: 1px solid #A5B4FC !important;
     }
     body.theme-light .hero-prediction-card #fcExplanationText {
       color: #334155 !important;
@@ -1473,7 +1616,15 @@
     body.theme-light .bottom-sheet [style*="color: #FFF"],
     body.theme-light .bottom-sheet [style*="color:#fff"],
     body.theme-light .bottom-sheet [style*="color:#FFFFFF"],
-    body.theme-light .bottom-sheet [style*="color:#ffffff"] {
+    body.theme-light .bottom-sheet [style*="color:#ffffff"],
+    body.theme-light .forecast-banner [style*="color:#FFF"],
+    body.theme-light .forecast-banner [style*="color: #FFF"],
+    body.theme-light .forecast-banner [style*="color:#fff"],
+    body.theme-light .forecast-banner [style*="color:#FFFFFF"],
+    body.theme-light .fintech-card [style*="color:#E2E8F0"],
+    body.theme-light .fintech-card [style*="color: #E2E8F0"],
+    body.theme-light .forecast-banner [style*="color:#E2E8F0"],
+    body.theme-light .forecast-banner [style*="color: #E2E8F0"] {
       color: #0F172A !important;
     }
 
@@ -1695,11 +1846,11 @@
         </div>
 
         <!-- Est. Month-END Banner (Streamlined Instant AI Co-Pilot) -->
-        <div class="forecast-banner" id="homeSmartForecastCard" onclick="switchTab('tab-ai')" style="cursor:pointer; padding:14px 16px; margin-bottom:16px; border-radius:18px; position:relative; overflow:hidden; background:linear-gradient(135deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%); border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 8px 24px rgba(0,0,0,0.3);" title="Tap to view details">
+        <div class="forecast-banner" id="homeSmartForecastCard" onclick="switchTab('tab-ai')" style="cursor:pointer; padding:14px 16px; margin-bottom:16px; border-radius:18px; position:relative; overflow:hidden;" title="Tap to view details">
           <div class="forecast-badge-row" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <div class="forecast-title" style="display:flex; align-items:center; gap:6px;">
-              <span class="material-icons-round" style="color:#8B5CF6; font-size:18px;">analytics</span>
-              <span style="color:#FFF; font-weight:800; font-size:14px; letter-spacing:-0.2px;">Est. Month-END</span>
+              <span class="material-icons-round" style="color:var(--color-sapphire); font-size:18px;">analytics</span>
+              <span class="forecast-title-text" style="font-weight:800; font-size:14px; letter-spacing:-0.2px;">Est. Month-END</span>
             </div>
             <div id="forecastRiskBadge" style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.45); box-shadow:0 0 10px rgba(16,185,129,0.25);" title="Spending Status Indicator">
               <span class="blink-status-light" id="forecastRiskDot" style="background:#10B981; color:#10B981; width:9px; height:9px;"></span>
@@ -1708,7 +1859,7 @@
 
           <div class="forecast-numbers-row" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div class="forecast-big-val" id="forecastProjectedVal" style="font-size:24px; font-weight:800; color:#FFF; letter-spacing:-0.5px;">₹0.00</div>
+              <div class="forecast-big-val" id="forecastProjectedVal" style="font-size:24px; font-weight:800; letter-spacing:-0.5px;">₹0.00</div>
             </div>
             <div style="text-align:right;">
               <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.3); padding:4px 9px; border-radius:10px; font-size:11px; font-weight:800; color:var(--color-emerald);" id="homeSafeTodayPill">
@@ -1719,15 +1870,15 @@
           </div>
 
           <!-- 1-Line AI Smart Suggestion (Single Lightbulb) -->
-          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:8px 12px; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+          <div class="forecast-advice-box" id="homeForecastAdviceBox" style="border-radius:12px; padding:8px 12px; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
             <span class="material-icons-round" style="color:#F59E0B; font-size:16px; flex-shrink:0;">lightbulb</span>
-            <p class="forecast-text" id="forecastAdviceText" style="margin:0; font-size:11px; line-height:1.35; color:#E2E8F0; font-weight:500;">
+            <p class="forecast-text" id="forecastAdviceText" style="margin:0; font-size:11px; line-height:1.35; font-weight:500;">
               Analyzing spending pace...
             </p>
           </div>
 
           <!-- Compact View Details Footer -->
-          <div style="display:flex; justify-content:flex-end; align-items:center; gap:3px; font-size:10px; color:#A78BFA; font-weight:700; margin-top:2px;">
+          <div class="forecast-footer-link" style="display:flex; justify-content:flex-end; align-items:center; gap:3px; font-size:10px; font-weight:700; margin-top:2px;">
             <span>View Details</span>
             <span class="material-icons-round" style="font-size:13px;">arrow_forward</span>
           </div>
@@ -1893,59 +2044,59 @@
           <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(139,92,246,0.18); border-radius:50%; filter:blur(28px); pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:13px; font-weight:800; color:#A78BFA; letter-spacing:0.2px;">Est. Month-END & Details</div>
+            <div class="fc-hero-title" style="font-size:13px; font-weight:800; letter-spacing:0.2px;">Est. Month-END & Details</div>
             <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge" style="font-size:10px; padding:3px 9px;">SAFE</div>
           </div>
 
-          <div style="font-size:32px; font-weight:800; color:#FFF; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
+          <div style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
           
-          <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
+          <div style="font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
             <span class="material-icons-round" style="font-size:16px;">trending_down</span>
             <span>Calculating live trajectory...</span>
           </div>
 
           <!-- Current Daily Spending & Safe Daily Spending Grid -->
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-            <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
-              <div class="cf-label" style="color:var(--text-muted); font-size:10px; text-transform:uppercase; font-weight:700;">CURRENT DAILY SPENDING</div>
+            <div class="cashflow-box" style="padding:10px 12px; border-radius:14px;">
+              <div class="cf-label" style="font-size:10px; text-transform:uppercase; font-weight:700;">CURRENT DAILY SPENDING</div>
               <div style="font-size:16px; font-weight:800; color:#38BDF8;" id="fcMtdSpend">₹0.00/day</div>
             </div>
-            <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
-              <div class="cf-label" style="color:var(--text-muted); font-size:10px; text-transform:uppercase; font-weight:700;">SAFE DAILY SPENDING</div>
+            <div class="cashflow-box" style="padding:10px 12px; border-radius:14px;">
+              <div class="cf-label" style="font-size:10px; text-transform:uppercase; font-weight:700;">SAFE DAILY SPENDING</div>
               <div style="font-size:16px; font-weight:800; color:#10B981;" id="fcSafeDailyCap">₹0.00/day</div>
             </div>
           </div>
 
           <!-- Top Spending Category Row -->
-          <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:10px 14px; margin-bottom:10px;" id="fcTopDriverBox">
+          <div id="fcTopDriverBox" style="border-radius:14px; padding:10px 14px; margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:8px;">
                 <div style="width:30px; height:30px; border-radius:8px; background:rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center;">
                   <span class="material-icons-round" style="color:#F59E0B; font-size:18px;">category</span>
                 </div>
                 <div>
-                  <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">TOP SPENDING CATEGORY</div>
-                  <div style="font-size:13px; font-weight:800; color:#FFF;" id="fcTopDriverName">Food & Dining</div>
+                  <div class="cf-label" style="font-size:10px; font-weight:700; text-transform:uppercase;">TOP SPENDING CATEGORY</div>
+                  <div class="fc-driver-name" style="font-size:13px; font-weight:800;" id="fcTopDriverName">Food & Dining</div>
                 </div>
               </div>
               <div style="text-align:right;">
                 <div style="font-size:14px; font-weight:800; color:#F59E0B;" id="fcTopDriverAmount">₹0.00</div>
-                <div style="font-size:10px; color:#A78BFA; font-weight:700;" id="fcTopDriverPct">0% of budget</div>
+                <div class="fc-driver-pct" style="font-size:10px; font-weight:700;" id="fcTopDriverPct">0% of budget</div>
               </div>
             </div>
           </div>
 
           <!-- AI Suggestion Box (5-10 words, 1-1.5 lines) -->
-          <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.25); border-radius:14px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
-            <span class="material-icons-round" style="color:#A78BFA; font-size:18px; flex-shrink:0;">auto_awesome</span>
-            <p style="margin:0; font-size:11px; line-height:1.4; color:#E2E8F0; font-weight:500;" id="fcAiSuggestionText">
+          <div id="fcAiSuggestionBox" style="border-radius:14px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+            <span class="material-icons-round fc-spark-icon" style="font-size:18px; flex-shrink:0;">auto_awesome</span>
+            <p style="margin:0; font-size:11px; line-height:1.4; font-weight:500;" id="fcAiSuggestionText">
               Keep Food & Dining steady at current pace to protect your savings.
             </p>
           </div>
 
           <!-- View More... Button -> Opens AI Chatbot -->
           <div style="display:flex; justify-content:flex-end;">
-            <button type="button" onclick="openAiChatModal()" style="display:inline-flex; align-items:center; gap:4px; padding:5px 12px; font-size:11px; font-weight:700; color:#A78BFA; background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.35); border-radius:10px; cursor:pointer;" title="Ask AI Mentor">
+            <button type="button" id="fcViewMoreBtn" onclick="openAiChatModal()" style="display:inline-flex; align-items:center; gap:4px; padding:5px 12px; font-size:11px; font-weight:700; border-radius:10px; cursor:pointer;" title="Ask AI Mentor">
               <span>View more...</span>
               <span class="material-icons-round" style="font-size:14px;">chat</span>
             </button>
@@ -2582,9 +2733,6 @@
           <span class="material-icons-round" style="color:var(--color-amber); font-size:22px;">notifications_active</span>
           <div class="tx-title" style="font-size:16px;">Predictive Alerts</div>
         </div>
-        <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-secondary); padding:4px 10px; font-size:11px; border-radius:8px;" onclick="markAllNotificationsRead()">
-          Mark All Read
-        </button>
       </div>
 
       <div id="notificationsList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
@@ -3678,7 +3826,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.5').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.6').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
@@ -5033,11 +5181,15 @@
         userNotifications = res.notifications || [];
         const unreadCount = res.unread_count || 0;
 
+        // Exclude nuisance 'Cash in Hand' low balance notifications
+        userNotifications = (res.notifications || []).filter(n => !((n.title || '').toLowerCase().includes('cash')));
+        const validUnreadCount = userNotifications.filter(n => !n.is_read).length;
+
         // Update Bell Badge
         const badge = document.getElementById('notifBadge');
         if (badge) {
-          if (unreadCount > 0) {
-            badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+          if (validUnreadCount > 0) {
+            badge.innerText = validUnreadCount > 9 ? '9+' : validUnreadCount;
             badge.style.display = 'flex';
           } else {
             badge.style.display = 'none';
@@ -5057,18 +5209,20 @@
       if (!container) return;
       container.innerHTML = '';
 
-      if (!notifs || notifs.length === 0) {
+      const validNotifs = (notifs || []).filter(n => !((n.title || '').toLowerCase().includes('cash')));
+
+      if (!validNotifs || validNotifs.length === 0) {
         container.innerHTML = `
           <div style="text-align:center; padding:30px 10px; color:var(--text-muted);">
             <span class="material-icons-round" style="font-size:36px; color:var(--color-emerald); margin-bottom:8px;">check_circle</span>
-            <div style="font-weight:700; color:#FFF; font-size:14px;">All Clear!</div>
-            <div style="font-size:12px; margin-top:4px;">No budget breaches, low balance alerts, or bill warnings.</div>
+            <div style="font-weight:700; color:var(--text-primary); font-size:14px;">All Clear!</div>
+            <div style="font-size:12px; margin-top:4px;">No budget breaches or urgent financial warnings.</div>
           </div>
         `;
         return;
       }
 
-      notifs.forEach(n => {
+      validNotifs.forEach(n => {
         const item = document.createElement('div');
         item.className = 'tx-item';
         item.style.cursor = 'pointer';
@@ -5111,7 +5265,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="material-icons-round" style="color:${iconColor}; font-size:20px;">${iconName}</span>
-              <span style="font-size:13px; font-weight:800; color:#FFF;">${n.title}</span>
+              <span style="font-size:13px; font-weight:800; color:var(--text-primary);">${n.title}</span>
             </div>
             ${!n.is_read ? '<span style="width:8px; height:8px; border-radius:50%; background:var(--color-ruby);"></span>' : ''}
           </div>
@@ -5129,7 +5283,7 @@
       const banner = document.getElementById('criticalAlertBanner');
       if (!banner) return;
 
-      const critical = notifs.find(n => !n.is_read && (n.type === 'DANGER' || n.type === 'WARNING'));
+      const critical = (notifs || []).find(n => !n.is_read && (n.type === 'DANGER' || n.type === 'WARNING') && !((n.title || '').toLowerCase().includes('cash')));
       if (critical) {
         document.getElementById('critAlertTitle').innerText = critical.title;
         document.getElementById('critAlertMsg').innerText = critical.message;

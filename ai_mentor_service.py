@@ -540,9 +540,12 @@ def local_financial_nlu_engine(context: Dict[str, Any], user_prompt: str) -> Dic
         chips = ["📊 Is mahine ka total kharch?", "💰 Mera bacha paisa?", "🍔 Khane pe kitna gaya?"]
 
     # ----------------------------------------------------
-    # 4. PURCHASE DECISION / AFFORDABILITY ("Kya mai X khareed sakta hu?")
+    # 4. PURCHASE DECISION / AFFORDABILITY ("Kya mai 5000 ka phone khareed sakta hu?")
     # ----------------------------------------------------
-    elif any(k in user_q for k in ["afford", "kharid", "buy", "purchase", "le lu", "le sakta", "lena chahiye"]):
+    elif any(k in user_q for k in [
+        "afford", "kharid", "khareed", "kharidu", "khareedu", "buy", "purchase", 
+        "le lu", "le sakta", "le sakti", "le sakte", "lena chahiye", "lena sahi"
+    ]) or (parsed_amount and any(k in user_q for k in ["sakta hu", "sakti hu", "sakenge", "le lein"])):
         check_amt = parsed_amount if parsed_amount else 2500.0
 
         if check_amt <= remaining_budget:
@@ -604,7 +607,154 @@ def local_financial_nlu_engine(context: Dict[str, Any], user_prompt: str) -> Dic
         chips = ["💰 Mera bacha hua budget?", "🛡️ Aaj ka safe limit?", "📊 Is mahine ka total kharch?"]
 
     # ----------------------------------------------------
-    # 5. CATEGORY SPECIFIC QUERIES (Food, Travel, Shopping, Bills)
+    # 5. SAVINGS STRATEGY & 50/30/20 RULE ("Paisa kaise bachayein?", "Bachat tips")
+    # ----------------------------------------------------
+    elif any(k in user_q for k in ["save kaise", "kaise bachaye", "kaise bachayein", "bachat", "saving tips", "tips", "50-30-20", "50/30/20"]):
+        top_driver_hindi = f"'{top_cat}' में 15% की कटौती करने से सीधे **₹{round(top_cat_amt * 0.15, 2):,.2f}** बचेंगे!" if (top_cat != "None" and top_cat_amt > 0) else "शॉपिंग या बाहर खाने जैसे गैर-जरूरी खर्च में 15% कटौती से सीधी बचत होगी!"
+        top_driver_eng = f"Cutting 15% from '{top_cat}' captures **₹{round(top_cat_amt * 0.15, 2):,.2f}**." if (top_cat != "None" and top_cat_amt > 0) else "Cutting 15% from dining or shopping captures instant savings."
+        top_driver_spoken_hi = f"{top_cat} me thoda control karein." if (top_cat != "None" and top_cat_amt > 0) else "shopping aur dining me thoda control karein."
+
+        if is_hindi:
+            reply = (
+                f"💡 **पैसा बचाने के 3 सबसे आसान नियम:**\n\n"
+                f"1. **50-30-20 का जादुई नियम:**\n"
+                f"   • **50% जरूरतें (Needs):** राशन, किराया, बिजली बिल\n"
+                f"   • **30% शौक (Wants):** बाहर खाना, फिल्में, शॉपिंग\n"
+                f"   • **20% बचत (Savings):** इमरजेंसी फंड व निवेश\n\n"
+                f"2. **दैनिक सेफ लिमिट का पालन:** रोज **₹{safe_cap:.1f}/दिन** से कम खर्च रखें।\n"
+                f"3. **सबसे बड़े खर्च पर नियंत्रण:** {top_driver_hindi}"
+            )
+            spoken = f"Paisa bachane ke liye roz safe daily limit ka dhyan rakhein, aur {top_driver_spoken_hi}"
+        else:
+            reply = (
+                f"💡 **3 Core Principles to Grow Your Savings:**\n\n"
+                f"1. **The 50/30/20 Rule:**\n"
+                f"   • **50% Needs:** Rent, groceries, utility bills\n"
+                f"   • **30% Wants:** Dining, entertainment, shopping\n"
+                f"   • **20% Savings:** Emergency cushion & wealth accumulation\n\n"
+                f"2. **Respect Daily Safe Pace:** Stay under **₹{safe_cap:.1f}/day**.\n"
+                f"3. **Trim Top Driver:** {top_driver_eng}"
+            )
+            spoken = f"Stay under your daily safe pace to protect your savings."
+
+        chips = ["🎯 Budget status?", "💰 Mera bacha paisa?", "🏆 Top spending kisme hua?"]
+
+    # ----------------------------------------------------
+    # 6. UPCOMING BILLS & RECURRING COMMITTMENTS ("Upcoming bills kya hai?")
+    # ----------------------------------------------------
+    elif any(k in user_q for k in ["upcoming", "recurring", "pending bill", "bill due", "dues", "bills kya hai"]):
+        if upcoming_bills:
+            b_lines = [f"• **{b['title']}**: ₹{float(b['amount']):,.2f} (Due: {b['next_due_date']})" for b in upcoming_bills]
+            b_text = "\n".join(b_lines)
+            if is_hindi:
+                reply = f"📅 **आने वाले बिल व कमिटमेंट्स:**\n\n{b_text}\n\nकृपया इन तारीखों से पहले अपने एकाउंट में पर्याप्त बैलेंस रखें।"
+                spoken = f"Aapke paas {len(upcoming_bills)} upcoming bills due hain."
+            else:
+                reply = f"📅 **Upcoming Recurring Bills:**\n\n{b_text}\n\nEnsure sufficient balance before due dates."
+                spoken = f"You have {len(upcoming_bills)} upcoming bills due."
+        else:
+            if is_hindi:
+                reply = "🎉 **कोई भी बिल पेंडिंग नहीं है!**\n\nइस महीने कोई भी आगामी रिकरिंग पेमेंट बाकी नहीं है।"
+                spoken = "Aapka koi bhi bill pending nahi hai."
+            else:
+                reply = "🎉 **All clear! No upcoming recurring bills due.**\n\nYour commitments are up to date."
+                spoken = "All clear, no upcoming recurring bills."
+
+        chips = ["💰 Mera bacha paisa?", "📊 Is mahine ka kharch?", "🛡️ Aaj ka safe limit?"]
+
+    # ----------------------------------------------------
+    # 7. ACCOUNT BALANCE & NET WORTH ("Balance kitna hai", "Bank me kitna hai")
+    # ----------------------------------------------------
+    elif any(k in user_q for k in ["balance", "paisa", "paise", "account", "bank", "cash", "net worth", "total paisa"]):
+        acc_lines = []
+        for a in accounts:
+            acc_lines.append(f"• **{a['name']}** ({a['account_type']}): **₹{float(a['current_balance']):,.2f}**")
+        acc_text = "\n".join(acc_lines) if acc_lines else "• कोई एकाउंट लिंक नहीं है।"
+
+        total_assets = context["total_assets"]
+
+        if is_hindi:
+            reply = (
+                f"💼 **आपके एकाउंट्स का लाइव बैलेंस:**\n\n"
+                f"{acc_text}\n\n"
+                f"• **कुल लिक्विड बैलेंस:** **₹{total_assets:,.2f}**\n\n"
+                f"आपका सारा बैलेंस डबल-एंट्री लेजर में 100% सुरक्षित और अपडेटेड है।"
+            )
+            spoken = f"Aapka kul liquid balance {int(total_assets)} rupaye hai."
+        else:
+            reply = (
+                f"💼 **Your Live Account Balances:**\n\n"
+                f"{acc_text}\n\n"
+                f"• **Total Liquid Balance:** **₹{total_assets:,.2f}**\n\n"
+                f"All accounts are perfectly synchronized with double-entry precision."
+            )
+            spoken = f"Your total liquid balance across all accounts is {int(total_assets)} rupees."
+
+        chips = ["📊 Is mahine ka kharcha?", "🎯 Budget kitna bacha hai?", "🛡️ Aaj ka safe limit?"]
+
+    # ----------------------------------------------------
+    # 8. TOP SPENDING CATEGORY ("Kisme zyada kharch hua?", "Top spend")
+    # ----------------------------------------------------
+    elif any(k in user_q for k in ["zyada", "jyada", "sabse bada", "top", "highest", "kisme"]):
+        if top_cat != "None" and top_cat_amt > 0:
+            pct_of_spend = round((top_cat_amt / cur_spend * 100), 1) if cur_spend > 0 else 0.0
+            if is_hindi:
+                reply = (
+                    f"🏆 **इस महीने का सबसे बड़ा खर्च:**\n\n"
+                    f"आपका सबसे अधिक पैसा **{top_cat}** में गया है:\n"
+                    f"• कुल राशि: **₹{top_cat_amt:,.2f}** ({pct_of_spend}% of total spend)\n\n"
+                    f"💡 **सुझाव:** यदि आप {top_cat} में सिर्फ 15% की बचत कर लें, तो महीने के अंत में आपके पास **₹{round(top_cat_amt * 0.15, 2):,.2f}** अतिरिक्त बचेंगे!"
+                )
+                spoken = f"Aapka sabse zyada kharcha {top_cat} me hua hai, kul {int(top_cat_amt)} rupaye."
+            else:
+                reply = (
+                    f"🏆 **Top Spending Expense Category:**\n\n"
+                    f"Your highest expenditure driver is **{top_cat}**:\n"
+                    f"• Total Amount: **₹{top_cat_amt:,.2f}** ({pct_of_spend}% of total spend)\n\n"
+                    f"💡 **Recommendation:** Trimming 15% from {top_cat} will leave you with an extra **₹{round(top_cat_amt * 0.15, 2):,.2f}** in pocket savings!"
+                )
+                spoken = f"Your highest expense category is {top_cat} with {int(top_cat_amt)} rupees spent."
+        else:
+            if is_hindi:
+                reply = "ℹ️ इस महीने अभी तक बहुत कम खर्च हुआ है। कोई प्रमुख कैटेगरी ओवर-स्पेंड नहीं है।"
+                spoken = "Is mahine abhi tak kharch bilkul shant aur surakshit hai."
+            else:
+                reply = "ℹ️ Minimal expenses recorded so far this month. No single category has dominated."
+                spoken = "Minimal expenses recorded so far."
+
+        chips = ["🍔 Food ka kharch?", "💰 Mera bacha paisa?", "💡 Bachat kaise badhaye?"]
+
+    # ----------------------------------------------------
+    # 9. BUDGET & RUNWAY ("Budget kitna bacha hai?")
+    # ----------------------------------------------------
+    elif any(k in user_q for k in ["budget", "bacha", "remaining", "overrun", "risk"]):
+        if is_hindi:
+            reply = (
+                f"🎯 **इस महीने का बजट स्टेटस:**\n\n"
+                f"• कुल तय बजट: **₹{budget:,.2f}**\n"
+                f"• अब तक खर्च: **₹{cur_spend:,.2f}**\n"
+                f"• बचा हुआ बजट: **₹{remaining_budget:,.2f}**\n"
+                f"• महीने में बाकी दिन: **{days_left} दिन**\n"
+                f"• 🛡️ सेफ डेली लिमिट: **₹{safe_cap:.1f} / दिन**\n\n"
+                f"{'🟢 बहुत बढ़िया! आप बजट के भीतर हैं और बचत की राह पर हैं।' if cur_spend <= budget else '🔴 ध्यान दें: खर्च बजट को पार कर चुका है, गैर-जरूरी खर्च तुरंत रोकें।'}"
+            )
+            spoken = f"Aapka bacha hua budget {int(remaining_budget)} rupaye hai, aur roz ka safe limit {int(safe_cap)} rupaye hai."
+        else:
+            reply = (
+                f"🎯 **Monthly Budget Overview:**\n\n"
+                f"• Total Budget: **₹{budget:,.2f}**\n"
+                f"• MTD Spend: **₹{cur_spend:,.2f}**\n"
+                f"• Remaining Budget: **₹{remaining_budget:,.2f}**\n"
+                f"• Days Remaining: **{days_left} days**\n"
+                f"• 🛡️ Safe Daily Pace: **₹{safe_cap:.1f}/day**\n\n"
+                f"{'🟢 On track! You are pacing safely inside your budget ceiling.' if cur_spend <= budget else '🔴 Overrun alert: Spending has crossed your target budget ceiling.'}"
+            )
+            spoken = f"You have {int(remaining_budget)} rupees remaining in your monthly budget."
+
+        chips = ["🛡️ Aaj ka safe limit?", "🍔 Food ka kharch?", "💡 Bachat kaise badhaye?"]
+
+    # ----------------------------------------------------
+    # 10. CATEGORY SPECIFIC QUERIES (Food, Travel, Shopping, Bills)
     # ----------------------------------------------------
     elif matched_cat:
         cat_info = category_spends.get(matched_cat)
@@ -643,150 +793,6 @@ def local_financial_nlu_engine(context: Dict[str, Any], user_prompt: str) -> Dic
                 spoken = f"Zero rupees spent on {matched_display} this month."
 
         chips = ["📊 Sabse zyada kharcha kisme hua?", "💰 Mera bacha paisa?", "💡 Bachat kaise badhaye?"]
-
-    # ----------------------------------------------------
-    # 6. ACCOUNT BALANCE & NET WORTH ("Balance kitna hai", "Bank me kitna hai")
-    # ----------------------------------------------------
-    elif any(k in user_q for k in ["balance", "paisa", "paise", "account", "bank", "cash", "net worth", "total paisa"]):
-        acc_lines = []
-        for a in accounts:
-            acc_lines.append(f"• **{a['name']}** ({a['account_type']}): **₹{float(a['current_balance']):,.2f}**")
-        acc_text = "\n".join(acc_lines) if acc_lines else "• कोई एकाउंट लिंक नहीं है।"
-
-        total_assets = context["total_assets"]
-
-        if is_hindi:
-            reply = (
-                f"💼 **आपके एकाउंट्स का लाइव बैलेंस:**\n\n"
-                f"{acc_text}\n\n"
-                f"• **कुल लिक्विड बैलेंस:** **₹{total_assets:,.2f}**\n\n"
-                f"आपका सारा बैलेंस डबल-एंट्री लेजर में 100% सुरक्षित और अपडेटेड है।"
-            )
-            spoken = f"Aapka kul liquid balance {int(total_assets)} rupaye hai."
-        else:
-            reply = (
-                f"💼 **Your Live Account Balances:**\n\n"
-                f"{acc_text}\n\n"
-                f"• **Total Liquid Balance:** **₹{total_assets:,.2f}**\n\n"
-                f"All accounts are perfectly synchronized with double-entry precision."
-            )
-            spoken = f"Your total liquid balance across all accounts is {int(total_assets)} rupees."
-
-        chips = ["📊 Is mahine ka kharcha?", "🎯 Budget kitna bacha hai?", "🛡️ Aaj ka safe limit?"]
-
-
-    # ----------------------------------------------------
-    # 8. TOP SPENDING CATEGORY ("Kisme zyada kharch hua?", "Top spend")
-    # ----------------------------------------------------
-    elif any(k in user_q for k in ["zyada", "jyada", "sabse bada", "top", "highest", "kisme"]):
-        if top_cat != "None" and top_cat_amt > 0:
-            pct_of_spend = round((top_cat_amt / cur_spend * 100), 1) if cur_spend > 0 else 0.0
-            if is_hindi:
-                reply = (
-                    f"🏆 **इस महीने का सबसे बड़ा खर्च:**\n\n"
-                    f"आपका सबसे अधिक पैसा **{top_cat}** में गया है:\n"
-                    f"• कुल राशि: **₹{top_cat_amt:,.2f}** ({pct_of_spend}% of total spend)\n\n"
-                    f"💡 **सुझाव:** यदि आप {top_cat} में सिर्फ 15% की बचत कर लें, तो महीने के अंत में आपके पास **₹{round(top_cat_amt * 0.15, 2):,.2f}** अतिरिक्त बचेंगे!"
-                )
-                spoken = f"Aapka sabse zyada kharcha {top_cat} me hua hai, kul {int(top_cat_amt)} rupaye."
-            else:
-                reply = (
-                    f"🏆 **Top Spending Expense Category:**\n\n"
-                    f"Your highest expenditure driver is **{top_cat}**:\n"
-                    f"• Total Amount: **₹{top_cat_amt:,.2f}** ({pct_of_spend}% of total spend)\n\n"
-                    f"💡 **Recommendation:** Trimming 15% from {top_cat} will leave you with an extra **₹{round(top_cat_amt * 0.15, 2):,.2f}** in pocket savings!"
-                )
-                spoken = f"Your highest expense category is {top_cat} with {int(top_cat_amt)} rupees spent."
-        else:
-            if is_hindi:
-                reply = "ℹ️ इस महीने अभी तक बहुत कम खर्च हुआ है। कोई प्रमुख कैटेगरी ओवर-स्पेंड नहीं है।"
-                spoken = "Is mahine abhi tak kharch bilkul shant aur surakshit hai."
-            else:
-                reply = "ℹ️ Minimal expenses recorded so far this month. No single category has dominated."
-                spoken = "Minimal expenses recorded so far."
-
-        chips = ["🍔 Food ka kharch?", "💰 Mera bacha paisa?", "💡 Bachat kaise badhaye?"]
-
-    # ----------------------------------------------------
-    # 9. SAVINGS STRATEGY & 50/30/20 RULE ("Paisa kaise bachayein?")
-    # ----------------------------------------------------
-    elif any(k in user_q for k in ["save", "saving", "bachat", "kaise bachaye", "cut", "tips", "invest"]):
-        if is_hindi:
-            reply = (
-                f"💡 **पैसा बचाने के 3 सबसे आसान नियम:**\n\n"
-                f"1. **50-30-20 का जादुई नियम:**\n"
-                f"   • **50% जरूरतें (Needs):** राशन, किराया, बिजली बिल\n"
-                f"   • **30% शौक (Wants):** बाहर खाना, फिल्में, शॉपिंग\n"
-                f"   • **20% बचत (Savings):** इमरजेंसी फंड व निवेश\n\n"
-                f"2. **दैनिक सेफ लिमिट का पालन:** रोज **₹{safe_cap:.1f}/दिन** से कम खर्च रखें।\n"
-                f"3. **सबसे बड़े खर्च पर नियंत्रण:** '{top_cat}' में 15% की कटौती करने से सीधे **₹{round(top_cat_amt * 0.15, 2):,.2f}** बचेंगे!"
-            )
-            spoken = f"Paisa bachane ke liye roz {int(safe_cap)} rupaye ki safe daily limit ka dhyan rakhein, aur {top_cat} me thoda control karein."
-        else:
-            reply = (
-                f"💡 **3 Core Principles to Grow Your Savings:**\n\n"
-                f"1. **The 50/30/20 Rule:**\n"
-                f"   • **50% Needs:** Rent, groceries, utility bills\n"
-                f"   • **30% Wants:** Dining, entertainment, shopping\n"
-                f"   • **20% Savings:** Emergency cushion & wealth accumulation\n\n"
-                f"2. **Respect Daily Safe Pace:** Stay under **₹{safe_cap:.1f}/day**.\n"
-                f"3. **Trim Top Driver:** Cutting 15% from '{top_cat}' captures **₹{round(top_cat_amt * 0.15, 2):,.2f}**."
-            )
-            spoken = f"Stay under your daily safe pace of {int(safe_cap)} rupees per day to protect your savings."
-
-        chips = ["🎯 Budget status?", "💰 Mera bacha paisa?", "🏆 Top spending kisme hua?"]
-
-    # ----------------------------------------------------
-    # 10. BUDGET & RUNWAY ("Budget kitna bacha hai?")
-    # ----------------------------------------------------
-    elif any(k in user_q for k in ["budget", "bacha", "remaining", "overrun", "risk"]):
-        if is_hindi:
-            reply = (
-                f"🎯 **इस महीने का बजट स्टेटस:**\n\n"
-                f"• कुल तय बजट: **₹{budget:,.2f}**\n"
-                f"• अब तक खर्च: **₹{cur_spend:,.2f}**\n"
-                f"• बचा हुआ बजट: **₹{remaining_budget:,.2f}**\n"
-                f"• महीने में बाकी दिन: **{days_left} दिन**\n"
-                f"• 🛡️ सेफ डेली लिमिट: **₹{safe_cap:.1f} / दिन**\n\n"
-                f"{'🟢 बहुत बढ़िया! आप बजट के भीतर हैं और बचत की राह पर हैं।' if cur_spend <= budget else '🔴 ध्यान दें: खर्च बजट को पार कर चुका है, गैर-जरूरी खर्च तुरंत रोकें।'}"
-            )
-            spoken = f"Aapka bacha hua budget {int(remaining_budget)} rupaye hai, aur roz ka safe limit {int(safe_cap)} rupaye hai."
-        else:
-            reply = (
-                f"🎯 **Monthly Budget Overview:**\n\n"
-                f"• Total Budget: **₹{budget:,.2f}**\n"
-                f"• MTD Spend: **₹{cur_spend:,.2f}**\n"
-                f"• Remaining Budget: **₹{remaining_budget:,.2f}**\n"
-                f"• Days Remaining: **{days_left} days**\n"
-                f"• 🛡️ Safe Daily Pace: **₹{safe_cap:.1f}/day**\n\n"
-                f"{'🟢 On track! You are pacing safely inside your budget ceiling.' if cur_spend <= budget else '🔴 Overrun alert: Spending has crossed your target budget ceiling.'}"
-            )
-            spoken = f"You have {int(remaining_budget)} rupees remaining in your monthly budget."
-
-        chips = ["🛡️ Aaj ka safe limit?", "🍔 Food ka kharch?", "💡 Bachat kaise badhaye?"]
-
-    # ----------------------------------------------------
-    # 11. UPCOMING BILLS & RECURRING COMMITTMENTS
-    # ----------------------------------------------------
-    elif any(k in user_q for k in ["bill", "recurring", "pending", "dues", "bijli", "recharge"]):
-        if upcoming_bills:
-            b_lines = [f"• **{b['title']}**: ₹{float(b['amount']):,.2f} (Due: {b['next_due_date']})" for b in upcoming_bills]
-            b_text = "\n".join(b_lines)
-            if is_hindi:
-                reply = f"📅 **आने वाले बिल व कमिटमेंट्स:**\n\n{b_text}\n\nकृपया इन तारीखों से पहले अपने एकाउंट में पर्याप्त बैलेंस रखें।"
-                spoken = f"Aapke paas {len(upcoming_bills)} upcoming bills due hain."
-            else:
-                reply = f"📅 **Upcoming Recurring Bills:**\n\n{b_text}\n\nEnsure sufficient balance before due dates."
-                spoken = f"You have {len(upcoming_bills)} upcoming bills due."
-        else:
-            if is_hindi:
-                reply = "🎉 **कोई भी बिल पेंडिंग नहीं है!**\n\nइस महीने कोई भी आगामी रिकरिंग पेमेंट बाकी नहीं है।"
-                spoken = "Aapka koi bhi bill pending nahi hai."
-            else:
-                reply = "🎉 **All clear! No upcoming recurring bills due.**\n\nYour commitments are up to date."
-                spoken = "All clear, no upcoming recurring bills."
-
-        chips = ["💰 Mera bacha paisa?", "📊 Is mahine ka kharch?", "🛡️ Aaj ka safe limit?"]
 
     # ----------------------------------------------------
     # 12. FALLBACK FINANCIAL SNAPSHOT

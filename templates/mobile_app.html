@@ -531,6 +531,15 @@
       color: #FFFFFF !important;
       font-size: 20px;
       flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .tx-icon-box .tx-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 12px;
     }
     .tx-title {
       font-size: 14px;
@@ -2416,7 +2425,8 @@
       </div>
 
       <div style="text-align:center; margin-bottom:16px;">
-        <div class="tx-icon-box" id="txDetailIconBox" style="width:54px; height:54px; font-size:26px; margin:0 auto 10px auto; border-radius:16px;">
+        <div class="tx-icon-box" id="txDetailIconBox" style="width:54px; height:54px; font-size:26px; margin:0 auto 10px auto; border-radius:16px; position:relative; overflow:hidden;">
+          <img id="txDetailImg" src="" alt="Category" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:16px;" onerror="this.style.display='none'; document.getElementById('txDetailIcon').style.display='block';">
           <span class="material-icons-round" id="txDetailIcon" style="font-size:28px;">receipt</span>
         </div>
         <div class="tx-amount" id="txDetailAmount" style="font-size:30px; font-weight:800;">₹0.00</div>
@@ -6030,6 +6040,194 @@
       });
     }
 
+    const CATEGORY_AESTHETIC_VISUALS = {
+      // ---------------- EXPENSE CATEGORIES ----------------
+      'food': {
+        shortName: 'Food',
+        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80',
+        icon: 'restaurant',
+        color: '#EF4444'
+      },
+      'education': {
+        shortName: 'Education',
+        image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=120&q=80',
+        icon: 'school',
+        color: '#06B6D4'
+      },
+      'shop': {
+        shortName: 'Shopping',
+        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=120&q=80',
+        icon: 'shopping_bag',
+        color: '#EC4899'
+      },
+      'transport': {
+        shortName: 'Transport',
+        image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=120&q=80',
+        icon: 'directions_car',
+        color: '#F59E0B'
+      },
+      'entertain': {
+        shortName: 'Entertainment',
+        image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=120&q=80',
+        icon: 'movie',
+        color: '#8B5CF6'
+      },
+      'health': {
+        shortName: 'Health',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80',
+        icon: 'local_hospital',
+        color: '#10B981'
+      },
+      'hous': {
+        shortName: 'House',
+        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=120&q=80',
+        icon: 'home',
+        color: '#3B82F6'
+      },
+      'finan': {
+        shortName: 'Financial',
+        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
+        icon: 'trending_up',
+        color: '#6366F1'
+      },
+      'person': {
+        shortName: 'Personal',
+        image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80',
+        icon: 'face',
+        color: '#D946EF'
+      },
+
+      // ---------------- INCOME CATEGORIES ----------------
+      'salary': {
+        shortName: 'Salary',
+        image: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=120&q=80',
+        icon: 'work',
+        color: '#10B981'
+      },
+      'business': {
+        shortName: 'Business',
+        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=120&q=80',
+        icon: 'business_center',
+        color: '#3B82F6'
+      },
+      'freelance': {
+        shortName: 'Freelance',
+        image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=120&q=80',
+        icon: 'laptop_mac',
+        color: '#06B6D4'
+      },
+      'invest': {
+        shortName: 'Investments',
+        image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
+        icon: 'show_chart',
+        color: '#8B5CF6'
+      },
+      'gift': {
+        shortName: 'Gifts & Grants',
+        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
+        icon: 'redeem',
+        color: '#EC4899'
+      },
+      'grant': {
+        shortName: 'Grants',
+        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
+        icon: 'workspace_premium',
+        color: '#F59E0B'
+      },
+      'bonus': {
+        shortName: 'Bonus',
+        image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=120&q=80',
+        icon: 'emoji_events',
+        color: '#F59E0B'
+      },
+      'rent': {
+        shortName: 'Rental',
+        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=120&q=80',
+        icon: 'apartment',
+        color: '#10B981'
+      },
+      'dividend': {
+        shortName: 'Dividends',
+        image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80',
+        icon: 'paid',
+        color: '#10B981'
+      },
+      'interest': {
+        shortName: 'Interest',
+        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
+        icon: 'savings',
+        color: '#3B82F6'
+      },
+      'crypto': {
+        shortName: 'Crypto',
+        image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=120&q=80',
+        icon: 'currency_bitcoin',
+        color: '#F59E0B'
+      }
+    };
+
+    // User specified exact ordering for expenses:
+    // food, education, shopping, transport, entertainment, health, house, financial, personal
+    const TARGET_CATEGORY_ORDER = [
+      'food',
+      'education',
+      'shop',
+      'transport',
+      'entertain',
+      'health',
+      'hous',
+      'finan',
+      'person'
+    ];
+
+    // Logical ordering for income categories:
+    const TARGET_INCOME_ORDER = [
+      'salary',
+      'business',
+      'freelance',
+      'invest',
+      'gift',
+      'grant',
+      'bonus',
+      'rent',
+      'dividend',
+      'interest',
+      'crypto'
+    ];
+
+    function getCategoryOrderRank(catName, sheetType = 'EXPENSE') {
+      const lower = (catName || '').toLowerCase();
+      const orderList = sheetType === 'INCOME' ? TARGET_INCOME_ORDER : TARGET_CATEGORY_ORDER;
+      for (let i = 0; i < orderList.length; i++) {
+        if (lower.includes(orderList[i])) return i;
+      }
+      return 100; // Custom user-added categories placed after standard
+    }
+
+    function getCategoryVisualMeta(c) {
+      const lower = (c.name || '').toLowerCase();
+      for (const [key, meta] of Object.entries(CATEGORY_AESTHETIC_VISUALS)) {
+        if (lower.includes(key)) {
+          return {
+            displayName: meta.shortName,
+            image: meta.image,
+            icon: c.icon || meta.icon,
+            color: c.color_hex || meta.color
+          };
+        }
+      }
+      const isIncome = (c.type === 'INCOME') || (APP_STATE.sheetType === 'INCOME');
+      return {
+        displayName: c.name,
+        image: c.image_url || (isIncome 
+          ? 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=120&q=80' 
+          : ''),
+        icon: c.icon || (isIncome ? 'account_balance_wallet' : 'category'),
+        color: c.color_hex || (isIncome ? '#10B981' : '#6366F1')
+      };
+    }
+
+
     async function loadTransactions() {
       const res = await apiRequest('/transactions');
       if (res && res.success) {
@@ -6045,7 +6243,7 @@
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No transactions recorded yet. Tap + to add.</div>';
         return;
       }
-      transactions.forEach(tx => container.appendChild(createTxElement(tx)));
+      transactions.forEach(tx => container.appendChild(createTxElement(tx, true)));
     }
 
     function renderTransactionsList(transactions = null) {
@@ -6081,26 +6279,54 @@
 
       const sign = isExpense ? '-' : isIncome ? '+' : '⇄';
       const colorClass = isExpense ? 'expense' : isIncome ? 'income' : 'transfer';
-      const icon = tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
-      const bg = tx.category_color || (isTransfer ? '#3B82F6' : isIncome ? '#10B981' : '#64748B');
+
+      const visual = getCategoryVisualMeta({
+        name: tx.category_name || tx.note || '',
+        type: tx.transaction_type,
+        icon: tx.category_icon,
+        color_hex: tx.category_color,
+        image_url: tx.image_url
+      });
+
+      const icon = visual.icon || tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
+      const bg = visual.color || tx.category_color || (isTransfer ? '#3B82F6' : isIncome ? '#10B981' : '#64748B');
+      const imgUrl = (!isTransfer && visual.image) ? visual.image : null;
 
       const accDisplay = formatAccountName(tx.account_name);
       const targetAccDisplay = formatAccountName(tx.target_account_name);
       const title = isTransfer ? `Transfer: ${accDisplay} ➔ ${targetAccDisplay}` : (tx.category_name || tx.note || 'Transaction');
       const subtitle = `${tx.date} • ${accDisplay}${tx.note && !isTransfer ? ` • ${tx.note}` : ''}`;
 
+      const numAmount = parseFloat(tx.amount) || 0;
+      const formattedAmount = numAmount.toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+      const iconBoxMarkup = imgUrl ? `
+        <div class="tx-icon-box" style="position:relative; overflow:hidden; padding:0; background:${bg}; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.18);">
+          <img src="${imgUrl}" 
+               alt="${visual.displayName || tx.category_name || 'Category'}" 
+               class="tx-img"
+               loading="lazy" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+            <span class="material-icons-round" style="color:#FFF; font-size:20px;">${icon}</span>
+          </div>
+        </div>
+      ` : `
+        <div class="tx-icon-box" style="background:${bg}; border-radius:12px;">
+          <span class="material-icons-round" style="color:#FFF; font-size:20px;">${icon}</span>
+        </div>
+      `;
+
       el.innerHTML = `
         <div class="tx-left">
-          <div class="tx-icon-box" style="background:${bg};">
-            <span class="material-icons-round">${icon}</span>
-          </div>
+          ${iconBoxMarkup}
           <div>
             <div class="tx-title">${title}</div>
             <div class="tx-meta">${subtitle}</div>
           </div>
         </div>
         <div class="tx-right">
-          <div class="tx-amount ${colorClass}">${sign}₹${tx.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+          <div class="tx-amount ${colorClass}">${sign}₹${formattedAmount}</div>
           <span class="tx-badge" style="background:${isTransfer ? 'rgba(59,130,246,0.15)' : isIncome ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}; color:${isTransfer ? 'var(--color-sapphire)' : isIncome ? 'var(--color-emerald)' : 'var(--color-ruby)'};">
             ${tx.transaction_type}
           </span>
@@ -6125,12 +6351,38 @@
       const isIncome = tx.transaction_type === 'INCOME';
       const isTransfer = tx.transaction_type === 'TRANSFER';
       
-      const icon = tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
-      const bg = tx.category_color || (isTransfer ? '#3B82F6' : isIncome ? '#10B981' : '#64748B');
+      const visual = getCategoryVisualMeta({
+        name: tx.category_name || tx.note || '',
+        type: tx.transaction_type,
+        icon: tx.category_icon,
+        color_hex: tx.category_color,
+        image_url: tx.image_url
+      });
 
-      document.getElementById('txDetailIconBox').style.background = bg;
-      document.getElementById('txDetailIcon').innerText = icon;
-      document.getElementById('txDetailAmount').innerText = `${isExpense ? '-' : isIncome ? '+' : '⇄'}₹${tx.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const icon = visual.icon || tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
+      const bg = visual.color || tx.category_color || (isTransfer ? '#3B82F6' : isIncome ? '#10B981' : '#64748B');
+      const imgUrl = (!isTransfer && visual.image) ? visual.image : null;
+
+      const iconBox = document.getElementById('txDetailIconBox');
+      const imgEl = document.getElementById('txDetailImg');
+      const iconEl = document.getElementById('txDetailIcon');
+
+      if (iconBox) iconBox.style.background = bg;
+      if (imgUrl && imgEl) {
+        imgEl.src = imgUrl;
+        imgEl.alt = visual.displayName || tx.category_name || 'Category';
+        imgEl.style.display = 'block';
+        if (iconEl) iconEl.style.display = 'none';
+      } else {
+        if (imgEl) imgEl.style.display = 'none';
+        if (iconEl) {
+          iconEl.style.display = 'block';
+          iconEl.innerText = icon;
+        }
+      }
+
+      const numAmount = parseFloat(tx.amount) || 0;
+      document.getElementById('txDetailAmount').innerText = `${isExpense ? '-' : isIncome ? '+' : '⇄'}₹${numAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
       document.getElementById('txDetailAmount').style.color = isIncome ? 'var(--color-emerald)' : isTransfer ? 'var(--color-sapphire)' : (APP_STATE.appTheme === 'theme-light' ? 'var(--color-ruby)' : 'var(--text-primary)');
       const accDisplay = formatAccountName(tx.account_name);
       const targetAccDisplay = formatAccountName(tx.target_account_name);
@@ -6528,193 +6780,6 @@
         };
         container.appendChild(p);
       });
-    }
-
-    const CATEGORY_AESTHETIC_VISUALS = {
-      // ---------------- EXPENSE CATEGORIES ----------------
-      'food': {
-        shortName: 'Food',
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80',
-        icon: 'restaurant',
-        color: '#EF4444'
-      },
-      'education': {
-        shortName: 'Education',
-        image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=120&q=80',
-        icon: 'school',
-        color: '#06B6D4'
-      },
-      'shop': {
-        shortName: 'Shopping',
-        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=120&q=80',
-        icon: 'shopping_bag',
-        color: '#EC4899'
-      },
-      'transport': {
-        shortName: 'Transport',
-        image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=120&q=80',
-        icon: 'directions_car',
-        color: '#F59E0B'
-      },
-      'entertain': {
-        shortName: 'Entertainment',
-        image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=120&q=80',
-        icon: 'movie',
-        color: '#8B5CF6'
-      },
-      'health': {
-        shortName: 'Health',
-        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80',
-        icon: 'local_hospital',
-        color: '#10B981'
-      },
-      'hous': {
-        shortName: 'House',
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=120&q=80',
-        icon: 'home',
-        color: '#3B82F6'
-      },
-      'finan': {
-        shortName: 'Financial',
-        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
-        icon: 'trending_up',
-        color: '#6366F1'
-      },
-      'person': {
-        shortName: 'Personal',
-        image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80',
-        icon: 'face',
-        color: '#D946EF'
-      },
-
-      // ---------------- INCOME CATEGORIES ----------------
-      'salary': {
-        shortName: 'Salary',
-        image: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=120&q=80',
-        icon: 'work',
-        color: '#10B981'
-      },
-      'business': {
-        shortName: 'Business',
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=120&q=80',
-        icon: 'business_center',
-        color: '#3B82F6'
-      },
-      'freelance': {
-        shortName: 'Freelance',
-        image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=120&q=80',
-        icon: 'laptop_mac',
-        color: '#06B6D4'
-      },
-      'invest': {
-        shortName: 'Investments',
-        image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
-        icon: 'show_chart',
-        color: '#8B5CF6'
-      },
-      'gift': {
-        shortName: 'Gifts & Grants',
-        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
-        icon: 'redeem',
-        color: '#EC4899'
-      },
-      'grant': {
-        shortName: 'Grants',
-        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
-        icon: 'workspace_premium',
-        color: '#F59E0B'
-      },
-      'bonus': {
-        shortName: 'Bonus',
-        image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=120&q=80',
-        icon: 'emoji_events',
-        color: '#F59E0B'
-      },
-      'rent': {
-        shortName: 'Rental',
-        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=120&q=80',
-        icon: 'apartment',
-        color: '#10B981'
-      },
-      'dividend': {
-        shortName: 'Dividends',
-        image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80',
-        icon: 'paid',
-        color: '#10B981'
-      },
-      'interest': {
-        shortName: 'Interest',
-        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
-        icon: 'savings',
-        color: '#3B82F6'
-      },
-      'crypto': {
-        shortName: 'Crypto',
-        image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=120&q=80',
-        icon: 'currency_bitcoin',
-        color: '#F59E0B'
-      }
-    };
-
-    // User specified exact ordering for expenses:
-    // food, education, shopping, transport, entertainment, health, house, financial, personal
-    const TARGET_CATEGORY_ORDER = [
-      'food',
-      'education',
-      'shop',
-      'transport',
-      'entertain',
-      'health',
-      'hous',
-      'finan',
-      'person'
-    ];
-
-    // Logical ordering for income categories:
-    const TARGET_INCOME_ORDER = [
-      'salary',
-      'business',
-      'freelance',
-      'invest',
-      'gift',
-      'grant',
-      'bonus',
-      'rent',
-      'dividend',
-      'interest',
-      'crypto'
-    ];
-
-    function getCategoryOrderRank(catName, sheetType = 'EXPENSE') {
-      const lower = (catName || '').toLowerCase();
-      const orderList = sheetType === 'INCOME' ? TARGET_INCOME_ORDER : TARGET_CATEGORY_ORDER;
-      for (let i = 0; i < orderList.length; i++) {
-        if (lower.includes(orderList[i])) return i;
-      }
-      return 100; // Custom user-added categories placed after standard
-    }
-
-    function getCategoryVisualMeta(c) {
-      const lower = (c.name || '').toLowerCase();
-      for (const [key, meta] of Object.entries(CATEGORY_AESTHETIC_VISUALS)) {
-        if (lower.includes(key)) {
-          return {
-            displayName: meta.shortName,
-            image: meta.image,
-            icon: c.icon || meta.icon,
-            color: c.color_hex || meta.color
-          };
-        }
-      }
-      const isIncome = (c.type === 'INCOME') || (APP_STATE.sheetType === 'INCOME');
-      return {
-        displayName: c.name,
-        image: c.image_url || (isIncome 
-          ? 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=120&q=80' 
-          : ''),
-        icon: c.icon || (isIncome ? 'account_balance_wallet' : 'category'),
-        color: c.color_hex || (isIncome ? '#10B981' : '#6366F1')
-      };
     }
 
     function populateSheetCategories() {

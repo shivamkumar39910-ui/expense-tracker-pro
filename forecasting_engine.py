@@ -837,10 +837,50 @@ def calculate_month_end_forecast(
             risk_data, velocity_data, category_forecasts, upcoming_bills, conf_level
         )
 
+        # Derive Top Spending Driver from mtd_transactions
+        cat_sums = {}
+        for t in mtd_transactions:
+            c_name = t.get("category_name") or "Others"
+            cat_sums[c_name] = cat_sums.get(c_name, 0.0) + float(t.get("amount") or 0.0)
+
+        top_driver_name = "None"
+        top_driver_amt = 0.0
+        top_driver_pct = 0.0
+        if cat_sums:
+            sorted_cats = sorted(cat_sums.items(), key=lambda x: x[1], reverse=True)
+            top_driver_name, top_driver_amt = sorted_cats[0]
+            if float(mtd_spend) > 0:
+                top_driver_pct = round((top_driver_amt / float(mtd_spend)) * 100, 1)
+
+        # Generate Contextual 1-Liner AI Suggestion
+        safe_pace = float(risk_data["safe_daily_spend"])
+        b_float = float(monthly_budget)
+        f_float = float(final_forecast)
+        days_left_cnt = max(1, total_days - current_day)
+        if b_float > 0 and f_float > b_float:
+            ai_one_liner = f"💡 Spend under ₹{safe_pace:.1f}/day to finish under your ₹{b_float:,.0f} budget."
+            ai_control_tip = f"🔥 {top_driver_name} is your highest expense ({top_driver_pct}%). Reducing it by 15% saves ₹{top_driver_amt * 0.15:,.0f}."
+        elif b_float > 0:
+            savings_proj = max(0.0, b_float - f_float)
+            ai_one_liner = f"🎉 Great pacing! You're on track to save ₹{savings_proj:,.0f} this month."
+            ai_control_tip = f"💡 Keeping {top_driver_name} steady at current pace protects your month-end savings."
+        else:
+            ai_one_liner = f"📊 Daily safe spend is ₹{safe_pace:.1f}/day across remaining {days_left_cnt} days."
+            ai_control_tip = f"💡 {top_driver_name} accounts for {top_driver_pct}% of your MTD spend."
+
         # Construct backward-compatible & enhanced payload
         overrun_amount = max(0.0, float(final_forecast - monthly_budget)) if monthly_budget > 0 else 0.0
 
         forecast_result = {
+            "estimated_month_end": float(final_forecast),
+            "safe_today": safe_pace,
+            "ai_one_liner": ai_one_liner,
+            "ai_control_tip": ai_control_tip,
+            "top_spending_driver": {
+                "category": top_driver_name,
+                "amount": round(top_driver_amt, 2),
+                "percentage": top_driver_pct
+            },
             # Legacy fields for complete backward compatibility
             "current_date": cutoff_date_str,
             "days_elapsed": max(1, current_day),

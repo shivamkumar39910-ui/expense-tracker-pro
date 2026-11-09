@@ -1509,6 +1509,183 @@ def ai_mentor_chat():
     advice = ai_mentor_service.generate_ai_mentor_advice(user_id, user_prompt=prompt_msg)
     return jsonify({"success": True, "data": advice}), 200
 
+@api_v1.route('/affordability/check', methods=['POST'])
+@token_required
+def check_affordability():
+    """
+    Purchase Decision Assistant 2.0 ("Can I Afford This?"):
+    Calculates whether a prospective purchase is Affordable, requires Caution,
+    or is Not Recommended based on:
+    1. Total liquid balance across Cash, Bank, UPI accounts
+    2. Upcoming recurring commitments for the remainder of current month
+    3. Monthly budget ceiling and current MTD spend pace
+    4. Active savings goals balance protection
+    5. Resulting daily safe burn rate & cash runway
+    """
+    import calendar
+    user_id = request.user["id"]
+    data = request.get_json() or {}
+    try:
+        amount = float(data.get("amount", 0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid purchase amount"}), 400
+
+    if amount <= 0:
+        return jsonify({"success": False, "error": "Purchase amount must be greater than zero"}), 400
+
+    item_name = (data.get("item_name") or "Item").strip()
+    category = (data.get("category") or "Shopping").strip()
+
+    today = date.today()
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    days_elapsed = max(1, today.day)
+    days_remaining = max(1, days_in_month - today.day)
+
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+
+    # 1. Accounts & Total Liquid Funds
+    cursor.execute("""
+        SELECT COALESCE(SUM(current_balance), 0) as total_liquid
+        FROM accounts
+        WHERE user_id = ?
+    """, (user_id,))
+    total_liquid = float(cursor.fetchone()["total_liquid"] or 0.0)
+
+    # 2. Monthly Budget
+    cursor.execute("""
+        SELECT amount FROM budgets
+        WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)
+        LIMIT 1
+    """, (user_id, today.month, today.year))
+    b_row = cursor.fetchone()
+    monthly_budget = float(b_row["amount"] or 0.0) if b_row else 0.0
+
+    # Current MTD Expenses
+    cur_pattern = f"{today.year:04d}-{today.month:02d}%"
+    cursor.execute("""
+        SELECT COALESCE(SUM(amount), 0) as mtd_spent
+        FROM transactions
+        WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date LIKE ?
+    """, (user_id, cur_pattern))
+    mtd_spent = float(cursor.fetchone()["mtd_spent"] or 0.0)
+
+    # 3. Active Financial Goals
+    cursor.execute("""
+        SELECT COALESCE(SUM(current_amount), 0) as total_saved,
+               COALESCE(SUM(target_amount), 0) as total_targets,
+               COUNT(id) as active_goals
+        FROM financial_goals
+        WHERE user_id = ? AND (is_completed = 0 OR is_completed IS NULL)
+    """, (user_id,))
+    g_row = cursor.fetchone()
+    goal_savings = float(g_row["total_saved"] or 0.0) if g_row else 0.0
+    active_goals_count = int(g_row["active_goals"] or 0) if g_row else 0
+
+    # 4. Upcoming committed recurring bills this month
+    cursor.execute("""
+        SELECT COALESCE(SUM(amount), 0) as upcoming_bills
+        FROM recurring_bills
+        WHERE user_id = ? AND is_active = 1 AND due_day > ?
+    """, (user_id, today.day))
+    b_row = cursor.fetchone()
+    upcoming_bills = float(b_row["upcoming_bills"] or 0.0) if b_row else 0.0
+
+    # 5. Top spending category driver this month
+    cursor.execute("""
+        SELECT COALESCE(c.name, 'Others') as category_name,
+               COALESCE(SUM(t.amount), 0) as cat_spend
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ?
+        GROUP BY c.id, c.name
+        ORDER BY cat_spend DESC LIMIT 1
+    """, (user_id, cur_pattern))
+    top_cat_row = cursor.fetchone()
+    top_category = top_cat_row["category_name"] if top_cat_row else "General"
+    top_cat_spend = float(top_cat_row["cat_spend"] or 0.0) if top_cat_row else 0.0
+    conn.close()
+
+    # Calculations
+    balance_after = total_liquid - amount
+    safety_buffer = max(500.0, total_liquid * 0.10)
+    uncommitted_funds = total_liquid - upcoming_bills - safety_buffer
+
+    # Projected spend after purchase
+    projected_spend_now = mtd_spent + ((mtd_spent / days_elapsed) * days_remaining)
+    projected_spend_after = projected_spend_now + amount
+
+    # New daily safe cap after purchase
+    if monthly_budget > 0:
+        budget_remaining_after = max(0.0, monthly_budget - mtd_spent - amount)
+        new_daily_safe_cap = budget_remaining_after / days_remaining
+        budget_overrun = projected_spend_after - monthly_budget
+    else:
+        new_daily_safe_cap = max(0.0, (balance_after - upcoming_bills) / days_remaining)
+        budget_overrun = 0.0
+
+    if monthly_budget > 0:
+        max_safe_purchase = max(0.0, min(uncommitted_funds, monthly_budget - mtd_spent))
+    else:
+        max_safe_purchase = max(0.0, uncommitted_funds)
+
+    daily_pace = max(10.0, mtd_spent / days_elapsed)
+    runway_days_after = max(0, int(balance_after / daily_pace))
+
+    # Decision Matrix
+    if balance_after < 0:
+        verdict = "NOT_RECOMMENDED"
+        headline = "Insufficient Funds"
+        explanation = f"You need ₹{abs(balance_after):,.2f} more in your accounts to afford this. Paying this will immediately deplete your cash reserves."
+    elif monthly_budget > 0 and (mtd_spent + amount) > monthly_budget * 1.15:
+        verdict = "NOT_RECOMMENDED"
+        headline = "High Budget Breach Risk"
+        explanation = f"This purchase will push your monthly spend to ₹{projected_spend_after:,.2f}, exceeding your ₹{monthly_budget:,.2f} budget by ₹{budget_overrun:,.2f} ({(projected_spend_after/monthly_budget)*100:.0f}% used)."
+    elif balance_after < upcoming_bills:
+        verdict = "NOT_RECOMMENDED"
+        headline = "Threatens Upcoming Bills"
+        explanation = f"You have ₹{upcoming_bills:,.2f} in upcoming bills due this month. This purchase leaves only ₹{balance_after:,.2f}, risking overdue bills."
+    elif (monthly_budget > 0 and (mtd_spent + amount) > monthly_budget) or (balance_after < safety_buffer):
+        verdict = "CAUTION"
+        headline = "Manageable with Caution"
+        explanation = f"You have enough cash, but this purchase reduces your daily safe spend to ₹{new_daily_safe_cap:,.1f}/day for the remaining {days_remaining} days of this month."
+    else:
+        verdict = "AFFORDABLE"
+        headline = "Safe to Purchase!"
+        explanation = f"You can comfortably afford this. You will have ₹{balance_after:,.2f} remaining, your upcoming bills are fully covered, and your daily safe pace stays strong at ₹{new_daily_safe_cap:,.1f}/day."
+
+    # Actionable Advice
+    if verdict == "AFFORDABLE":
+        advice = "Safe to proceed! Your savings goals and emergency reserves remain 100% protected."
+    elif verdict == "CAUTION":
+        advice = f"Consider waiting {min(15, days_remaining)} days until next income or keeping your purchase under ₹{max_safe_purchase:,.2f}."
+    else:
+        advice = f"Recommended safe purchase ceiling right now: ₹{max_safe_purchase:,.2f}. Avoid dipping into your savings reserve."
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "verdict": verdict,
+            "headline": headline,
+            "explanation": explanation,
+            "advice": advice,
+            "amount": amount,
+            "item_name": item_name,
+            "category": category,
+            "current_liquid_funds": round(total_liquid, 2),
+            "balance_after": round(balance_after, 2),
+            "upcoming_bills": round(upcoming_bills, 2),
+            "days_remaining": days_remaining,
+            "new_daily_safe_cap": round(new_daily_safe_cap, 2),
+            "cash_runway_days": runway_days_after,
+            "max_safe_purchase": round(max_safe_purchase, 2),
+            "active_goals_count": active_goals_count,
+            "goal_savings": round(goal_savings, 2),
+            "top_spending_category": top_category,
+            "top_spending_amount": round(top_cat_spend, 2)
+        }
+    }), 200
+
 @api_v1.route('/command-center/summary', methods=['GET'])
 @token_required
 def get_command_center_summary():

@@ -413,6 +413,41 @@
       color: var(--text-primary);
     }
 
+    /* Afford Calculator Presets & Star Feature Styling */
+    .afford-preset-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .afford-preset-chip:active {
+      transform: scale(0.96);
+    }
+    .afford-preset-chip.active {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.35) 0%, rgba(59, 130, 246, 0.35) 100%);
+      border-color: #8B5CF6;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+    }
+    body.theme-light .afford-preset-chip {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+      color: #334155;
+    }
+    body.theme-light .afford-preset-chip.active {
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+      border-color: #6366F1;
+      color: #4F46E5;
+    }
+
     /* AI Spending Forecast Banner */
     .forecast-banner {
       background: linear-gradient(135deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
@@ -1636,27 +1671,43 @@
           </div>
         </div>
 
-        <!-- Smart Forecast Banner (Compact & Streamlined) -->
-        <div class="forecast-banner" onclick="switchTab('tab-forecast')" style="cursor:pointer; padding:14px 16px; margin-bottom:16px;" title="Tap to view deep predictions">
+        <!-- Smart Forecast Banner (Compact & Streamlined AI Co-Pilot) -->
+        <div class="forecast-banner" id="homeSmartForecastCard" onclick="switchTab('tab-ai')" style="cursor:pointer; padding:16px; margin-bottom:16px; border-radius:18px; position:relative; overflow:hidden; background:linear-gradient(135deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%); border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 8px 24px rgba(0,0,0,0.3);" title="Tap to view deep insights & purchase assistant">
           <div class="forecast-badge-row" style="margin-bottom:8px;">
             <div class="forecast-title" style="display:flex; align-items:center; gap:6px;">
               <span class="material-icons-round" style="color:#8B5CF6; font-size:18px;">auto_awesome</span>
               <span style="color:#FFF; font-weight:800; font-size:13px;">Smart Forecast</span>
+              <span style="font-size:10px; color:#A78BFA; font-weight:700; margin-left:4px;">AI Powered</span>
             </div>
-            <div class="forecast-risk-pill risk-safe" id="forecastRiskBadge" style="font-size:10px; padding:2px 8px;">SAFE</div>
+            <div class="forecast-risk-pill risk-safe" id="forecastRiskBadge" style="font-size:10px; padding:3px 9px;">SAFE</div>
           </div>
 
-          <div class="forecast-numbers-row" style="margin-bottom:6px;">
+          <div class="forecast-numbers-row" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline;">
             <div>
-              <div style="font-size:10px; color:var(--text-muted); font-weight:600;">Projected Month-End</div>
-              <div class="forecast-big-val" id="forecastProjectedVal" style="font-size:22px;">₹0.00</div>
+              <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Estimated Month-End</div>
+              <div class="forecast-big-val" id="forecastProjectedVal" style="font-size:24px; font-weight:800; color:#FFF; letter-spacing:-0.5px;">₹0.00</div>
             </div>
-            <div class="forecast-speed" id="forecastSpeedVal" style="font-size:12px;">₹0.0 / day pace</div>
+            <div style="text-align:right;">
+              <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.3); padding:4px 9px; border-radius:10px; font-size:11px; font-weight:800; color:var(--color-emerald);" id="homeSafeTodayPill">
+                <span class="material-icons-round" style="font-size:13px;">shield</span>
+                <span id="forecastSpeedVal">₹0.0 / day safe pace</span>
+              </div>
+            </div>
           </div>
 
-          <p class="forecast-text" id="forecastAdviceText" style="margin:0; font-size:11px; line-height:1.4;">
-            Analyzing current monthly spending pace...
-          </p>
+          <!-- 1-Line AI Smart Suggestion -->
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:9px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+            <span class="material-icons-round" style="color:#F59E0B; font-size:16px; flex-shrink:0;">lightbulb</span>
+            <p class="forecast-text" id="forecastAdviceText" style="margin:0; font-size:11px; line-height:1.35; color:#E2E8F0; font-weight:500;">
+              Analyzing spending pace... Tap for deep insights & purchase decision assistant.
+            </p>
+          </div>
+
+          <!-- Subtle Tap-Through Footer -->
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#A78BFA; font-weight:700; padding-top:2px;">
+            <span>Tap for Deep Insights & Affordability ➔</span>
+            <span class="material-icons-round" style="font-size:14px;">chevron_right</span>
+          </div>
         </div>
 
         <!-- Recent Transactions -->
@@ -1819,7 +1870,7 @@
           <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(139,92,246,0.18); border-radius:50%; filter:blur(28px); pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:11px; font-weight:800; color:#A78BFA; letter-spacing:0.5px;">PROJECTED MONTH-END EXPENDITURE</div>
+            <div style="font-size:11px; font-weight:800; color:#A78BFA; letter-spacing:0.5px;">ESTIMATED MONTH-END EXPENDITURE (AI PREDICTED)</div>
             <div style="display:flex; align-items:center; gap:6px;">
               <div class="forecast-risk-pill" id="forecastConfidenceBadge" style="background:rgba(139,92,246,0.2); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px;">CONFIDENCE: HIGH</div>
               <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge">SAFE</div>
@@ -1828,9 +1879,24 @@
 
           <div style="font-size:32px; font-weight:800; color:#FFF; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
           
-          <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
+          <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
             <span class="material-icons-round" style="font-size:16px;">trending_down</span>
             <span>Calculating live trajectory...</span>
+          </div>
+
+          <!-- Top Spending Driver & AI Control Tip Pill -->
+          <div style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px; align-items:flex-start; gap:8px;" id="fcTopDriverBox">
+            <span class="material-icons-round" style="color:var(--color-ruby); font-size:18px; margin-top:2px;">local_fire_department</span>
+            <div style="flex:1;">
+              <div style="font-size:12px; font-weight:800; color:#FFF;" id="fcTopDriverTitle">Top Spending Driver</div>
+              <div style="font-size:11px; color:#E2E8F0; margin-top:2px; line-height:1.4;" id="fcTopDriverAdvice">Calculating top spending category...</div>
+            </div>
+          </div>
+
+          <!-- Goal Impact Linkage -->
+          <div style="display:none; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px; align-items:center; gap:8px;" id="fcGoalImpactBox">
+            <span class="material-icons-round" style="color:var(--color-emerald); font-size:18px;">flag</span>
+            <div style="font-size:11px; color:#E2E8F0; font-weight:600;" id="fcGoalImpactText">Savings Goal: On track!</div>
           </div>
 
           <!-- Velocity & Safe Cap Grid -->
@@ -1849,6 +1915,56 @@
           <p class="forecast-text" id="fcExplanationText" style="font-size:12px; color:var(--text-secondary); line-height:1.45; margin:0;">
             Calculating data-driven forecast based on your multi-month patterns and current-month pace.
           </p>
+        </div>
+
+        <!-- 2. CAN I AFFORD THIS? — PURCHASE DECISION ASSISTANT (STAR FEATURE) -->
+        <div class="fintech-card" style="padding:18px; margin-bottom:16px; border-radius:20px; background:linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%); border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 8px 24px rgba(0,0,0,0.3);">
+          
+          <!-- Card Header with Gradient Accent -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(236,72,153,0.35);">
+                <span class="material-icons-round" style="color:#FFF; font-size:20px;">shopping_bag</span>
+              </div>
+              <div>
+                <div style="font-size:14px; font-weight:800; color:#FFF; letter-spacing:0.2px;">Can I Afford This?</div>
+                <div style="font-size:11px; color:#A78BFA; font-weight:600;">AI Purchase Decision Assistant</div>
+              </div>
+            </div>
+            <span style="font-size:10px; font-weight:800; background:rgba(236,72,153,0.15); color:#F472B6; padding:3px 8px; border-radius:8px; border:1px solid rgba(236,72,153,0.3);">SMART AI</span>
+          </div>
+
+          <p style="font-size:11px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+            Thinking of buying something? Select a product or type an amount to check if you can afford it safely without breaking your budget.
+          </p>
+
+          <!-- Quick Category Preset Chips (Scrollable Row) -->
+          <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:12px; scrollbar-width:none;" id="affordPresetsRow">
+            <button type="button" class="afford-preset-chip active" onclick="selectAffordPreset('Smartphone', 25000, this)">📱 Phone</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Laptop', 55000, this)">💻 Laptop</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Shopping', 3500, this)">🛍️ Clothes</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Vacation', 15000, this)">✈️ Trip</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Vehicle', 40000, this)">🚲 Bike</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Watch', 4500, this)">⌚ Watch</button>
+            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Custom', '', this)">➕ Custom</button>
+          </div>
+
+          <!-- Purchase Input Row -->
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <div style="position:relative; flex:1;">
+              <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:15px; font-weight:700; color:var(--text-muted);">₹</span>
+              <input type="number" id="affordAmountInput" placeholder="Amount (e.g. 25000)" value="25000" oninput="runAffordabilityCheck(true)" style="width:100%; height:44px; padding-left:28px; padding-right:12px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; font-size:14px; font-weight:700; outline:none;">
+            </div>
+            <button type="button" onclick="runAffordabilityCheck(false)" style="padding:0 18px; height:44px; border-radius:12px; background:linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); color:#FFF; font-size:13px; font-weight:800; border:none; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 3px 12px rgba(139,92,246,0.35); flex-shrink:0;">
+              <span>Check</span>
+              <span class="material-icons-round" style="font-size:16px;">bolt</span>
+            </button>
+          </div>
+
+          <!-- Affordability Result Box (Dynamic) -->
+          <div id="affordResultBox" style="border-radius:16px; padding:14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s ease;">
+            <!-- Rendered dynamically by JS -->
+          </div>
         </div>
 
         <!-- 2. Weekly Daily Expense Trend (Mon - Sun) -->
@@ -3726,6 +3842,188 @@
     }
 
     // Tab Navigation & Native Browser / Phone Back Button Support
+    // ====================================================
+    // "CAN I AFFORD THIS?" — PURCHASE DECISION ASSISTANT
+    // ====================================================
+    let SELECTED_AFFORD_ITEM = 'Smartphone';
+    let SELECTED_AFFORD_CATEGORY = 'Shopping';
+    let _affordDebounceTimer = null;
+
+    function selectAffordPreset(name, defaultAmt, btn) {
+      SELECTED_AFFORD_ITEM = name;
+      SELECTED_AFFORD_CATEGORY = (name === 'Trip') ? 'Transport' : 'Shopping';
+      const input = document.getElementById('affordAmountInput');
+      if (defaultAmt !== '' && defaultAmt !== undefined) {
+        input.value = defaultAmt;
+      } else {
+        input.value = '';
+        input.focus();
+      }
+      document.querySelectorAll('.afford-preset-chip').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      triggerHaptic('light');
+      runAffordabilityCheck(false);
+    }
+
+    async function runAffordabilityCheck(isTyping = false) {
+      const input = document.getElementById('affordAmountInput');
+      const resultBox = document.getElementById('affordResultBox');
+      if (!input || !resultBox) return;
+
+      const amt = parseFloat(input.value) || 0;
+      if (amt <= 0) {
+        resultBox.innerHTML = `
+          <div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">
+            Enter an amount above or tap any product preset to check affordability.
+          </div>
+        `;
+        return;
+      }
+
+      // 0ms Optimistic Client-Side Calculation
+      const accounts = APP_STATE.accounts || [];
+      const totalLiquid = accounts.reduce((sum, a) => sum + (parseFloat(a.current_balance) || 0), 0);
+      const budgetLimit = (APP_STATE.budgets && APP_STATE.budgets.overall_budget) || 1000;
+      const mtdSpent = APP_STATE.categoryTotalExpense || (APP_STATE.forecast ? APP_STATE.forecast.mtd_actual_spend : 0) || 0;
+      
+      const now = new Date();
+      const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const daysLeft = Math.max(1, totalDays - now.getDate());
+
+      const balanceAfter = totalLiquid - amt;
+      const newMtd = mtdSpent + amt;
+      const newDailyCap = Math.max(0, (budgetLimit - newMtd) / daysLeft);
+
+      let optVerdict = 'AFFORDABLE';
+      let optColor = 'var(--color-emerald)';
+      let optBg = 'rgba(16,185,129,0.12)';
+      let optBorder = 'rgba(16,185,129,0.3)';
+      let optIcon = 'check_circle';
+      let optHeadline = 'Safe to Purchase!';
+      let optDesc = `You will have ₹${balanceAfter.toLocaleString('en-IN', {minimumFractionDigits: 2})} remaining. Your daily safe limit stays at ₹${newDailyCap.toFixed(1)}/day.`;
+
+      if (balanceAfter < 0) {
+        optVerdict = 'NOT RECOMMENDED';
+        optColor = 'var(--color-ruby)';
+        optBg = 'rgba(239,68,68,0.14)';
+        optBorder = 'rgba(239,68,68,0.35)';
+        optIcon = 'cancel';
+        optHeadline = 'Insufficient Funds';
+        optDesc = `You need ₹${Math.abs(balanceAfter).toLocaleString('en-IN', {minimumFractionDigits: 2})} more to afford this purchase without dipping below zero.`;
+      } else if (budgetLimit > 0 && newMtd > budgetLimit) {
+        optVerdict = 'CAUTION';
+        optColor = 'var(--color-amber)';
+        optBg = 'rgba(245,158,11,0.14)';
+        optBorder = 'rgba(245,158,11,0.35)';
+        optIcon = 'warning';
+        optHeadline = 'Manageable with Caution';
+        optDesc = `You have enough cash, but this will exceed your monthly budget by ₹${(newMtd - budgetLimit).toLocaleString('en-IN', {minimumFractionDigits: 2})}. Safe daily limit reduces to ₹${newDailyCap.toFixed(1)}/day.`;
+      }
+
+      // Render 0ms instant preview
+      renderAffordabilityCard({
+        verdict: optVerdict,
+        color: optColor,
+        bg: optBg,
+        border: optBorder,
+        icon: optIcon,
+        headline: optHeadline,
+        explanation: optDesc,
+        balance_after: balanceAfter,
+        new_daily_safe_cap: newDailyCap,
+        max_safe_purchase: Math.max(0, budgetLimit - mtdSpent),
+        advice: (optVerdict === 'AFFORDABLE') ? 'Safe to proceed! Goals and safety cushion remain intact.' : (optVerdict === 'CAUTION') ? 'Consider waiting until your next income or capping your purchase.' : 'Avoid dipping into your core reserves.'
+      });
+
+      // Debounce server call when typing
+      if (isTyping) {
+        clearTimeout(_affordDebounceTimer);
+        _affordDebounceTimer = setTimeout(() => sendAffordabilityServerRequest(amt), 350);
+      } else {
+        sendAffordabilityServerRequest(amt);
+      }
+    }
+
+    async function sendAffordabilityServerRequest(amt) {
+      try {
+        const res = await apiRequest('/affordability/check', 'POST', {
+          amount: amt,
+          item_name: SELECTED_AFFORD_ITEM,
+          category: SELECTED_AFFORD_CATEGORY
+        });
+        if (res && res.success && res.data) {
+          const d = res.data;
+          const isAff = d.verdict === 'AFFORDABLE';
+          const isCaut = d.verdict === 'CAUTION';
+          renderAffordabilityCard({
+            verdict: isAff ? 'AFFORDABLE' : isCaut ? 'CAUTION' : 'NOT RECOMMENDED',
+            color: isAff ? 'var(--color-emerald)' : isCaut ? 'var(--color-amber)' : 'var(--color-ruby)',
+            bg: isAff ? 'rgba(16,185,129,0.14)' : isCaut ? 'rgba(245,158,11,0.14)' : 'rgba(239,68,68,0.14)',
+            border: isAff ? 'rgba(16,185,129,0.35)' : isCaut ? 'rgba(245,158,11,0.35)' : 'rgba(239,68,68,0.35)',
+            icon: isAff ? 'check_circle' : isCaut ? 'warning' : 'cancel',
+            headline: d.headline,
+            explanation: d.explanation,
+            advice: d.advice,
+            balance_after: d.balance_after,
+            new_daily_safe_cap: d.new_daily_safe_cap,
+            max_safe_purchase: d.max_safe_purchase
+          });
+        }
+      } catch (e) {
+        console.warn('Server affordability check fallback:', e);
+      }
+    }
+
+    function renderAffordabilityCard(res) {
+      const box = document.getElementById('affordResultBox');
+      if (!box) return;
+      box.style.display = 'block';
+      box.style.background = res.bg;
+      box.style.borderColor = res.border;
+      
+      const balColor = res.balance_after >= 0 ? '#FFF' : 'var(--color-ruby)';
+      const balSign = res.balance_after >= 0 ? '' : '-';
+
+      box.innerHTML = `
+        <!-- Status Banner -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span class="material-icons-round" style="color:${res.color}; font-size:20px;">${res.icon}</span>
+            <span style="font-size:13px; font-weight:800; color:#FFF;">${res.headline}</span>
+          </div>
+          <span style="font-size:10px; font-weight:800; color:${res.color}; background:rgba(0,0,0,0.25); border:1px solid ${res.border}; padding:3px 8px; border-radius:8px;">${res.verdict}</span>
+        </div>
+
+        <!-- Plain English Explanation -->
+        <p style="font-size:11px; color:#E2E8F0; line-height:1.45; margin:0 0 12px 0;">
+          ${res.explanation}
+        </p>
+
+        <!-- 3 Quick Metrics -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+            <div style="font-size:9px; color:var(--text-muted); font-weight:700;">BALANCE AFTER</div>
+            <div style="font-size:12px; font-weight:800; color:${balColor}; margin-top:2px;">${balSign}₹${Math.abs(res.balance_after || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+            <div style="font-size:9px; color:var(--text-muted); font-weight:700;">DAILY SAFE CAP</div>
+            <div style="font-size:12px; font-weight:800; color:var(--color-emerald); margin-top:2px;">₹${(res.new_daily_safe_cap || 0).toFixed(0)}/day</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+            <div style="font-size:9px; color:var(--text-muted); font-weight:700;">MAX SAFE SPEND</div>
+            <div style="font-size:12px; font-weight:800; color:#38BDF8; margin-top:2px;">₹${(res.max_safe_purchase || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+          </div>
+        </div>
+
+        ${res.advice ? `
+        <div style="font-size:11px; color:#CBD5E1; font-weight:600; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:8px; display:flex; align-items:center; gap:6px;">
+          <span class="material-icons-round" style="color:#F59E0B; font-size:15px; flex-shrink:0;">lightbulb</span>
+          <span>${res.advice}</span>
+        </div>
+        ` : ''}
+      `;
+    }
+
     function switchTab(tabId, pushHistory = true) {
       try {
         triggerHaptic('light');
@@ -4141,14 +4439,27 @@
 
     function updateForecastUI(f) {
       if (!f) return;
-      document.getElementById('forecastProjectedVal').innerText = `₹${f.projected_month_end_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('forecastSpeedVal').innerText = `₹${f.daily_spending_velocity.toFixed(1)} / day pace`;
-      document.getElementById('forecastAdviceText').innerText = f.warning_message || f.risk_reason || '';
+      const projAmount = f.estimated_month_end || f.projected_month_end_spend || 0;
+      const safePace = (f.safe_today !== undefined) ? f.safe_today : (f.safe_daily_spend !== undefined ? f.safe_daily_spend : 0);
+
+      const projEl = document.getElementById('forecastProjectedVal');
+      if (projEl) projEl.innerText = `₹${projAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      const speedEl = document.getElementById('forecastSpeedVal');
+      if (speedEl) {
+        speedEl.innerText = `₹${safePace.toFixed(1)} / day safe pace`;
+      }
+
+      const adviceEl = document.getElementById('forecastAdviceText');
+      if (adviceEl) {
+        adviceEl.innerText = f.ai_one_liner || f.warning_message || f.risk_reason || 'Analyzing spending pace... Tap for deep insights & purchase decision assistant.';
+      }
 
       const badge = document.getElementById('forecastRiskBadge');
       if (badge) {
-        badge.innerText = f.risk_status;
-        badge.className = `forecast-risk-pill ${f.risk_status === 'SAFE' ? 'risk-safe' : f.risk_status === 'WARNING' ? 'risk-warning' : 'risk-danger'}`;
+        const risk = f.risk_status || f.risk_level || 'SAFE';
+        badge.innerText = risk;
+        badge.className = `forecast-risk-pill ${risk === 'SAFE' ? 'risk-safe' : (risk === 'WARNING' || risk === 'MODERATE') ? 'risk-warning' : 'risk-danger'}`;
       }
 
       // Tab 4 Deep Dive
@@ -4203,8 +4514,52 @@
         expEl.innerText = text;
       }
 
+      // Populate Top Spending Driver Box
+      const topBox = document.getElementById('fcTopDriverBox');
+      const topTitle = document.getElementById('fcTopDriverTitle');
+      const topAdvice = document.getElementById('fcTopDriverAdvice');
+      if (topBox && topTitle && topAdvice) {
+        if (f.top_spending_driver && f.top_spending_driver.category && f.top_spending_driver.category !== 'None') {
+          topTitle.innerText = `🔥 Top Spending Driver: ${f.top_spending_driver.category} (${f.top_spending_driver.percentage}% of MTD)`;
+          topAdvice.innerText = f.ai_control_tip || `Highest expense is in ${f.top_spending_driver.category}. Reducing discretionary spending here saves the most.`;
+          topBox.style.display = 'flex';
+        } else {
+          topBox.style.display = 'none';
+        }
+      }
+
+      // Populate Goal Impact Linkage
+      const goalBox = document.getElementById('fcGoalImpactBox');
+      const goalText = document.getElementById('fcGoalImpactText');
+      if (goalBox && goalText) {
+        const hasGoals = Array.isArray(APP_STATE.goals) && APP_STATE.goals.length > 0;
+        if (hasGoals) {
+          const g = APP_STATE.goals[0];
+          const gName = g.title || 'Savings Goal';
+          const isOver = f.risk_status === 'DANGER' || f.risk_status === 'CRITICAL';
+          if (isOver) {
+            goalText.innerHTML = `⚠️ <strong>Goal Alert:</strong> High spending pace may delay your <strong>${gName}</strong>. Safe pace of ₹${(f.safe_daily_spend || 0).toFixed(0)}/day will keep it on track.`;
+            goalBox.style.background = 'rgba(239,68,68,0.12)';
+            goalBox.style.borderColor = 'rgba(239,68,68,0.25)';
+          } else {
+            goalText.innerHTML = `🎯 <strong>Goal On Track:</strong> Current safe spending pace keeps your <strong>${gName}</strong> 100% on track!`;
+            goalBox.style.background = 'rgba(16,185,129,0.12)';
+            goalBox.style.borderColor = 'rgba(16,185,129,0.25)';
+          }
+          goalBox.style.display = 'flex';
+        } else {
+          goalBox.style.display = 'none';
+        }
+      }
+
+      // Run default affordability check if not run yet
+      if (!window._hasInitAffordCheck) {
+        window._hasInitAffordCheck = true;
+        setTimeout(() => runAffordabilityCheck(true), 150);
+      }
+
       const baseEl = document.getElementById('fcWmaBaseline');
-      if (baseEl) baseEl.innerText = `₹${f.baseline_wma_history.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      if (baseEl) baseEl.innerText = `₹${(f.baseline_wma_history || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
       renderCategoryDrivers(f.category_forecasts);
       renderUpcomingBills(f.upcoming_recurring);

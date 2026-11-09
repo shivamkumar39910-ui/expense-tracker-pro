@@ -3717,7 +3717,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.2').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.3').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);

@@ -523,20 +523,18 @@ class BudgetRiskEngine:
         discretionary_buffer = remaining_budget - upcoming_recurring_total
         safe_daily_spend = max(Decimal("0.00"), (discretionary_buffer / Decimal(days_rem_safe)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
-        # Risk level determination
-        if mtd_spend > monthly_budget:
-            risk_level = "CRITICAL"
+        # Risk level determination based on exact user specification:
+        # > 110% of budget -> DANGER (Red light)
+        # 90% to 110% of budget -> CAUTION (Yellow light)
+        # < 90% of budget -> SAFE (Green light)
+        if budget_usage_pct > 110.0 or mtd_spend > monthly_budget:
+            risk_level = "CRITICAL" if mtd_spend > monthly_budget else "HIGH"
             risk_status = "DANGER"
-            overrun = float(mtd_spend - monthly_budget)
-            risk_reason = f"Budget already breached by Rs.{overrun:,.2f} ({round((mtd_f/budget_f)*100, 1)}% spent)."
-        elif projected_spend > monthly_budget:
-            risk_level = "HIGH"
-            risk_status = "DANGER"
-            overrun = float(projected_spend - monthly_budget)
+            overrun = float(max(mtd_spend, projected_spend) - monthly_budget)
             risk_reason = f"Paced to exceed budget by Rs.{overrun:,.2f} ({budget_usage_pct}% of budget)."
-        elif budget_usage_pct >= 85.0:
+        elif budget_usage_pct >= 90.0:
             risk_level = "MODERATE"
-            risk_status = "WARNING"
+            risk_status = "CAUTION"
             risk_reason = f"Approaching limit: projected to consume {budget_usage_pct}% of your budget."
         else:
             risk_level = "LOW"
@@ -858,15 +856,15 @@ def calculate_month_end_forecast(
         f_float = float(final_forecast)
         days_left_cnt = max(1, total_days - current_day)
         if b_float > 0 and f_float > b_float:
-            ai_one_liner = f"💡 Spend under ₹{safe_pace:.1f}/day to finish under your ₹{b_float:,.0f} budget."
-            ai_control_tip = f"🔥 {top_driver_name} is your highest expense ({top_driver_pct}%). Reducing it by 15% saves ₹{top_driver_amt * 0.15:,.0f}."
+            ai_one_liner = f"Spend under ₹{safe_pace:.1f}/day to finish under your ₹{b_float:,.0f} budget."
+            ai_control_tip = f"{top_driver_name} is your highest expense ({top_driver_pct}%). Reducing it by 15% saves ₹{top_driver_amt * 0.15:,.0f}."
         elif b_float > 0:
             savings_proj = max(0.0, b_float - f_float)
-            ai_one_liner = f"🎉 Great pacing! You're on track to save ₹{savings_proj:,.0f} this month."
-            ai_control_tip = f"💡 Keeping {top_driver_name} steady at current pace protects your month-end savings."
+            ai_one_liner = f"Great pacing! You're on track to save ₹{savings_proj:,.0f} this month."
+            ai_control_tip = f"Keeping {top_driver_name} steady at current pace protects your month-end savings."
         else:
-            ai_one_liner = f"📊 Daily safe spend is ₹{safe_pace:.1f}/day across remaining {days_left_cnt} days."
-            ai_control_tip = f"💡 {top_driver_name} accounts for {top_driver_pct}% of your MTD spend."
+            ai_one_liner = f"Daily safe spend is ₹{safe_pace:.1f}/day across remaining {days_left_cnt} days."
+            ai_control_tip = f"{top_driver_name} accounts for {top_driver_pct}% of your MTD spend."
 
         # Construct backward-compatible & enhanced payload
         overrun_amount = max(0.0, float(final_forecast - monthly_budget)) if monthly_budget > 0 else 0.0

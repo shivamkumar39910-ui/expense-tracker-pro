@@ -1888,56 +1888,68 @@
           </div>
         </div>
 
-        <!-- 1. Hero AI Month-End Prediction Card -->
+        <!-- 1. Est. Month-END & Details Card -->
         <div class="fintech-card hero-prediction-card" style="border-radius:20px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
           <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(139,92,246,0.18); border-radius:50%; filter:blur(28px); pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:11px; font-weight:800; color:#A78BFA; letter-spacing:0.5px;">ESTIMATED MONTH-END EXPENDITURE (AI PREDICTED)</div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <div class="forecast-risk-pill" id="forecastConfidenceBadge" style="background:rgba(139,92,246,0.2); color:#A78BFA; border:1px solid rgba(139,92,246,0.4); font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px;">CONFIDENCE: HIGH</div>
-              <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge">SAFE</div>
-            </div>
+            <div style="font-size:13px; font-weight:800; color:#A78BFA; letter-spacing:0.2px;">Est. Month-END & Details</div>
+            <div class="forecast-risk-pill risk-safe" id="forecastDeepRiskBadge" style="font-size:10px; padding:3px 9px;">SAFE</div>
           </div>
 
           <div style="font-size:32px; font-weight:800; color:#FFF; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
           
-          <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
+          <div style="font-size:12px; color:#10B981; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
             <span class="material-icons-round" style="font-size:16px;">trending_down</span>
             <span>Calculating live trajectory...</span>
           </div>
 
-          <!-- Top Spending Driver & AI Control Tip Pill -->
-          <div style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px; align-items:flex-start; gap:8px;" id="fcTopDriverBox">
-            <span class="material-icons-round" style="color:var(--color-ruby); font-size:18px; margin-top:2px;">local_fire_department</span>
-            <div style="flex:1;">
-              <div style="font-size:12px; font-weight:800; color:#FFF;" id="fcTopDriverTitle">Top Spending Driver</div>
-              <div style="font-size:11px; color:#E2E8F0; margin-top:2px; line-height:1.4;" id="fcTopDriverAdvice">Calculating top spending category...</div>
-            </div>
-          </div>
-
-          <!-- Goal Impact Linkage -->
-          <div style="display:none; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px; align-items:center; gap:8px;" id="fcGoalImpactBox">
-            <span class="material-icons-round" style="color:var(--color-emerald); font-size:18px;">flag</span>
-            <div style="font-size:11px; color:#E2E8F0; font-weight:600;" id="fcGoalImpactText">Savings Goal: On track!</div>
-          </div>
-
-          <!-- Velocity & Safe Cap Grid -->
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+          <!-- Current Daily Spending & Safe Daily Spending Grid -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
             <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
-              <div class="cf-label" style="color:var(--text-muted); font-size:10px;">DAILY SPEND VELOCITY</div>
+              <div class="cf-label" style="color:var(--text-muted); font-size:10px; text-transform:uppercase; font-weight:700;">CURRENT DAILY SPENDING</div>
               <div style="font-size:16px; font-weight:800; color:#38BDF8;" id="fcMtdSpend">₹0.00/day</div>
             </div>
             <div class="cashflow-box" style="background:rgba(255,255,255,0.05); padding:10px 12px; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">
-              <div class="cf-label" style="color:var(--text-muted); font-size:10px;">SAFE DAILY CAP</div>
+              <div class="cf-label" style="color:var(--text-muted); font-size:10px; text-transform:uppercase; font-weight:700;">SAFE DAILY SPENDING</div>
               <div style="font-size:16px; font-weight:800; color:#10B981;" id="fcSafeDailyCap">₹0.00/day</div>
             </div>
           </div>
 
-          <!-- Explanation Narrative -->
-          <p class="forecast-text" id="fcExplanationText" style="font-size:12px; color:var(--text-secondary); line-height:1.45; margin:0;">
-            Calculating data-driven forecast based on your multi-month patterns and current-month pace.
-          </p>
+          <!-- Top Spending Category Row -->
+          <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:10px 14px; margin-bottom:10px;" id="fcTopDriverBox">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:30px; height:30px; border-radius:8px; background:rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center;">
+                  <span class="material-icons-round" style="color:#F59E0B; font-size:18px;">category</span>
+                </div>
+                <div>
+                  <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">TOP SPENDING CATEGORY</div>
+                  <div style="font-size:13px; font-weight:800; color:#FFF;" id="fcTopDriverName">Food & Dining</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px; font-weight:800; color:#F59E0B;" id="fcTopDriverAmount">₹0.00</div>
+                <div style="font-size:10px; color:#A78BFA; font-weight:700;" id="fcTopDriverPct">0% of budget</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Suggestion Box (5-10 words, 1-1.5 lines) -->
+          <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.25); border-radius:14px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+            <span class="material-icons-round" style="color:#A78BFA; font-size:18px; flex-shrink:0;">auto_awesome</span>
+            <p style="margin:0; font-size:11px; line-height:1.4; color:#E2E8F0; font-weight:500;" id="fcAiSuggestionText">
+              Keep Food & Dining steady at current pace to protect your savings.
+            </p>
+          </div>
+
+          <!-- View More... Button -> Opens AI Chatbot -->
+          <div style="display:flex; justify-content:flex-end;">
+            <button type="button" onclick="openAiChatModal()" style="display:inline-flex; align-items:center; gap:4px; padding:5px 12px; font-size:11px; font-weight:700; color:#A78BFA; background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.35); border-radius:10px; cursor:pointer;" title="Ask AI Mentor">
+              <span>View more...</span>
+              <span class="material-icons-round" style="font-size:14px;">chat</span>
+            </button>
+          </div>
         </div>
 
         <!-- 2. Weekly Daily Expense Trend (Mon - Sun) -->
@@ -3666,7 +3678,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.4').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.5').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
@@ -4510,94 +4522,88 @@
 
     function renderForecastDetails(f) {
       if (!f) return;
+      const budget = f.monthly_budget || (APP_STATE.budgets && APP_STATE.budgets.overall_budget) || 1000;
+      const projSpend = f.projected_month_end_spend !== undefined ? f.projected_month_end_spend : (f.estimated_month_end || 0);
+
       const projEl = document.getElementById('fcMonthEndProjectedDisplay');
-      if (projEl) projEl.innerText = `₹${f.projected_month_end_spend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      if (projEl) projEl.innerText = `₹${projSpend.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
       const surplusEl = document.getElementById('fcSurplusDisplay');
       if (surplusEl) {
-        if (f.monthly_budget > 0) {
-          if (f.projected_month_end_spend <= f.monthly_budget) {
-            const surplus = f.monthly_budget - f.projected_month_end_spend;
-            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#10B981;">trending_down</span><span style="color:#10B981;">Projected Savings: +₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${f.projected_budget_utilization_pct}% of ₹${f.monthly_budget.toLocaleString('en-IN')} budget)</span>`;
+        if (budget > 0) {
+          if (projSpend <= budget) {
+            const surplus = budget - projSpend;
+            const savePct = Math.round((surplus / budget) * 100);
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#10B981;">trending_down</span><span style="color:#10B981;">Projected Savings: +₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${savePct}% of budget saved)</span>`;
           } else {
-            const overrun = f.projected_month_end_spend - f.monthly_budget;
-            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${f.projected_budget_utilization_pct}% of ₹${f.monthly_budget.toLocaleString('en-IN')} budget)</span>`;
+            const overrun = projSpend - budget;
+            const overrunPct = Math.round((overrun / budget) * 100);
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${overrunPct}% over budget)</span>`;
           }
         } else {
           surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#38BDF8;">info</span><span style="color:#38BDF8;">No monthly budget ceiling configured</span>`;
         }
       }
 
+      // Current Daily Spending (formerly velocity)
       const mtdEl = document.getElementById('fcMtdSpend');
-      if (mtdEl) mtdEl.innerText = `₹${f.daily_spending_velocity.toFixed(1)}/day`;
+      const curDaily = f.daily_spending_velocity !== undefined ? f.daily_spending_velocity : (f.daily_run_rate || 0);
+      if (mtdEl) mtdEl.innerText = `₹${curDaily.toFixed(1)}/day`;
 
+      // Safe Daily Spending (formerly cap)
       const capEl = document.getElementById('fcSafeDailyCap');
-      if (capEl) capEl.innerText = `₹${(f.safe_daily_spend !== undefined ? f.safe_daily_spend : 0).toFixed(1)}/day`;
+      const safeDaily = f.safe_daily_spend !== undefined ? f.safe_daily_spend : (f.safe_today !== undefined ? f.safe_today : (f.safe_daily_cap || 0));
+      if (capEl) capEl.innerText = `₹${safeDaily.toFixed(1)}/day`;
 
+      // Deep Risk Badge
       const deepBadge = document.getElementById('forecastDeepRiskBadge');
       if (deepBadge) {
-        const r = f.risk_level || f.risk_status;
-        deepBadge.innerText = r;
-        deepBadge.className = `forecast-risk-pill ${r === 'CRITICAL' || r === 'HIGH' || r === 'DANGER' ? 'risk-danger' : r === 'MODERATE' || r === 'WARNING' ? 'risk-warning' : 'risk-safe'}`;
-      }
-
-      const confBadge = document.getElementById('forecastConfidenceBadge');
-      if (confBadge && f.confidence) {
-        confBadge.innerText = `CONFIDENCE: ${f.confidence}`;
-        confBadge.style.color = f.confidence === 'HIGH' ? '#10B981' : f.confidence === 'MEDIUM' ? '#F59E0B' : '#94A3B8';
-        confBadge.style.borderColor = f.confidence === 'HIGH' ? 'rgba(16,185,129,0.4)' : f.confidence === 'MEDIUM' ? 'rgba(245,158,11,0.4)' : 'rgba(148,163,184,0.4)';
-        confBadge.title = f.confidence_reason || '';
-      }
-
-      const expEl = document.getElementById('fcExplanationText');
-      if (expEl) {
-        let text = f.risk_reason || f.warning_message || '';
-        if (f.confidence_reason) text += ` • ${f.confidence_reason}`;
-        expEl.innerText = text;
-      }
-
-      // Populate Top Spending Driver Box
-      const topBox = document.getElementById('fcTopDriverBox');
-      const topTitle = document.getElementById('fcTopDriverTitle');
-      const topAdvice = document.getElementById('fcTopDriverAdvice');
-      if (topBox && topTitle && topAdvice) {
-        if (f.top_spending_driver && f.top_spending_driver.category && f.top_spending_driver.category !== 'None') {
-          topTitle.innerText = `🔥 Top Spending Driver: ${f.top_spending_driver.category} (${f.top_spending_driver.percentage}% of MTD)`;
-          topAdvice.innerText = f.ai_control_tip || `Highest expense is in ${f.top_spending_driver.category}. Reducing discretionary spending here saves the most.`;
-          topBox.style.display = 'flex';
+        const pct = budget > 0 ? (projSpend / budget) * 100 : 0;
+        if (budget > 0 && pct > 110) {
+          deepBadge.className = 'forecast-risk-pill risk-danger';
+          deepBadge.innerText = 'DANGER';
+        } else if (budget > 0 && pct >= 90) {
+          deepBadge.className = 'forecast-risk-pill risk-warning';
+          deepBadge.innerText = 'CAUTION';
         } else {
-          topBox.style.display = 'none';
+          deepBadge.className = 'forecast-risk-pill risk-safe';
+          deepBadge.innerText = 'SAFE';
         }
       }
 
-      // Populate Goal Impact Linkage
-      const goalBox = document.getElementById('fcGoalImpactBox');
-      const goalText = document.getElementById('fcGoalImpactText');
-      if (goalBox && goalText) {
-        const hasGoals = Array.isArray(APP_STATE.goals) && APP_STATE.goals.length > 0;
-        if (hasGoals) {
-          const g = APP_STATE.goals[0];
-          const gName = g.title || 'Savings Goal';
-          const isOver = f.risk_status === 'DANGER' || f.risk_status === 'CRITICAL';
-          if (isOver) {
-            goalText.innerHTML = `⚠️ <strong>Goal Alert:</strong> High spending pace may delay your <strong>${gName}</strong>. Safe pace of ₹${(f.safe_daily_spend || 0).toFixed(0)}/day will keep it on track.`;
-            goalBox.style.background = 'rgba(239,68,68,0.12)';
-            goalBox.style.borderColor = 'rgba(239,68,68,0.25)';
-          } else {
-            goalText.innerHTML = `🎯 <strong>Goal On Track:</strong> Current safe spending pace keeps your <strong>${gName}</strong> 100% on track!`;
-            goalBox.style.background = 'rgba(16,185,129,0.12)';
-            goalBox.style.borderColor = 'rgba(16,185,129,0.25)';
-          }
-          goalBox.style.display = 'flex';
-        } else {
-          goalBox.style.display = 'none';
-        }
+      // Top Spending Category & % of Budget
+      let topCat = 'Food & Dining';
+      let topAmt = 0;
+      if (f.top_spending_driver && f.top_spending_driver.category && f.top_spending_driver.category !== 'None') {
+        topCat = f.top_spending_driver.category;
+        topAmt = parseFloat(f.top_spending_driver.amount) || 0;
+      } else if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
+        topCat = APP_STATE.categoryBreakdown[0].name || 'Others';
+        topAmt = parseFloat(APP_STATE.categoryBreakdown[0].amount) || 0;
       }
 
-      // Run default affordability check if not run yet
-      if (!window._hasInitAffordCheck) {
-        window._hasInitAffordCheck = true;
-        setTimeout(() => runAffordabilityCheck(true), 150);
+      const topNameEl = document.getElementById('fcTopDriverName');
+      const topAmtEl = document.getElementById('fcTopDriverAmount');
+      const topPctEl = document.getElementById('fcTopDriverPct');
+      if (topNameEl) topNameEl.innerText = topCat;
+      if (topAmtEl) topAmtEl.innerText = `₹${topAmt.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      if (topPctEl) {
+        const catPctOfBudget = budget > 0 ? Math.round((topAmt / budget) * 100) : 0;
+        topPctEl.innerText = `${catPctOfBudget}% of budget`;
+      }
+
+      // AI Suggestion (5-10 words / 1-1.5 lines based on data analysis)
+      const aiSugEl = document.getElementById('fcAiSuggestionText');
+      if (aiSugEl) {
+        let sugText = '';
+        if (topAmt > 0 && projSpend > budget) {
+          sugText = `Reduce ${topCat} pace to finish within your ₹${budget.toLocaleString('en-IN')} budget.`;
+        } else if (topAmt > 0) {
+          sugText = `Keep ${topCat} steady at current pace to protect your savings.`;
+        } else {
+          sugText = `Daily safe spending is ₹${safeDaily.toFixed(1)}/day across remaining days.`;
+        }
+        aiSugEl.innerText = sugText;
       }
 
       const baseEl = document.getElementById('fcWmaBaseline');
@@ -6355,6 +6361,13 @@
       }));
       slices.sort((a, b) => b.amount - a.amount);
       APP_STATE.categoryBreakdown = slices;
+      if (slices.length > 0 && APP_STATE.forecast) {
+        APP_STATE.forecast.top_spending_driver = {
+          category: slices[0].name,
+          amount: slices[0].amount,
+          percentage: slices[0].percentage
+        };
+      }
       APP_STATE.categoryTotalExpense = currentMonthExpenses;
       renderDonutChart(slices, currentMonthExpenses);
 

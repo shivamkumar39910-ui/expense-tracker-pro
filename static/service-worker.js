@@ -1,5 +1,5 @@
 // Service Worker for Expense Tracker Pro 2.0 (Phase 15 PWA)
-const CACHE_NAME = 'expense-pro-v2.4-cache';
+const CACHE_NAME = 'expense-pro-v2.5-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',

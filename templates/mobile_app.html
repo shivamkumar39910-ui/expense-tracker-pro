@@ -1701,9 +1701,8 @@
               <span class="material-icons-round" style="color:#8B5CF6; font-size:18px;">analytics</span>
               <span style="color:#FFF; font-weight:800; font-size:14px; letter-spacing:-0.2px;">Est. Month-END</span>
             </div>
-            <div class="forecast-risk-pill" id="forecastRiskBadge" style="display:inline-flex; align-items:center; gap:6px; font-size:10px; padding:3px 9px; border-radius:12px; font-weight:800; background:rgba(16,185,129,0.16); border:1px solid rgba(16,185,129,0.45); color:#10B981;">
-              <span class="blink-status-light" id="forecastRiskDot" style="background:#10B981; color:#10B981;"></span>
-              <span id="forecastRiskText">SAFE</span>
+            <div id="forecastRiskBadge" style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.45); box-shadow:0 0 10px rgba(16,185,129,0.25);" title="Spending Status Indicator">
+              <span class="blink-status-light" id="forecastRiskDot" style="background:#10B981; color:#10B981; width:9px; height:9px;"></span>
             </div>
           </div>
 
@@ -1939,56 +1938,6 @@
           <p class="forecast-text" id="fcExplanationText" style="font-size:12px; color:var(--text-secondary); line-height:1.45; margin:0;">
             Calculating data-driven forecast based on your multi-month patterns and current-month pace.
           </p>
-        </div>
-
-        <!-- 2. CAN I AFFORD THIS? — PURCHASE DECISION ASSISTANT (STAR FEATURE) -->
-        <div class="fintech-card" style="padding:18px; margin-bottom:16px; border-radius:20px; background:linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%); border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 8px 24px rgba(0,0,0,0.3);">
-          
-          <!-- Card Header with Gradient Accent -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <div style="width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(236,72,153,0.35);">
-                <span class="material-icons-round" style="color:#FFF; font-size:20px;">shopping_bag</span>
-              </div>
-              <div>
-                <div style="font-size:14px; font-weight:800; color:#FFF; letter-spacing:0.2px;">Can I Afford This?</div>
-                <div style="font-size:11px; color:#A78BFA; font-weight:600;">AI Purchase Decision Assistant</div>
-              </div>
-            </div>
-            <span style="font-size:10px; font-weight:800; background:rgba(236,72,153,0.15); color:#F472B6; padding:3px 8px; border-radius:8px; border:1px solid rgba(236,72,153,0.3);">SMART AI</span>
-          </div>
-
-          <p style="font-size:11px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
-            Thinking of buying something? Select a product or type an amount to check if you can afford it safely without breaking your budget.
-          </p>
-
-          <!-- Quick Category Preset Chips (Scrollable Row) -->
-          <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:12px; scrollbar-width:none;" id="affordPresetsRow">
-            <button type="button" class="afford-preset-chip active" onclick="selectAffordPreset('Smartphone', 25000, this)">📱 Phone</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Laptop', 55000, this)">💻 Laptop</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Shopping', 3500, this)">🛍️ Clothes</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Vacation', 15000, this)">✈️ Trip</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Vehicle', 40000, this)">🚲 Bike</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Watch', 4500, this)">⌚ Watch</button>
-            <button type="button" class="afford-preset-chip" onclick="selectAffordPreset('Custom', '', this)">➕ Custom</button>
-          </div>
-
-          <!-- Purchase Input Row -->
-          <div style="display:flex; gap:8px; margin-bottom:14px;">
-            <div style="position:relative; flex:1;">
-              <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:15px; font-weight:700; color:var(--text-muted);">₹</span>
-              <input type="number" id="affordAmountInput" placeholder="Amount (e.g. 25000)" value="25000" oninput="runAffordabilityCheck(true)" style="width:100%; height:44px; padding-left:28px; padding-right:12px; border-radius:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#FFF; font-size:14px; font-weight:700; outline:none;">
-            </div>
-            <button type="button" onclick="runAffordabilityCheck(false)" style="padding:0 18px; height:44px; border-radius:12px; background:linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%); color:#FFF; font-size:13px; font-weight:800; border:none; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 3px 12px rgba(139,92,246,0.35); flex-shrink:0;">
-              <span>Check</span>
-              <span class="material-icons-round" style="font-size:16px;">bolt</span>
-            </button>
-          </div>
-
-          <!-- Affordability Result Box (Dynamic) -->
-          <div id="affordResultBox" style="border-radius:16px; padding:14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s ease;">
-            <!-- Rendered dynamically by JS -->
-          </div>
         </div>
 
         <!-- 2. Weekly Daily Expense Trend (Mon - Sun) -->
@@ -3717,7 +3666,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.3').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.4').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
@@ -4529,33 +4478,29 @@
 
       const badge = document.getElementById('forecastRiskBadge');
       const dot = document.getElementById('forecastRiskDot');
-      const text = document.getElementById('forecastRiskText');
 
-      if (badge) {
+      if (badge && dot) {
         if (budget > 0 && pct > 110) {
           // RED BLINK (> 110%)
-          if (dot) { dot.style.background = '#EF4444'; dot.style.color = '#EF4444'; }
-          badge.style.background = 'rgba(239, 68, 68, 0.2)';
-          badge.style.borderColor = 'rgba(239, 68, 68, 0.5)';
-          badge.style.color = '#EF4444';
-          if (text) text.innerText = 'DANGER';
-          else badge.innerText = 'DANGER';
+          dot.style.background = '#EF4444';
+          dot.style.color = '#EF4444';
+          badge.style.background = 'rgba(239, 68, 68, 0.22)';
+          badge.style.borderColor = 'rgba(239, 68, 68, 0.55)';
+          badge.style.boxShadow = '0 0 12px rgba(239,68,68,0.4)';
         } else if (budget > 0 && pct >= 90 && pct <= 110) {
           // YELLOW BLINK (90% to 110%)
-          if (dot) { dot.style.background = '#F59E0B'; dot.style.color = '#F59E0B'; }
+          dot.style.background = '#F59E0B';
+          dot.style.color = '#F59E0B';
           badge.style.background = 'rgba(245, 158, 11, 0.18)';
-          badge.style.borderColor = 'rgba(245, 158, 11, 0.45)';
-          badge.style.color = '#F59E0B';
-          if (text) text.innerText = 'CAUTION';
-          else badge.innerText = 'CAUTION';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+          badge.style.boxShadow = '0 0 12px rgba(245,158,11,0.35)';
         } else {
           // GREEN BLINK (< 90%)
-          if (dot) { dot.style.background = '#10B981'; dot.style.color = '#10B981'; }
-          badge.style.background = 'rgba(16, 185, 129, 0.16)';
-          badge.style.borderColor = 'rgba(16, 185, 129, 0.45)';
-          badge.style.color = '#10B981';
-          if (text) text.innerText = 'SAFE';
-          else badge.innerText = 'SAFE';
+          dot.style.background = '#10B981';
+          dot.style.color = '#10B981';
+          badge.style.background = 'rgba(16, 185, 129, 0.18)';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+          badge.style.boxShadow = '0 0 12px rgba(16,185,129,0.35)';
         }
       }
 

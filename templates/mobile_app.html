@@ -17,6 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
+  <meta name="app-shell-version" content="v3.3">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2037,7 +2038,7 @@
           </div>
           
           <div style="background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; margin-bottom:10px;">
-            <div id="homeBudgetProgressBar" style="width: 0%; height:100%; background:var(--color-emerald); border-radius:4px; transition:width 0.5s ease;"></div>
+            <div id="homeBudgetProgressBar" style="width: 0%; height:100%; background:var(--color-emerald); border-radius:4px; transition:none;"></div>
           </div>
 
           <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); font-weight:600;">
@@ -2182,7 +2183,7 @@
           <div class="cf-amount" id="budgetLimitDisplay" style="font-size:26px; margin-bottom:10px;">₹25,000.00</div>
           
           <div style="background:var(--bg-card-subtle); height:10px; border-radius:5px; overflow:hidden; margin: 12px 0 8px 0;">
-            <div id="budgetProgressBar" style="width: 5%; height:100%; background:var(--color-emerald); transition:width 0.5s ease;"></div>
+            <div id="budgetProgressBar" style="width: 5%; height:100%; background:var(--color-emerald); transition:none;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); font-weight:600;">
             <span>Spent: <strong id="budgetSpentDisplay" style="color:var(--text-primary);">₹1,200</strong></span>
@@ -2242,7 +2243,7 @@
 
         <!-- 1. Est. Month-END & Details Card -->
         <div class="fintech-card hero-prediction-card" style="border-radius:20px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
-          <div style="position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(139,92,246,0.18); border-radius:50%; filter:blur(28px); pointer-events:none;"></div>
+          <div style="position:absolute; top:-30px; right:-30px; width:140px; height:140px; background:radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div class="fc-hero-title" style="font-size:13px; font-weight:800; letter-spacing:0.2px;">Est. Month-END & Details</div>
@@ -4145,6 +4146,8 @@
       budgets: null,
       categoryBreakdown: [],
       categoryTotalExpense: 0,
+      monthlyIncome: 0,
+      _txListDirty: true,
       forecast: null,
       activeTxFilter: 'ALL',
       // Sheet Entry State
@@ -4383,6 +4386,47 @@
       return APP_STATE.history6m;
     }
 
+    function ensureBreakdownInitialized() {
+      if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
+        return APP_STATE.categoryBreakdown;
+      }
+      const now = new Date();
+      const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const catTotals = {};
+      let totExp = 0;
+      let totInc = 0;
+      (APP_STATE.transactions || []).forEach(t => {
+        if (!t || !t.date || !String(t.date).startsWith(curYM)) return;
+        const amt = parseFloat(t.amount) || 0;
+        if (t.transaction_type === 'EXPENSE') {
+          totExp += amt;
+          const cName = t.category_name || 'Others';
+          if (!catTotals[cName]) {
+            catTotals[cName] = {
+              name: cName,
+              amount: 0,
+              color: t.category_color || '#6B7280',
+              icon: t.category_icon || 'category',
+              count: 0
+            };
+          }
+          catTotals[cName].amount += amt;
+          catTotals[cName].count += 1;
+        } else if (t.transaction_type === 'INCOME') {
+          totInc += amt;
+        }
+      });
+      const slices = Object.values(catTotals).map(c => ({
+        ...c,
+        percentage: totExp > 0 ? Math.round((c.amount / totExp) * 1000) / 10 : 0
+      }));
+      slices.sort((a, b) => b.amount - a.amount);
+      APP_STATE.categoryBreakdown = slices;
+      APP_STATE.categoryTotalExpense = totExp;
+      if (totInc > 0) APP_STATE.monthlyIncome = totInc;
+      return slices;
+    }
+
     function ensureForecastInitialized() {
       const now = new Date();
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -4467,6 +4511,9 @@
           bObj.total_expense = APP_STATE.categoryTotalExpense;
           if (!bObj.cashflow) bObj.cashflow = {};
           bObj.cashflow.expenses = APP_STATE.categoryTotalExpense;
+          if (APP_STATE.monthlyIncome !== undefined && APP_STATE.monthlyIncome > 0) {
+            bObj.cashflow.income = APP_STATE.monthlyIncome;
+          }
         }
         if (Array.isArray(APP_STATE.history6m)) bObj.history_6m = APP_STATE.history6m;
         if (Array.isArray(APP_STATE.weeklyDaily)) bObj.weekly_daily = APP_STATE.weeklyDaily;
@@ -4531,7 +4578,7 @@
 
     // Synchronous 0ms Hydration Controller: Paints Home, Analytics, Insights & Profile IMMEDIATELY at Frame 1
     function hydrateFromLocalCacheSync() {
-      applyAppTheme();
+      applyAppTheme(true);
       updateSyncBadge();
 
       if (!APP_STATE.token || !APP_STATE.user) {
@@ -4550,12 +4597,15 @@
             showPinLockOverlay();
           }
           applyBootstrapData(parsed, false);
+          if (!Array.isArray(APP_STATE.categoryBreakdown)) {
+            const bd = ensureBreakdownInitialized();
+            renderDonutChart(bd, APP_STATE.categoryTotalExpense, true);
+          }
           if (!Array.isArray(APP_STATE.history6m) || APP_STATE.history6m.length === 0) {
             renderHistoryBarChart(ensureHistory6mInitialized());
           }
           if (!APP_STATE.forecast) {
-            const initFc = ensureForecastInitialized();
-            renderForecastDetails(initFc);
+            updateForecastUI(ensureForecastInitialized());
           }
         } else {
           const cachedCats = localStorage.getItem('cached_categories');
@@ -4568,9 +4618,12 @@
             renderGoals(userGoals);
             renderSavingsGoalsModalList(userGoals);
           }
+          const bd = ensureBreakdownInitialized();
+          renderDonutChart(bd, APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
-          const initFc = ensureForecastInitialized();
-          renderForecastDetails(initFc);
+          renderWeeklyDailyBarChart();
+          syncBudgetAndProfileUI();
+          updateForecastUI(ensureForecastInitialized());
         }
       } catch (cacheErr) {
         console.warn('Instant cache hydration notice:', cacheErr);
@@ -4583,21 +4636,24 @@
     window.addEventListener('DOMContentLoaded', () => {
       if ('serviceWorker' in navigator) {
         let refreshingForSw = false;
-        const triggerSwUpgradeReload = () => {
+        const triggerSwUpgradeReload = (verKey = 'v3_3') => {
           if (refreshingForSw) return;
-          if (!sessionStorage.getItem('sw_upgraded_v3_2')) {
+          const flag = 'sw_upgraded_' + verKey;
+          if (!sessionStorage.getItem(flag)) {
             refreshingForSw = true;
-            sessionStorage.setItem('sw_upgraded_v3_2', '1');
+            sessionStorage.setItem(flag, '1');
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', triggerSwUpgradeReload);
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_3'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.2-cache') {
-            triggerSwUpgradeReload();
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.3-cache') {
+            triggerSwUpgradeReload('v3_3');
+          } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
+            triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.2').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.3').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -4606,9 +4662,9 @@
       window.addEventListener('offline', () => { updateSyncBadge(); });
 
       if (APP_STATE.token && APP_STATE.user) {
-        initializeAppData().catch(console.error);
+        initializeAppData(false).catch(console.error);
         if (LOCAL_PENDING_OPS.hasAny() || LOCAL_TOMBSTONES.getTxIds().size > 0) {
-          setTimeout(() => initializeAppData(true).catch(() => {}), 2200);
+          setTimeout(() => initializeAppData(false).catch(() => {}), 2200);
         }
         if (navigator.onLine && APP_STATE.offlineQueue && APP_STATE.offlineQueue.length > 0) {
           triggerManualSync().catch(console.warn);
@@ -4665,21 +4721,22 @@
     }
     window.formatAccountName = formatAccountName;
 
-    function applyAppTheme() {
+    function applyAppTheme(skipChartRedraw = false) {
       document.body.classList.remove('theme-oled', 'theme-midnight', 'theme-light');
       document.body.classList.add(APP_STATE.appTheme);
       const icon = document.getElementById('themeToggleIcon');
       if (icon) {
         icon.innerText = (APP_STATE.appTheme === 'theme-light') ? 'dark_mode' : 'light_mode';
       }
+      if (skipChartRedraw) return;
       try {
         if (Array.isArray(APP_STATE.categoryBreakdown)) {
-          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense);
+          renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense, true);
         }
-        if (Array.isArray(APP_STATE.history6m)) {
+        if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
           renderHistoryBarChart(APP_STATE.history6m);
         }
-        renderWeeklyDailyBarChart();
+        renderWeeklyDailyBarChart(APP_STATE.weeklyDaily && APP_STATE.weeklyDaily.length === 7 ? APP_STATE.weeklyDaily : null);
         if (APP_STATE.forecast) {
           renderTrajectoryChart(APP_STATE.forecast);
         }
@@ -4932,16 +4989,25 @@
           try { syncBudgetAndProfileUI(); } catch (e) {}
         }
         if (targetId === 'tab-analytics') {
-          if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
-            renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense, true);
+          if (APP_STATE._txListDirty) {
+            APP_STATE._txListDirty = false;
+            try { applyTxSearch(); } catch (e) {}
           }
-          renderHistoryBarChart(ensureHistory6mInitialized());
-          try { renderTransactionsList(); } catch (e) {}
+          if (!Array.isArray(APP_STATE.categoryBreakdown)) {
+            const bd = ensureBreakdownInitialized();
+            renderDonutChart(bd, APP_STATE.categoryTotalExpense, true);
+          }
+          if (!Array.isArray(APP_STATE.history6m) || APP_STATE.history6m.length === 0) {
+            renderHistoryBarChart(ensureHistory6mInitialized());
+          }
         }
         if (targetId === 'tab-ai') {
-          const fc = APP_STATE.forecast || ensureForecastInitialized();
-          try { renderForecastDetails(fc); } catch (e) {}
-          try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
+          if (!APP_STATE.forecast) {
+            try { updateForecastUI(ensureForecastInitialized()); } catch (e) {}
+          }
+          if (!Array.isArray(APP_STATE.weeklyDaily) || APP_STATE.weeklyDaily.length !== 7) {
+            try { renderWeeklyDailyBarChart(); } catch (e) {}
+          }
         }
       } catch (err) {
         console.error('switchTab error:', err);
@@ -5083,13 +5149,27 @@
       const txY = parseInt(txDate.slice(0, 4));
       const txM = parseInt(txDate.slice(5, 7));
 
+      // Reconcile account balance delta
+      if (Array.isArray(b.accounts) && tx.account_id) {
+        const acc = b.accounts.find(a => String(a.id) === String(tx.account_id));
+        if (acc) {
+          const curBal = parseFloat(acc.current_balance) || 0;
+          if (tx.transaction_type === 'EXPENSE') acc.current_balance = Math.max(0, Math.round((curBal - amt) * 100) / 100);
+          else if (tx.transaction_type === 'INCOME') acc.current_balance = Math.max(0, Math.round((curBal + amt) * 100) / 100);
+        }
+      }
+
       if (tx.transaction_type === 'EXPENSE') {
         if (txYM === curYM) {
           if (!b.cashflow) b.cashflow = {};
           b.cashflow.expenses = Math.max(0, Math.round(((parseFloat(b.cashflow.expenses) || 0) + amt) * 100) / 100);
-          b.total_expense = Math.max(0, Math.round(((parseFloat(b.total_expense) || 0) + amt) * 100) / 100);
+          b.total_expense = b.cashflow.expenses;
           if (b.budgets) {
             b.budgets.total_spent = b.cashflow.expenses;
+            const oLim = parseFloat(b.budgets.overall_budget) || 0;
+            b.budgets.remaining = Math.max(0, Math.round((oLim - b.budgets.total_spent) * 100) / 100);
+            b.budgets.utilization_pct = oLim > 0 ? Math.round((b.budgets.total_spent / oLim) * 1000) / 10 : 0;
+            b.budgets.is_exceeded = oLim > 0 && b.budgets.total_spent > oLim;
             if (Array.isArray(b.budgets.category_budgets) && tx.category_id) {
               b.budgets.category_budgets.forEach(cb => {
                 if (String(cb.category_id) === String(tx.category_id)) {
@@ -5101,17 +5181,6 @@
                 }
               });
             }
-          }
-          if (b.forecast) {
-            const newMtd = Math.max(0, Math.round(((parseFloat(b.forecast.mtd_actual_spend) || 0) + amt) * 100) / 100);
-            const daysEl = Math.max(1, b.forecast.days_elapsed || now.getDate());
-            const newVel = newMtd / daysEl;
-            const newProj = Math.max(newMtd, (parseFloat(b.forecast.projected_month_end_spend) || 0) + amt);
-            b.forecast.mtd_actual_spend = newMtd;
-            b.forecast.daily_spending_velocity = Math.round(newVel * 100) / 100;
-            b.forecast.daily_run_rate = b.forecast.daily_spending_velocity;
-            b.forecast.projected_month_end_spend = Math.round(newProj * 100) / 100;
-            b.forecast.estimated_month_end = b.forecast.projected_month_end_spend;
           }
           if (Array.isArray(b.breakdown)) {
             const cName = tx.category_name || 'Others';
@@ -5131,9 +5200,47 @@
             }
             const totalBd = b.breakdown.reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
             b.breakdown = b.breakdown.filter(s => (parseFloat(s.amount) || 0) > 0);
+            b.breakdown.sort((x, y) => (parseFloat(y.amount) || 0) - (parseFloat(x.amount) || 0));
             b.breakdown.forEach(s => {
               s.percentage = totalBd > 0 ? Math.round((s.amount / totalBd) * 1000) / 10 : 0;
             });
+          }
+          if (b.forecast) {
+            const newMtd = Math.max(0, Math.round(((parseFloat(b.forecast.mtd_actual_spend) || 0) + amt) * 100) / 100);
+            const daysEl = Math.max(1, b.forecast.days_elapsed || now.getDate());
+            const totalD = b.forecast.total_days_in_month || new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const daysLeft = Math.max(1, totalD - daysEl);
+            const newVel = newMtd / daysEl;
+            const newProj = Math.max(newMtd, (parseFloat(b.forecast.projected_month_end_spend) || 0) + amt);
+            const bCap = parseFloat(b.forecast.monthly_budget) || (b.budgets ? parseFloat(b.budgets.overall_budget) : 0) || 0;
+            const safeDaily = bCap > 0 ? Math.max(0, (bCap - newMtd) / daysLeft) : 0;
+
+            b.forecast.mtd_actual_spend = newMtd;
+            b.forecast.daily_spending_velocity = Math.round(newVel * 100) / 100;
+            b.forecast.daily_run_rate = b.forecast.daily_spending_velocity;
+            b.forecast.projected_month_end_spend = Math.round(newProj * 100) / 100;
+            b.forecast.estimated_month_end = b.forecast.projected_month_end_spend;
+            b.forecast.safe_daily_spend = Math.round(safeDaily * 10) / 10;
+            b.forecast.safe_today = b.forecast.safe_daily_spend;
+            b.forecast.safe_daily_cap = b.forecast.safe_daily_spend;
+            if (Array.isArray(b.breakdown) && b.breakdown.length > 0) {
+              b.forecast.top_spending_driver = {
+                category: b.breakdown[0].name,
+                amount: b.breakdown[0].amount,
+                percentage: b.breakdown[0].percentage
+              };
+            } else {
+              b.forecast.top_spending_driver = { category: 'None', amount: 0, percentage: 0 };
+            }
+            const pctB = bCap > 0 ? (newProj / bCap) * 100 : 0;
+            if (bCap > 0 && pctB > 110) {
+              b.forecast.ai_one_liner = `Spend under ₹${safeDaily.toFixed(1)}/day to finish under ₹${bCap.toLocaleString('en-IN')} budget.`;
+            } else if (bCap > 0 && pctB >= 90) {
+              b.forecast.ai_one_liner = `Approaching budget limit. Daily safe cap is ₹${safeDaily.toFixed(1)}/day.`;
+            } else if (bCap > 0) {
+              const estSav = Math.max(0, bCap - newProj);
+              b.forecast.ai_one_liner = `Great pacing! You're on track to save ₹${estSav.toLocaleString('en-IN', {maximumFractionDigits:0})} this month.`;
+            }
           }
         }
         if (Array.isArray(b.history_6m)) {
@@ -5205,10 +5312,32 @@
         if (Math.abs((parseFloat(b.budgets.overall_budget) || 0) - bOverride.overall_budget) < 0.01) {
           LOCAL_PENDING_OPS.clearBudgetOverride();
         } else {
-          b.budgets.overall_budget = bOverride.overall_budget;
+          const val = bOverride.overall_budget;
+          const curSpent = parseFloat(b.budgets.total_spent) || (b.cashflow ? parseFloat(b.cashflow.expenses) : 0) || 0;
+          const nowD = new Date();
+          const daysInM = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
+          const daysLeftM = Math.max(1, daysInM - nowD.getDate());
+          const newSafeDaily = Math.max(0, (val - curSpent) / daysLeftM);
+
+          b.budgets.overall_budget = val;
+          b.budgets.remaining = Math.max(0, val - curSpent);
+          b.budgets.utilization_pct = val > 0 ? Math.round((curSpent / val) * 100) : 0;
+          b.budgets.is_exceeded = val > 0 && curSpent > val;
           if (!b.forecast) b.forecast = {};
-          b.forecast.monthly_budget = bOverride.overall_budget;
-          b.forecast.budget = bOverride.overall_budget;
+          b.forecast.monthly_budget = val;
+          b.forecast.budget = val;
+          b.forecast.safe_daily_spend = Math.round(newSafeDaily * 10) / 10;
+          b.forecast.safe_today = b.forecast.safe_daily_spend;
+          b.forecast.safe_daily_cap = b.forecast.safe_daily_spend;
+          const proj = parseFloat(b.forecast.projected_month_end_spend) || 0;
+          const pctB = val > 0 ? (proj / val) * 100 : 0;
+          if (val > 0 && pctB > 110) {
+            b.forecast.ai_one_liner = `Spend under ₹${newSafeDaily.toFixed(1)}/day to finish under ₹${val.toLocaleString('en-IN')} budget.`;
+          } else if (val > 0 && pctB >= 90) {
+            b.forecast.ai_one_liner = `Approaching budget limit. Daily safe cap is ₹${newSafeDaily.toFixed(1)}/day.`;
+          } else if (val > 0) {
+            b.forecast.ai_one_liner = `Great pacing! You're on track to save ₹${Math.max(0, val - proj).toLocaleString('en-IN', {maximumFractionDigits:0})} this month.`;
+          }
         }
       }
 
@@ -5260,6 +5389,10 @@
       const deadTxIds = LOCAL_TOMBSTONES.getTxIds();
       const deadBudgetKeys = LOCAL_TOMBSTONES.getBudgetKeys();
 
+      if (b.cashflow && b.cashflow.income !== undefined) {
+        APP_STATE.monthlyIncome = parseFloat(b.cashflow.income) || 0;
+      }
+
       // Filter transactions through persistent delete tombstones so deleted items NEVER resurrect
       if (Array.isArray(b.transactions)) {
         b.transactions = b.transactions.filter(t => t && !deadTxIds.has(String(t.id)));
@@ -5268,7 +5401,13 @@
           if (t.target_account_name) t.target_account_name = formatAccountName(t.target_account_name);
         });
         APP_STATE.transactions = b.transactions;
-        renderTransactionsList(b.transactions);
+        const analyticsScreen = document.getElementById('tab-analytics');
+        if (analyticsScreen && analyticsScreen.classList.contains('active')) {
+          APP_STATE._txListDirty = false;
+          applyTxSearch();
+        } else {
+          APP_STATE._txListDirty = true;
+        }
       }
 
       if (Array.isArray(b.recent_transactions)) {
@@ -5339,8 +5478,6 @@
       syncBudgetAndProfileUI();
       if (APP_STATE.forecast) {
         updateForecastUI(APP_STATE.forecast);
-        renderForecastDetails(APP_STATE.forecast);
-        renderTrajectoryChart(APP_STATE.forecast);
       }
 
       applyPrivacyMode();
@@ -6907,12 +7044,19 @@
       APP_STATE.forecast.safe_daily_cap = Math.round(newSafeDaily * 10) / 10;
       APP_STATE.forecast.safe_daily_spend = Math.round(newSafeDaily * 10) / 10;
       APP_STATE.forecast.safe_today = Math.round(newSafeDaily * 10) / 10;
+      const projB = parseFloat(APP_STATE.forecast.projected_month_end_spend) || spent;
+      const pctB = val > 0 ? (projB / val) * 100 : 0;
+      if (val > 0 && pctB > 110) {
+        APP_STATE.forecast.ai_one_liner = `Spend under ₹${newSafeDaily.toFixed(1)}/day to finish under ₹${val.toLocaleString('en-IN')} budget.`;
+      } else if (val > 0 && pctB >= 90) {
+        APP_STATE.forecast.ai_one_liner = `Approaching budget limit. Daily safe cap is ₹${newSafeDaily.toFixed(1)}/day.`;
+      } else if (val > 0) {
+        APP_STATE.forecast.ai_one_liner = `Great pacing! You're on track to save ₹${Math.max(0, val - projB).toLocaleString('en-IN', {maximumFractionDigits:0})} this month.`;
+      }
 
       APP_STATE.mutationVersion++;
       syncBudgetAndProfileUI();
       updateForecastUI(APP_STATE.forecast);
-      renderForecastDetails(APP_STATE.forecast);
-      renderTrajectoryChart(APP_STATE.forecast);
 
       // Feedback Toast
       showToast(`Monthly budget set to ₹${val.toLocaleString('en-IN')}!`, 'success');
@@ -7139,7 +7283,9 @@
 
       input.value = '';
       renderCategoryLimitsModalList();
-      if (typeof renderCategoryBudgets === 'function') {
+      if (typeof syncBudgetAndProfileUI === 'function') {
+        syncBudgetAndProfileUI();
+      } else if (typeof renderCategoryBudgets === 'function') {
         renderCategoryBudgets(APP_STATE.budgets.category_budgets);
       }
       showToast(`Limit for ${cat.name} set to ₹${amount.toLocaleString('en-IN')}!`, 'success');
@@ -7194,7 +7340,9 @@
               return !matchId && !matchCat;
             });
             renderCategoryLimitsModalList();
-            if (typeof renderCategoryBudgets === 'function') {
+            if (typeof syncBudgetAndProfileUI === 'function') {
+              syncBudgetAndProfileUI();
+            } else if (typeof renderCategoryBudgets === 'function') {
               renderCategoryBudgets(APP_STATE.budgets.category_budgets);
             }
           }
@@ -7508,8 +7656,9 @@
     // ----------------------------------------------------
     // ULTRA-FAST 0ms CROSS-SCREEN SYNCHRONIZATION ENGINE
     // ----------------------------------------------------
-    function syncAllScreensOptimistically(tx, isAddition = true) {
+    function syncAllScreensOptimistically(tx, isAddition = true, opts = {}) {
       if (!tx) return;
+      const skipRender = Boolean(opts && opts.skipRender);
       const amount = parseFloat(tx.amount) || 0;
 
       // 1. In-memory transactions array update
@@ -7566,18 +7715,18 @@
           cb.utilization_pct = lim > 0 ? Math.round((spent / lim) * 1000) / 10 : 0;
           cb.is_exceeded = spent > lim;
         });
-        if (typeof renderCategoryBudgets === 'function') {
-          renderCategoryBudgets(APP_STATE.budgets.category_budgets);
-        }
       }
 
-      // 3. Update Home Screen (Total Expense, Budget Progress, Forecast, Recent Tx)
-      const homeExp = document.getElementById('homeTotalExpenseDisplay');
-      if (homeExp) {
-        setMaskableText('homeTotalExpenseDisplay', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
-      }
+      // Compute Category Breakdown & Top Driver FIRST so Forecast Details / AI Suggestion reflect latest tx at 0ms!
+      const slices = Object.values(catTotals).map(c => ({
+        ...c,
+        percentage: currentMonthExpenses > 0 ? Math.round((c.amount / currentMonthExpenses) * 1000) / 10 : 0
+      }));
+      slices.sort((a, b) => b.amount - a.amount);
+      APP_STATE.categoryBreakdown = slices;
+      APP_STATE.categoryTotalExpense = currentMonthExpenses;
+      APP_STATE.monthlyIncome = currentMonthIncome;
 
-      // Sync Budgets State & UI Across Home, Budgets Tab & Profile
       if (!APP_STATE.budgets) APP_STATE.budgets = {};
       const budgetLimit = parseFloat(APP_STATE.budgets.overall_budget) || (APP_STATE.forecast ? parseFloat(APP_STATE.forecast.monthly_budget) : 0) || 0;
       const remaining = Math.max(0, budgetLimit - currentMonthExpenses);
@@ -7588,13 +7737,8 @@
       APP_STATE.budgets.remaining = remaining;
       APP_STATE.budgets.utilization_pct = utilPct;
       APP_STATE.budgets.is_exceeded = isExceeded;
-      APP_STATE.categoryTotalExpense = currentMonthExpenses;
-      syncBudgetAndProfileUI();
 
-      // Home Recent Transactions
-      renderRecentTx(APP_STATE.transactions.slice(0, 5));
-
-      // Home Forecast Calculation (Instant 0ms Recalculation)
+      // Update Home Forecast & Top Driver BEFORE rendering Forecast UI
       const daysLeft = Math.max(1, daysInMonth - daysElapsed);
       const dailyVelocity = currentMonthExpenses / daysElapsed;
       const projectedMonthEnd = currentMonthExpenses + (dailyVelocity * (daysInMonth - daysElapsed));
@@ -7618,6 +7762,15 @@
       APP_STATE.forecast.safe_daily_cap = Math.round(safeDailyCap * 10) / 10;
       APP_STATE.forecast.monthly_budget = budgetLimit;
       APP_STATE.forecast.budget = budgetLimit;
+      if (slices.length > 0) {
+        APP_STATE.forecast.top_spending_driver = {
+          category: slices[0].name,
+          amount: slices[0].amount,
+          percentage: slices[0].percentage
+        };
+      } else {
+        APP_STATE.forecast.top_spending_driver = { category: 'None', amount: 0, percentage: 0 };
+      }
 
       const optPct = budgetLimit > 0 ? (projectedMonthEnd / budgetLimit) * 100 : 0;
       if (budgetLimit > 0 && optPct > 110) {
@@ -7631,26 +7784,7 @@
         APP_STATE.forecast.ai_one_liner = `Daily safe spend is ₹${safeDailyCap.toFixed(1)}/day across remaining days.`;
       }
 
-      updateForecastUI(APP_STATE.forecast);
-
-      // 4. Update Analytics Screen (Donut Chart, History Bar, All Transactions)
-      const slices = Object.values(catTotals).map(c => ({
-        ...c,
-        percentage: currentMonthExpenses > 0 ? Math.round((c.amount / currentMonthExpenses) * 1000) / 10 : 0
-      }));
-      slices.sort((a, b) => b.amount - a.amount);
-      APP_STATE.categoryBreakdown = slices;
-      if (slices.length > 0 && APP_STATE.forecast) {
-        APP_STATE.forecast.top_spending_driver = {
-          category: slices[0].name,
-          amount: slices[0].amount,
-          percentage: slices[0].percentage
-        };
-      }
-      APP_STATE.categoryTotalExpense = currentMonthExpenses;
-      renderDonutChart(slices, currentMonthExpenses, true);
-
-      // Update matching month (current or historical) in 6M Monthly Expense History
+      // Always keep matching 6M History month bucket synced in memory (even if skipRender)
       ensureHistory6mInitialized();
       const txYear = tx.date ? parseInt(String(tx.date).slice(0, 4)) : now.getFullYear();
       const txMonth = tx.date ? parseInt(String(tx.date).slice(5, 7)) : (now.getMonth() + 1);
@@ -7664,16 +7798,37 @@
       } else if (APP_STATE.history6m.length > 0 && (APP_STATE.transactions || []).length < 50) {
         APP_STATE.history6m[APP_STATE.history6m.length - 1].expenses = currentMonthExpenses;
       }
+
+      if (skipRender) return;
+
+      // 3. Render Home Screen (Total Expense, Cashflow hidden counters, Budget Progress, Forecast, Recent Tx)
+      const homeExp = document.getElementById('homeTotalExpenseDisplay');
+      if (homeExp) {
+        setMaskableText('homeTotalExpenseDisplay', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      }
+      setMaskableText('cfIncomeVal', `₹${currentMonthIncome.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      setMaskableText('cfExpenseVal', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+
+      syncBudgetAndProfileUI();
+      renderRecentTx(APP_STATE.transactions.slice(0, 5));
+      updateForecastUI(APP_STATE.forecast);
+
+      // 4. Render Analytics Charts + Defer All Transactions DOM if hidden
+      renderDonutChart(slices, currentMonthExpenses, true);
       renderHistoryBarChart(APP_STATE.history6m);
 
-      // Render All Transactions List
-      renderTransactionsList(APP_STATE.transactions);
+      const analyticsScreen = document.getElementById('tab-analytics');
+      if (analyticsScreen && analyticsScreen.classList.contains('active')) {
+        APP_STATE._txListDirty = false;
+        applyTxSearch();
+      } else {
+        APP_STATE._txListDirty = true;
+      }
 
-      // 5. Update Insights Screen Weekly Bar (updateForecastUI above already rendered Forecast Details & Trajectory SVG)
+      // 5. Render Insights Weekly Daily Chart (0ms)
       renderWeeklyDailyBarChart();
 
       // 6. Synchronize cleanly with unified single-store localStorage
-      APP_STATE.categoryTotalExpense = currentMonthExpenses;
       persistUnifiedLocalState();
     }
 
@@ -8225,9 +8380,8 @@
       }
 
       LOCAL_PENDING_OPS.addEdit(oldId, oldTx, updatedTx);
-      syncAllScreensOptimistically(oldTx, false);
+      syncAllScreensOptimistically(oldTx, false, { skipRender: true });
       syncAllScreensOptimistically(updatedTx, true);
-      persistUnifiedLocalState();
       showToast('Transaction updated!', 'success');
 
       const payload = {
@@ -8256,7 +8410,13 @@
           const idx = (APP_STATE.transactions || []).findIndex(t => String(t.id) === String(oldTx.id));
           if (idx !== -1) APP_STATE.transactions[idx].id = res.transaction_id;
           renderRecentTx((APP_STATE.transactions || []).slice(0, 5));
-          renderTransactionsList(APP_STATE.transactions);
+          const analyticsScreen = document.getElementById('tab-analytics');
+          if (analyticsScreen && analyticsScreen.classList.contains('active')) {
+            APP_STATE._txListDirty = false;
+            applyTxSearch();
+          } else {
+            APP_STATE._txListDirty = true;
+          }
           persistUnifiedLocalState();
         }
       } catch (err) {
@@ -9232,8 +9392,10 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+          renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
-          renderForecastDetails(ensureForecastInitialized());
+          renderWeeklyDailyBarChart();
+          updateForecastUI(ensureForecastInitialized());
           await initializeAppData();
 
           if (typeof showToast === 'function') {
@@ -9311,8 +9473,10 @@
               localStorage.setItem('user_profile', JSON.stringify(res.user));
               document.getElementById('authOverlay').classList.add('hidden');
               updateUserUI();
+              renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
               renderHistoryBarChart(ensureHistory6mInitialized());
-              renderForecastDetails(ensureForecastInitialized());
+              renderWeeklyDailyBarChart();
+              updateForecastUI(ensureForecastInitialized());
               await initializeAppData();
               if (typeof showToast === 'function') {
                 showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
@@ -9353,8 +9517,10 @@
 
             document.getElementById('authOverlay').classList.add('hidden');
             updateUserUI();
+            renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
             renderHistoryBarChart(ensureHistory6mInitialized());
-            renderForecastDetails(ensureForecastInitialized());
+            renderWeeklyDailyBarChart();
+            updateForecastUI(ensureForecastInitialized());
             await initializeAppData();
             if (typeof showToast === 'function') {
               showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
@@ -9639,8 +9805,10 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+          renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
-          renderForecastDetails(ensureForecastInitialized());
+          renderWeeklyDailyBarChart();
+          updateForecastUI(ensureForecastInitialized());
           await initializeAppData();
 
           if (typeof showToast === 'function') {
@@ -10939,10 +11107,31 @@
 
         if (res && res.success) {
           triggerHaptic('heavy');
-          alert(`✅ Transaction Confirmed & Recorded!\n₹${amount.toFixed(2)} recorded to ledger.`);
+          const accObj = (APP_STATE.accounts || []).find(a => a.id === accountId);
+          if (accObj) {
+            accObj.current_balance = Math.max(0, (parseFloat(accObj.current_balance) || 0) - amount);
+            renderAccountPillsAndNetWorth();
+          }
+          const catObj = getAllCategoryList().find(c => c.id === categoryId);
+          const optTx = {
+            id: res.transaction_id || ('temp-rcpt-' + Date.now()),
+            transaction_type: 'EXPENSE',
+            amount: amount,
+            date: date || new Date().toISOString().split('T')[0],
+            note: merchant ? `Receipt: ${merchant}` : 'Receipt Expense',
+            account_id: accountId,
+            account_name: formatAccountName(accObj ? accObj.name : 'Cash'),
+            category_id: categoryId,
+            category_name: catObj ? catObj.name : 'Others',
+            category_icon: catObj ? catObj.icon : 'receipt',
+            category_color: catObj ? catObj.color_hex : '#6B7280'
+          };
+          syncAllScreensOptimistically(optTx, true);
+          persistUnifiedLocalState();
           closeReceiptScannerModal();
           cancelReceiptReview();
-          await initializeAppData(true);
+          showToast(`₹${amount.toLocaleString('en-IN')} receipt recorded!`, 'success');
+          initializeAppData(false).catch(() => {});
         } else {
           alert(res?.error || 'Failed to record transaction.');
         }
@@ -11225,9 +11414,31 @@
 
         if (res && res.success) {
           triggerHaptic('heavy');
-          alert(`✅ Verified & Saved to Ledger!\n₹${amount.toFixed(2)} recorded.`);
+          const accObj = (APP_STATE.accounts || []).find(a => a.id === accountId);
+          if (accObj) {
+            if (txType === 'EXPENSE') accObj.current_balance = Math.max(0, (parseFloat(accObj.current_balance) || 0) - amount);
+            else if (txType === 'INCOME') accObj.current_balance = (parseFloat(accObj.current_balance) || 0) + amount;
+            renderAccountPillsAndNetWorth();
+          }
+          const catObj = getAllCategoryList().find(c => c.id === categoryId);
+          const optTx = {
+            id: res.transaction_id || ('temp-sms-' + Date.now()),
+            transaction_type: txType,
+            amount: amount,
+            date: date || new Date().toISOString().split('T')[0],
+            note: merchant ? `SMS: ${merchant}` : 'SMS Transaction',
+            account_id: accountId,
+            account_name: formatAccountName(accObj ? accObj.name : 'Cash'),
+            category_id: categoryId,
+            category_name: catObj ? catObj.name : 'Others',
+            category_icon: catObj ? catObj.icon : 'sms',
+            category_color: catObj ? catObj.color_hex : '#3B82F6'
+          };
+          syncAllScreensOptimistically(optTx, true);
+          persistUnifiedLocalState();
           closeSmsParserModal();
-          await initializeAppData(true);
+          showToast(`₹${amount.toLocaleString('en-IN')} SMS transaction saved!`, 'success');
+          initializeAppData(false).catch(() => {});
         } else {
           alert(res?.error || 'Failed to save transaction.');
         }
@@ -11419,6 +11630,8 @@
       APP_STATE.weeklyDaily = [];
       APP_STATE.categoryBreakdown = [];
       APP_STATE.categoryTotalExpense = 0;
+      APP_STATE.monthlyIncome = 0;
+      APP_STATE._txListDirty = true;
       APP_STATE.forecast = null;
       APP_STATE.accounts = [];
       APP_STATE.budgets = null;

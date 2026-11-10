@@ -1,5 +1,5 @@
-// Service Worker for Expense Tracker Pro 2.0 (Fast Live App Shell PWA v3.2)
-const CACHE_NAME = 'expense-pro-v3.2-cache';
+// Service Worker for Expense Tracker Pro 2.0 (0ms Instant App Shell PWA v3.3)
+const CACHE_NAME = 'expense-pro-v3.3-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',
@@ -56,46 +56,40 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. HTML App Shell (/mobile, /app, /): Fast Network-First (850ms timeout -> cache fallback)
-  //    Ensures latest code updates apply immediately on open/refresh while staying resilient offline.
+  // 2. HTML App Shell (/mobile, /app, /): Instant <10ms Cache-First + Smart Background Version Upgrade
   if (req.mode === 'navigate' || url.pathname === '/mobile' || url.pathname === '/app' || url.pathname === '/') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(req, { ignoreSearch: true }).then((cachedResponse) => {
-          const networkFetch = fetch(req).then((networkResponse) => {
+          const networkFetch = fetch(req).then(async (networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
-              cache.put(req, networkResponse.clone());
+              const netCloneForCache = networkResponse.clone();
+              if (cachedResponse) {
+                try {
+                  const [oldTxt, newTxt] = await Promise.all([
+                    cachedResponse.clone().text(),
+                    networkResponse.clone().text()
+                  ]);
+                  const oldM = oldTxt.match(/name="app-shell-version" content="([^"]+)"/);
+                  const newM = newTxt.match(/name="app-shell-version" content="([^"]+)"/);
+                  await cache.put(req, netCloneForCache);
+                  if (newM && (!oldM || oldM[1] !== newM[1])) {
+                    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+                    clientList.forEach((client) => {
+                      try { client.postMessage({ type: 'SW_HTML_UPDATED', version: newM[1] }); } catch (e) {}
+                    });
+                  }
+                } catch (e) {
+                  await cache.put(req, netCloneForCache);
+                }
+              } else {
+                await cache.put(req, netCloneForCache);
+              }
             }
             return networkResponse;
-          });
+          }).catch(() => cachedResponse);
 
-          if (!cachedResponse) {
-            return networkFetch.catch(() => caches.match('/mobile'));
-          }
-
-          return new Promise((resolve) => {
-            let settled = false;
-            const fallbackTimer = setTimeout(() => {
-              if (!settled) {
-                settled = true;
-                resolve(cachedResponse);
-              }
-            }, 850);
-
-            networkFetch.then((res) => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(fallbackTimer);
-                resolve(res);
-              }
-            }).catch(() => {
-              if (!settled) {
-                settled = true;
-                clearTimeout(fallbackTimer);
-                resolve(cachedResponse);
-              }
-            });
-          });
+          return cachedResponse || networkFetch;
         });
       })
     );

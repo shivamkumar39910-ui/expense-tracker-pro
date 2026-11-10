@@ -2466,6 +2466,19 @@ def verify_app_pin():
     clear_security_failed_attempts(f"pin:{user_id}")
     return jsonify({"success": True, "valid": True, "message": "PIN verified successfully"}), 200
 
+@api_v1.route('/security/disable-pin', methods=['POST'])
+@token_required
+def disable_app_pin():
+    """Deactivates and clears the user's App Security PIN."""
+    user_id = request.user["id"]
+    database.disable_user_app_pin(user_id)
+    settings = database.get_user_security_settings(user_id)
+    return jsonify({
+        "success": True,
+        "settings": settings,
+        "message": "App Security PIN deactivated successfully"
+    }), 200
+
 # ==================================================
 # 13. Reports & CSV Export Engine (Phase 14)
 # ==================================================
@@ -2526,21 +2539,43 @@ def export_transactions_csv():
 @token_required
 def get_reports_summary():
     """
-    Returns aggregated figures, category distribution, and top expenses
-    for monthly statement generation and print view.
+    Returns aggregated figures, category distribution, top expenses, and
+    chronological transaction ledger for any custom date range or preset period.
     """
     user_id = request.user["id"]
     today = date.today()
-    month = int(request.args.get("month", today.month))
-    year = int(request.args.get("year", today.year))
-    pattern = f"{year:04d}-{month:02d}%"
+    start_arg = (request.args.get("start_date") or "").strip()
+    end_arg = (request.args.get("end_date") or "").strip()
+    period_label = (request.args.get("period_label") or "").strip()
 
-    cashflow = database.get_monthly_cashflow_summary(user_id, month, year)
+    if start_arg and end_arg:
+        try:
+            start_dt = datetime.strptime(start_arg, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(end_arg, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"success": False, "error": "Invalid date format. Use YYYY-MM-DD."}), 400
+        if start_dt > end_dt:
+            start_dt, end_dt = end_dt, start_dt
+        start_date = start_dt.strftime("%Y-%m-%d")
+        end_date = end_dt.strftime("%Y-%m-%d")
+        cashflow = database.get_date_range_cashflow_summary(user_id, start_date, end_date)
+        default_period = f"{start_dt.strftime('%d %b %Y')} - {end_dt.strftime('%d %b %Y')}"
+        period_display = period_label if period_label else default_period
+        month = end_dt.month
+        year = end_dt.year
+    else:
+        month = int(request.args.get("month", today.month))
+        year = int(request.args.get("year", today.year))
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = f"{year:04d}-{month:02d}-01"
+        end_date = f"{year:04d}-{month:02d}-{last_day:02d}"
+        cashflow = database.get_monthly_cashflow_summary(user_id, month, year)
+        period_display = period_label if period_label else date(year, month, 1).strftime("%B %Y")
 
     conn = database.get_db_connection()
     cursor = conn.cursor()
 
-    # Category breakdown
+    # Category breakdown for EXPENSE transactions in window
     cursor.execute("""
         SELECT COALESCE(c.name, 'Other') as category_name,
                COALESCE(c.color_hex, '#6B7280') as color,
@@ -2548,35 +2583,55 @@ def get_reports_summary():
                COUNT(t.id) as count
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ?
+        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date >= ? AND t.date <= ?
         GROUP BY c.id, c.name, c.color_hex
         ORDER BY total_amount DESC
-    """, (user_id, pattern))
+    """, (user_id, start_date, end_date))
     categories = [dict(r) for r in cursor.fetchall()]
 
-    # Top 5 highest expenses
+    # Top 5 highest expenses in window
     cursor.execute("""
-        SELECT t.id, t.date, t.amount, t.note, c.name as category_name, a.name as account_name
+        SELECT t.id, t.date, t.amount, t.note,
+               COALESCE(c.name, 'Other') as category_name,
+               COALESCE(a.name, 'Account') as account_name
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
         LEFT JOIN accounts a ON t.account_id = a.id
-        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ?
+        WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date >= ? AND t.date <= ?
         ORDER BY t.amount DESC LIMIT 5
-    """, (user_id, pattern))
+    """, (user_id, start_date, end_date))
     top_expenses = [dict(r) for r in cursor.fetchall()]
+
+    # Full chronological transaction ledger for clean statement print
+    cursor.execute("""
+        SELECT t.id, t.date, t.transaction_type, t.amount, COALESCE(t.note, '') as note,
+               COALESCE(c.name, CASE WHEN t.transaction_type = 'TRANSFER' THEN 'Transfer' ELSE 'General' END) as category_name,
+               COALESCE(a.name, 'Account') as account_name,
+               COALESCE(dest.name, '') as target_account_name
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        LEFT JOIN accounts a ON t.account_id = a.id
+        LEFT JOIN accounts dest ON t.target_account_id = dest.id
+        WHERE t.user_id = ? AND t.date >= ? AND t.date <= ?
+        ORDER BY t.date DESC, t.id DESC
+    """, (user_id, start_date, end_date))
+    transactions = [dict(r) for r in cursor.fetchall()]
 
     conn.close()
 
-    month_name = date(year, month, 1).strftime("%B %Y")
     return jsonify({
         "success": True,
         "statement": {
-            "period": month_name,
+            "period": period_display,
+            "start_date": start_date,
+            "end_date": end_date,
             "month": month,
             "year": year,
             "cashflow": cashflow,
             "categories": categories,
             "top_expenses": top_expenses,
+            "transactions": transactions,
+            "tx_count": len(transactions),
             "generated_at": datetime.now().strftime("%d %b %Y, %I:%M %p")
         }
     }), 200

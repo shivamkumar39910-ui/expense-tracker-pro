@@ -1697,79 +1697,236 @@
       color: #FFFFFF !important;
     }
 
-    /* Bank-Grade Statement Print & PDF Styles */
+    /* ======================================================== */
+    /* REDESIGNED LUXURY PIN LOCK SCREEN (PHASE 13)             */
+    /* ======================================================== */
+    .pin-lock-shield {
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.24) 0%, rgba(59, 130, 246, 0.16) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px auto;
+      color: #60A5FA;
+      box-shadow: 0 10px 28px rgba(59, 130, 246, 0.22);
+    }
+    .pin-lock-user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 11px;
+      font-weight: 700;
+      color: #CBD5E1;
+      margin-top: 8px;
+    }
+    .pin-lock-dots {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin: 14px 0 30px 0;
+    }
+    .pin-lock-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(148, 163, 184, 0.15);
+      border: 2px solid #475569;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pin-lock-dot.filled {
+      background: #3B82F6;
+      border-color: #60A5FA;
+      transform: scale(1.22);
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.65);
+    }
+    .pin-lock-dot.error {
+      background: #EF4444;
+      border-color: #F87171;
+      transform: scale(1.1);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.65);
+    }
+    @keyframes pinShakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .pin-lock-dots.shake {
+      animation: pinShakeAnim 0.36s ease;
+    }
+    .pin-lock-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      justify-content: center;
+      gap: 14px 22px;
+      margin: 0 auto 26px auto;
+      width: 100%;
+    }
+    .pin-lock-key {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .pin-lock-key:hover {
+      background: rgba(255, 255, 255, 0.11);
+    }
+    .pin-lock-key:active {
+      transform: scale(0.91);
+      background: rgba(59, 130, 246, 0.28);
+      border-color: rgba(96, 165, 250, 0.65);
+    }
+    .pin-lock-key-num {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .pin-lock-key-sub {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      color: #94A3B8;
+      margin-top: 3px;
+      text-transform: uppercase;
+    }
+    .pin-lock-key-util {
+      background: transparent;
+      border-color: transparent;
+    }
+    .pin-lock-key-util:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .pin-lock-key-util:active {
+      transform: scale(0.9);
+      background: rgba(239, 68, 68, 0.18);
+    }
+    .pin-lock-key-empty {
+      width: 70px;
+      height: 70px;
+      pointer-events: none;
+    }
+    body.theme-light .pin-lock-shield {
+      background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%) !important;
+      border-color: #C7D2FE !important;
+      color: #4F46E5 !important;
+      box-shadow: 0 10px 24px rgba(79, 70, 229, 0.14) !important;
+    }
+    body.theme-light .pin-lock-user-chip {
+      background: #E2E8F0 !important;
+      border-color: #CBD5E1 !important;
+      color: #334155 !important;
+    }
+    body.theme-light .pin-lock-dot {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+    }
+    body.theme-light .pin-lock-dot.filled {
+      background: #2563EB !important;
+      border-color: #2563EB !important;
+    }
+    body.theme-light .pin-lock-key {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+    }
+    body.theme-light .pin-lock-key:active {
+      background: #DBEAFE !important;
+      border-color: #3B82F6 !important;
+    }
+    body.theme-light .pin-lock-key-sub {
+      color: #64748B !important;
+    }
+    body.theme-light .pin-lock-key-util {
+      background: transparent !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      color: #475569 !important;
+    }
+
+    /* ======================================================== */
+    /* STATEMENT PRESET CHIPS & CLEAN ISOLATED PRINT ENGINE     */
+    /* ======================================================== */
+    .stmt-preset-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+    .stmt-preset-btn {
+      padding: 6px 11px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .stmt-preset-btn.active {
+      background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%);
+      color: #FFFFFF;
+      border-color: transparent;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.28);
+    }
+    body.theme-light .stmt-preset-btn {
+      background: #F1F5F9 !important;
+      border-color: #CBD5E1 !important;
+      color: #334155 !important;
+    }
+    body.theme-light .stmt-preset-btn.active {
+      background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important;
+      color: #FFFFFF !important;
+      border-color: transparent !important;
+    }
+    #printOnlyStatementContainer {
+      display: none;
+    }
+
+    /* Bank-Grade Statement Print & PDF Styles (100% Isolated Clean Document) */
     @media print {
-      body {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 14mm;
+      }
+      html, body {
         background: #FFFFFF !important;
-        color: #000000 !important;
-        display: block !important;
+        color: #0F172A !important;
+        margin: 0 !important;
         padding: 0 !important;
-      }
-      .device-wrapper {
-        max-width: 100% !important;
         height: auto !important;
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        background: #FFFFFF !important;
-        color: #000000 !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-      .status-bar,
-      .app-header,
-      .app-nav-bar,
-      .fab-center,
-      .sheet-backdrop,
-      .sheet-handle,
-      .btn-submit-sheet,
-      .segment-btn,
-      .header-actions,
-      #pwaInstallBanner,
-      #criticalAlertBanner,
-      .auth-overlay,
-      #quickEntrySheet,
-      #currencyModal,
-      #receiptScannerModal,
-      #notificationsSheet,
-      #accountStatementSheet,
-      #txDetailSheet,
-      #newGoalSheet,
-      #contributeGoalSheet,
-      #setPinSheet {
+      body > *:not(#printOnlyStatementContainer) {
         display: none !important;
       }
-      #statementModal {
-        position: static !important;
+      #printOnlyStatementContainer {
         display: block !important;
-        transform: none !important;
-        box-shadow: none !important;
-        border: none !important;
-        padding: 20px !important;
-        max-height: none !important;
+        width: 100% !important;
         background: #FFFFFF !important;
-        color: #000000 !important;
-      }
-      #statementPrintArea {
-        background: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #CBD5E1 !important;
-        box-shadow: none !important;
-      }
-      #statementPrintArea * {
         color: #0F172A !important;
-        border-color: #E2E8F0 !important;
-      }
-      #statementPrintArea .cashflow-box {
-        background: #F8FAFC !important;
-        border: 1px solid #CBD5E1 !important;
-      }
-      #stmtInflow {
-        color: #059669 !important;
-      }
-      #stmtOutflow {
-        color: #DC2626 !important;
-      }
-      #stmtSavings {
-        color: #2563EB !important;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
     }
   </style>
@@ -2299,8 +2456,8 @@
           <div class="tx-left">
             <div class="tx-icon-box" style="background:var(--color-amber);"><span class="material-icons-round">receipt_long</span></div>
             <div>
-              <div class="tx-title">Monthly Financial Statement</div>
-              <div class="tx-meta">View, print or download bank-grade PDF</div>
+              <div class="tx-title">Financial Statement</div>
+              <div class="tx-meta">Week, month, year & custom date PDF statements</div>
             </div>
           </div>
           <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
@@ -2324,15 +2481,15 @@
           <div class="section-title">🔒 Security & Privacy</div>
         </div>
 
-        <div class="tx-item" onclick="openSetPinModal()" style="cursor:pointer;">
+        <div class="tx-item" onclick="handleSecurityPinRowClick()" style="cursor:pointer;">
           <div class="tx-left">
             <div class="tx-icon-box" style="background:#4F46E5;"><span class="material-icons-round">lock</span></div>
             <div>
               <div class="tx-title">App Security PIN</div>
-              <div class="tx-meta" id="profilePinStatus">PIN Protection Inactive</div>
+              <div class="tx-meta" id="profilePinStatus">Not Set</div>
             </div>
           </div>
-          <button type="button" id="profileSetPinBtn" style="flex:0 0 auto; width:auto; max-width:fit-content; background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; border:none; line-height:1.2; letter-spacing:0.2px; cursor:pointer; display:inline-block; text-align:center;">Set PIN</button>
+          <button type="button" id="profileSetPinBtn" style="flex:0 0 auto; width:auto; max-width:fit-content; background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:5px 11px; border-radius:8px; border:none; line-height:1.2; letter-spacing:0.2px; cursor:pointer; display:inline-block; text-align:center;">Set PIN</button>
         </div>
 
         <div class="tx-item" onclick="togglePrivacyMode()" style="cursor:pointer;">
@@ -3106,19 +3263,44 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- SET / CHANGE PIN MODAL (PHASE 13)              -->
+    <!-- SET SECURITY PIN MODAL (PHASE 13)              -->
     <!-- ============================================== -->
     <div class="sheet-backdrop" id="setPinBackdrop" onclick="closeSetPinModal()"></div>
     <div class="bottom-sheet" id="setPinSheet">
       <div class="sheet-handle"></div>
-      
-      <div class="tx-title" style="font-size:18px; margin-bottom:6px; text-align:center;">🔐 Set 4-Digit Security PIN</div>
-      <div class="tx-meta" style="text-align:center; margin-bottom:16px;">This PIN will protect your app whenever you switch away or reopen it.</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="width:32px;"></div>
+        <div class="tx-title" style="font-size:18px; text-align:center;">🔐 Set 4-Digit Security PIN</div>
+        <div class="btn-icon-header" onclick="closeSetPinModal()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+      <div class="tx-meta" style="text-align:center; margin-bottom:16px;">This PIN protects your app whenever you reopen it.</div>
 
-      <input type="password" maxlength="4" class="form-input-pill" placeholder="Enter 4-Digit PIN (e.g. 1234)" id="newPinInput" style="font-size:24px; letter-spacing:8px; text-align:center;">
-      <input type="password" maxlength="4" class="form-input-pill" placeholder="Confirm 4-Digit PIN" id="confirmPinInput" style="font-size:24px; letter-spacing:8px; text-align:center;">
+      <div id="setPinErrorBox" style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#EF4444; font-size:12px; font-weight:700; padding:8px 12px; border-radius:10px; text-align:center; margin-bottom:12px;"></div>
+
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="form-input-pill" placeholder="Enter 4-Digit PIN" id="newPinInput" style="font-size:24px; letter-spacing:10px; text-align:center;">
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="form-input-pill" placeholder="Confirm 4-Digit PIN" id="confirmPinInput" style="font-size:24px; letter-spacing:10px; text-align:center;">
 
       <button class="btn-submit-sheet" onclick="saveNewAppPin()">Activate PIN Security</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- DEACTIVATE SECURITY PIN MODAL (PHASE 13)       -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="deactivatePinBackdrop" onclick="closeDeactivatePinModal()"></div>
+    <div class="bottom-sheet" id="deactivatePinSheet">
+      <div class="sheet-handle"></div>
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="width:56px; height:56px; border-radius:18px; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.3); color:#EF4444; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
+          <span class="material-icons-round" style="font-size:28px;">lock_open</span>
+        </div>
+        <div class="tx-title" style="font-size:18px; margin-bottom:6px;">Deactivate Security PIN?</div>
+        <div class="tx-meta" style="line-height:1.5;">Your app will open directly without asking for a 4-digit PIN. You can set a new PIN anytime later.</div>
+      </div>
+
+      <button class="btn-submit-sheet" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:10px;" onclick="confirmDeactivateAppPin()">Yes, Deactivate PIN</button>
+      <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeDeactivatePinModal()">Keep PIN Active</button>
     </div>
 
     <!-- ============================================== -->
@@ -3155,10 +3337,10 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MONTHLY FINANCIAL STATEMENT MODAL (PHASE 14)   -->
+    <!-- FINANCIAL STATEMENT MODAL (7 PERIODS + PRINT)  -->
     <!-- ============================================== -->
     <div class="sheet-backdrop" id="statementBackdrop" onclick="closeStatementModal()"></div>
-    <div class="bottom-sheet" id="statementModal" style="max-height:86vh; overflow-y:auto;">
+    <div class="bottom-sheet" id="statementModal" style="max-height:88vh; overflow-y:auto;">
       <div class="sheet-handle"></div>
       
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -3169,50 +3351,81 @@
           <span class="material-icons-round" style="color:var(--color-amber); font-size:24px;">receipt_long</span>
           <div>
             <div class="tx-title" style="font-size:16px;">Financial Statement</div>
-            <div class="tx-meta" id="statementPeriodDisplay">September 2026</div>
+            <div class="tx-meta" id="statementPeriodDisplay">Select Period</div>
           </div>
         </div>
-        <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:12px; border-radius:10px;" onclick="window.print()">
-          🖨️ Print / PDF
+        <button type="button" class="segment-btn" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFF; padding:7px 13px; font-size:12px; font-weight:700; border-radius:10px; border:none; cursor:pointer; display:flex; align-items:center; gap:5px;" onclick="printFinancialStatement()">
+          <span class="material-icons-round" style="font-size:15px;">print</span>
+          <span>Print / PDF</span>
         </button>
       </div>
 
-      <!-- Statement Printable Content -->
-      <div id="statementPrintArea" class="fintech-card" style="padding:16px; margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #28354D; padding-bottom:10px; margin-bottom:12px;">
+      <!-- 7 Clean Statement Period Options -->
+      <div class="stmt-preset-grid" id="stmtPresetGrid">
+        <button type="button" class="stmt-preset-btn" data-preset="custom" onclick="selectStatementPreset('custom')">📅 Custom Dates</button>
+        <button type="button" class="stmt-preset-btn" data-preset="this_week" onclick="selectStatementPreset('this_week')">This Week</button>
+        <button type="button" class="stmt-preset-btn" data-preset="last_week" onclick="selectStatementPreset('last_week')">Last Week</button>
+        <button type="button" class="stmt-preset-btn active" data-preset="this_month" onclick="selectStatementPreset('this_month')">This Month</button>
+        <button type="button" class="stmt-preset-btn" data-preset="last_month" onclick="selectStatementPreset('last_month')">Last Month</button>
+        <button type="button" class="stmt-preset-btn" data-preset="half_year" onclick="selectStatementPreset('half_year')">Half Year</button>
+        <button type="button" class="stmt-preset-btn" data-preset="year" onclick="selectStatementPreset('year')">Year Statement</button>
+      </div>
+
+      <!-- Custom Start & End Date Selector -->
+      <div id="stmtCustomDateBox" style="display:none; background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:14px; padding:12px; margin-bottom:14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.4px;">Select Custom Date Duration</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
           <div>
-            <div style="font-size:16px; font-weight:800; color:#FFF;">EXPENSE TRACKER PRO</div>
-            <div style="font-size:11px; color:var(--text-muted);">Personal Finance & Wealth Ledger</div>
+            <label style="display:block; font-size:10px; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Start Date</label>
+            <input type="date" id="stmtCustomStart" class="form-input-pill" onchange="applyCustomStatementRange()" style="padding:8px 10px; font-size:12px; margin-bottom:0; text-align:left;">
+          </div>
+          <div>
+            <label style="display:block; font-size:10px; color:var(--text-muted); margin-bottom:4px; font-weight:600;">End Date</label>
+            <input type="date" id="stmtCustomEnd" class="form-input-pill" onchange="applyCustomStatementRange()" style="padding:8px 10px; font-size:12px; margin-bottom:0; text-align:left;">
+          </div>
+        </div>
+        <button type="button" class="btn-submit-sheet" style="padding:9px; font-size:12.5px;" onclick="applyCustomStatementRange()">Load Statement</button>
+      </div>
+
+      <!-- Statement Live Preview Area -->
+      <div id="statementPrintArea" class="fintech-card" style="padding:16px; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid var(--border-card); padding-bottom:10px; margin-bottom:12px;">
+          <div>
+            <div style="font-size:15px; font-weight:800; color:var(--text-primary);">EXPENSE TRACKER PRO</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="statementPeriodRangeBadge">Statement Summary</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:11px; color:var(--text-muted);" id="statementUserDisplay">Rahul Verma</div>
+            <div style="font-size:11.5px; font-weight:700; color:var(--text-primary);" id="statementUserDisplay">User</div>
             <div style="font-size:10px; color:var(--text-muted);" id="statementGenDate">Generated Today</div>
           </div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
-          <div class="cashflow-box" style="padding:8px;">
+          <div class="cashflow-box" style="padding:9px 8px;">
             <div class="cf-label income" style="font-size:9px;">INFLOW</div>
             <div style="font-size:13px; font-weight:800; color:var(--color-emerald);" id="stmtInflow">₹0.00</div>
           </div>
-          <div class="cashflow-box" style="padding:8px;">
+          <div class="cashflow-box" style="padding:9px 8px;">
             <div class="cf-label expense" style="font-size:9px;">OUTFLOW</div>
             <div style="font-size:13px; font-weight:800; color:var(--color-ruby);" id="stmtOutflow">₹0.00</div>
           </div>
-          <div class="cashflow-box" style="padding:8px;">
+          <div class="cashflow-box" style="padding:9px 8px;">
             <div class="cf-label" style="font-size:9px; color:var(--color-sapphire);">NET SAVINGS</div>
-            <div style="font-size:13px; font-weight:800; color:#FFF;" id="stmtSavings">₹0.00</div>
+            <div style="font-size:13px; font-weight:800; color:var(--text-primary);" id="stmtSavings">₹0.00</div>
           </div>
         </div>
 
-        <div style="font-size:12px; font-weight:700; color:#FFF; margin-bottom:6px;">Category Spending Breakdown</div>
-        <div id="stmtCategoryList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;"></div>
+        <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Category Breakdown</div>
+        <div id="stmtCategoryList" style="display:flex; flex-direction:column; gap:5px; margin-bottom:14px;"></div>
 
-        <div style="font-size:12px; font-weight:700; color:#FFF; margin-bottom:6px;">Top Expenses This Month</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:12px; font-weight:700; color:var(--text-primary);">Transactions in Period</div>
+          <div style="font-size:10.5px; color:var(--text-muted); font-weight:600;" id="stmtTxCountBadge">0 entries</div>
+        </div>
         <div id="stmtTopExpensesList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
-      <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeStatementModal()">Close Statement</button>
+      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeStatementModal()">Close Statement</button>
     </div>
 
     <!-- ============================================== -->
@@ -3567,47 +3780,79 @@
 
 
     <!-- ============================================== -->
-    <!-- APP PIN LOCK SECURITY OVERLAY (PHASE 13)       -->
+    <!-- REDESIGNED APP PIN LOCK OVERLAY (PHASE 13)     -->
     <!-- ============================================== -->
     <div class="auth-overlay hidden" id="pinLockOverlay" style="z-index:300;">
-      <div class="auth-brand" style="margin-bottom:24px;">
-        <div class="auth-shield-icon" style="background:rgba(59, 130, 246, 0.15); border-color:rgba(59, 130, 246, 0.3); color:var(--color-sapphire);">
-          <span class="material-icons-round">lock</span>
+      <div class="auth-brand" style="margin-bottom:10px;">
+        <div class="pin-lock-shield">
+          <span class="material-icons-round" style="font-size:32px;">lock</span>
         </div>
-        <div class="auth-title" style="font-size:22px;">Expense Tracker Pro</div>
-        <div class="auth-subtitle" id="pinLockSubtitle">Enter 4-Digit Security PIN</div>
-      </div>
-
-      <!-- 4 PIN Dots -->
-      <div style="display:flex; justify-content:center; gap:16px; margin-bottom:28px;">
-        <div class="pin-dot" id="pinDot0" style="width:14px; height:14px; border-radius:50%; background:#2A3854; border:2px solid #3B4E73; transition:all 0.2s;"></div>
-        <div class="pin-dot" id="pinDot1" style="width:14px; height:14px; border-radius:50%; background:#2A3854; border:2px solid #3B4E73; transition:all 0.2s;"></div>
-        <div class="pin-dot" id="pinDot2" style="width:14px; height:14px; border-radius:50%; background:#2A3854; border:2px solid #3B4E73; transition:all 0.2s;"></div>
-        <div class="pin-dot" id="pinDot3" style="width:14px; height:14px; border-radius:50%; background:#2A3854; border:2px solid #3B4E73; transition:all 0.2s;"></div>
-      </div>
-
-      <!-- Numeric Keypad for PIN -->
-      <div class="keypad-grid" style="max-width:280px; margin:0 auto 16px auto;">
-        <div class="key-btn" onclick="pressPinKey('1')">1</div>
-        <div class="key-btn" onclick="pressPinKey('2')">2</div>
-        <div class="key-btn" onclick="pressPinKey('3')">3</div>
-        <div class="key-btn" onclick="pressPinKey('4')">4</div>
-        <div class="key-btn" onclick="pressPinKey('5')">5</div>
-        <div class="key-btn" onclick="pressPinKey('6')">6</div>
-        <div class="key-btn" onclick="pressPinKey('7')">7</div>
-        <div class="key-btn" onclick="pressPinKey('8')">8</div>
-        <div class="key-btn" onclick="pressPinKey('9')">9</div>
-        <div class="key-btn" onclick="triggerBiometricUnlock()" title="Biometrics">
-          <span class="material-icons-round" style="color:var(--color-sapphire); font-size:24px;">fingerprint</span>
-        </div>
-        <div class="key-btn" onclick="pressPinKey('0')">0</div>
-        <div class="key-btn" onclick="pressPinDelete()">
-          <span class="material-icons-round" style="font-size:22px;">backspace</span>
+        <div class="auth-title" style="font-size:21px;">Expense Tracker Pro</div>
+        <div class="auth-subtitle" id="pinLockSubtitle" style="margin-top:4px; font-weight:600;">Enter 4-Digit Security PIN</div>
+        <div class="pin-lock-user-chip" id="pinLockUserBadge" style="display:none;">
+          <span class="material-icons-round" style="font-size:14px;">person</span>
+          <span id="pinLockUserName">Account Locked</span>
         </div>
       </div>
 
-      <div style="text-align:center; font-size:12px; color:var(--text-muted); cursor:pointer;" onclick="logoutUser()">
-        Log Out / Switch Account
+      <!-- 4 Animated Circular PIN Dots -->
+      <div class="pin-lock-dots" id="pinLockDotsRow">
+        <div class="pin-lock-dot" id="pinDot0"></div>
+        <div class="pin-lock-dot" id="pinDot1"></div>
+        <div class="pin-lock-dot" id="pinDot2"></div>
+        <div class="pin-lock-dot" id="pinDot3"></div>
+      </div>
+
+      <!-- True Circular Fintech Keypad (No Fingerprint) -->
+      <div class="pin-lock-pad">
+        <div class="pin-lock-key" onclick="pressPinKey('1')">
+          <span class="pin-lock-key-num">1</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('2')">
+          <span class="pin-lock-key-num">2</span>
+          <span class="pin-lock-key-sub">ABC</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('3')">
+          <span class="pin-lock-key-num">3</span>
+          <span class="pin-lock-key-sub">DEF</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('4')">
+          <span class="pin-lock-key-num">4</span>
+          <span class="pin-lock-key-sub">GHI</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('5')">
+          <span class="pin-lock-key-num">5</span>
+          <span class="pin-lock-key-sub">JKL</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('6')">
+          <span class="pin-lock-key-num">6</span>
+          <span class="pin-lock-key-sub">MNO</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('7')">
+          <span class="pin-lock-key-num">7</span>
+          <span class="pin-lock-key-sub">PQRS</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('8')">
+          <span class="pin-lock-key-num">8</span>
+          <span class="pin-lock-key-sub">TUV</span>
+        </div>
+        <div class="pin-lock-key" onclick="pressPinKey('9')">
+          <span class="pin-lock-key-num">9</span>
+          <span class="pin-lock-key-sub">WXYZ</span>
+        </div>
+        <div class="pin-lock-key-empty"></div>
+        <div class="pin-lock-key" onclick="pressPinKey('0')">
+          <span class="pin-lock-key-num">0</span>
+        </div>
+        <div class="pin-lock-key pin-lock-key-util" onclick="pressPinDelete()" title="Backspace">
+          <span class="material-icons-round" style="font-size:24px;">backspace</span>
+        </div>
+      </div>
+
+      <div style="text-align:center;">
+        <button type="button" onclick="logoutUser()" style="background:transparent; border:1px solid var(--border-card); color:var(--text-secondary); padding:7px 16px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer;">
+          Log Out / Switch Account
+        </button>
       </div>
     </div>
 
@@ -3839,6 +4084,9 @@
     </div>
   </div>
 
+  <!-- Dedicated Isolated Print Container (Prevents App UI Leakage in PDF) -->
+  <div id="printOnlyStatementContainer" aria-hidden="true"></div>
+
 
   <!-- Mobile Finance Application Controller Script -->
   <script>
@@ -3888,7 +4136,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.7').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=2.8').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
@@ -4256,6 +4504,7 @@
         if (targetId === 'tab-profile') {
           try { updateUserUI(); } catch (e) { console.error('updateUserUI error:', e); }
           try { renderProfileAccounts(); } catch (e) { console.error('renderProfileAccounts error:', e); }
+          try { checkSecurityOnStartup(true).catch(console.warn); } catch (e) {}
         }
         if (targetId === 'tab-analytics') {
           if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
@@ -4306,6 +4555,7 @@
       closeNewGoalModal();
       closeGoalContributeModal();
       closeSetPinModal();
+      closeDeactivatePinModal();
       closeEditProfileModal();
     }
 
@@ -8910,7 +9160,8 @@
     // ----------------------------------------------------
     // PHASE 13: APP PIN SECURITY & PRIVACY MODE
     // ----------------------------------------------------
-    async function checkSecurityOnStartup() {
+    async function checkSecurityOnStartup(skipLock = false) {
+      if (!APP_STATE.token) return;
       const res = await apiRequest('/security/settings');
       if (res && res.success) {
         const s = res.settings;
@@ -8920,34 +9171,54 @@
         const pinStatus = document.getElementById('profilePinStatus');
         const pinBtn = document.getElementById('profileSetPinBtn');
         if (pinStatus) {
-          pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : s.has_pin ? 'PIN Set (Disabled)' : 'Not Set';
+          pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : 'Not Set';
         }
         if (pinBtn) {
           pinBtn.style.flex = '0 0 auto';
           pinBtn.style.width = 'auto';
           pinBtn.style.maxWidth = 'fit-content';
-          pinBtn.style.padding = '4px 9px';
+          pinBtn.style.padding = '5px 11px';
+          pinBtn.style.borderRadius = '8px';
           pinBtn.style.boxShadow = 'none';
           if (s.is_pin_enabled) {
-            pinBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
-            pinBtn.innerText = 'Active';
+            pinBtn.style.background = 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)';
+            pinBtn.innerText = 'Deactivate';
           } else {
             pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
             pinBtn.innerText = 'Set PIN';
           }
         }
 
-        if (s.is_pin_enabled) {
+        if (!skipLock && s.is_pin_enabled && !APP_STATE.pinUnlockedThisSession) {
           showPinLockOverlay();
         }
       }
     }
 
+    function handleSecurityPinRowClick() {
+      if (APP_STATE.isPinEnabled) {
+        openDeactivatePinModal();
+      } else {
+        openSetPinModal();
+      }
+    }
+
     function showPinLockOverlay() {
       APP_STATE.enteredPin = '';
-      updatePinDots();
-      document.getElementById('pinLockSubtitle').innerText = 'Enter 4-Digit Security PIN';
-      document.getElementById('pinLockSubtitle').style.color = 'var(--text-muted)';
+      updatePinDots(false);
+      const sub = document.getElementById('pinLockSubtitle');
+      if (sub) {
+        sub.innerText = 'Enter 4-Digit Security PIN';
+        sub.style.color = 'var(--text-secondary)';
+      }
+      const userBadge = document.getElementById('pinLockUserBadge');
+      const userNameEl = document.getElementById('pinLockUserName');
+      if (userBadge && userNameEl && APP_STATE.user?.name) {
+        userNameEl.innerText = APP_STATE.user.name;
+        userBadge.style.display = 'inline-flex';
+      } else if (userBadge) {
+        userBadge.style.display = 'none';
+      }
       document.getElementById('pinLockOverlay').classList.remove('hidden');
     }
 
@@ -8960,9 +9231,9 @@
       triggerHaptic('light');
       if (APP_STATE.enteredPin.length < 4) {
         APP_STATE.enteredPin += digit;
-        updatePinDots();
+        updatePinDots(false);
         if (APP_STATE.enteredPin.length === 4) {
-          setTimeout(verifyPinCode, 150);
+          setTimeout(verifyPinCode, 140);
         }
       }
     }
@@ -8971,20 +9242,27 @@
       triggerHaptic('medium');
       if (APP_STATE.enteredPin.length > 0) {
         APP_STATE.enteredPin = APP_STATE.enteredPin.slice(0, -1);
-        updatePinDots();
+        updatePinDots(false);
       }
     }
 
-    function updatePinDots() {
+    function updatePinDots(isError = false) {
+      const dotsRow = document.getElementById('pinLockDotsRow');
+      if (dotsRow) {
+        dotsRow.classList.remove('shake');
+        if (isError) {
+          void dotsRow.offsetWidth;
+          dotsRow.classList.add('shake');
+        }
+      }
       for (let i = 0; i < 4; i++) {
         const dot = document.getElementById(`pinDot${i}`);
         if (!dot) continue;
-        if (i < APP_STATE.enteredPin.length) {
-          dot.style.background = 'var(--color-sapphire)';
-          dot.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.6)';
-        } else {
-          dot.style.background = '#2A3854';
-          dot.style.boxShadow = 'none';
+        dot.classList.remove('filled', 'error');
+        if (isError) {
+          dot.classList.add('error');
+        } else if (i < APP_STATE.enteredPin.length) {
+          dot.classList.add('filled');
         }
       }
     }
@@ -8993,58 +9271,109 @@
       const pin = APP_STATE.enteredPin;
       const res = await apiRequest('/security/verify-pin', 'POST', { pin });
       if (res && res.valid) {
+        APP_STATE.pinUnlockedThisSession = true;
         hidePinLockOverlay();
       } else {
         const sub = document.getElementById('pinLockSubtitle');
-        sub.innerText = 'Incorrect PIN. Try again.';
-        sub.style.color = 'var(--color-ruby)';
-        APP_STATE.enteredPin = '';
-        updatePinDots();
+        if (sub) {
+          sub.innerText = res?.error || 'Incorrect PIN. Please try again.';
+          sub.style.color = '#EF4444';
+        }
+        updatePinDots(true);
+        setTimeout(() => {
+          APP_STATE.enteredPin = '';
+          updatePinDots(false);
+        }, 420);
       }
     }
 
-    function triggerBiometricUnlock() {
-      if (APP_STATE.hasPin) {
-        setTimeout(() => {
-          hidePinLockOverlay();
-        }, 300);
-      } else {
-        alert('Please set your 4-digit PIN first.');
+    // Physical keyboard support when PIN lock overlay is active
+    document.addEventListener('keydown', (e) => {
+      const overlay = document.getElementById('pinLockOverlay');
+      if (!overlay || overlay.classList.contains('hidden')) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        pressPinKey(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        pressPinDelete();
       }
-    }
+    });
 
     function openSetPinModal() {
+      const errBox = document.getElementById('setPinErrorBox');
+      if (errBox) errBox.style.display = 'none';
       document.getElementById('newPinInput').value = '';
       document.getElementById('confirmPinInput').value = '';
       document.getElementById('setPinBackdrop').classList.add('active');
       document.getElementById('setPinSheet').classList.add('active');
+      setTimeout(() => document.getElementById('newPinInput')?.focus(), 200);
     }
 
     function closeSetPinModal() {
-      document.getElementById('setPinBackdrop').classList.remove('active');
-      document.getElementById('setPinSheet').classList.remove('active');
+      document.getElementById('setPinBackdrop')?.classList.remove('active');
+      document.getElementById('setPinSheet')?.classList.remove('active');
+    }
+
+    function openDeactivatePinModal() {
+      document.getElementById('deactivatePinBackdrop')?.classList.add('active');
+      document.getElementById('deactivatePinSheet')?.classList.add('active');
+    }
+
+    function closeDeactivatePinModal() {
+      document.getElementById('deactivatePinBackdrop')?.classList.remove('active');
+      document.getElementById('deactivatePinSheet')?.classList.remove('active');
+    }
+
+    async function confirmDeactivateAppPin() {
+      const res = await apiRequest('/security/disable-pin', 'POST');
+      if (res && res.success) {
+        APP_STATE.hasPin = false;
+        APP_STATE.isPinEnabled = false;
+        APP_STATE.pinUnlockedThisSession = false;
+        closeDeactivatePinModal();
+        await checkSecurityOnStartup();
+        if (typeof showToast === 'function') {
+          showToast('🔓 Security PIN deactivated successfully');
+        }
+      } else {
+        alert(res?.error || 'Failed to deactivate Security PIN.');
+      }
     }
 
     async function saveNewAppPin() {
       const p1 = document.getElementById('newPinInput').value.trim();
       const p2 = document.getElementById('confirmPinInput').value.trim();
+      const errBox = document.getElementById('setPinErrorBox');
+
+      const showErr = (msg) => {
+        if (errBox) {
+          errBox.innerText = msg;
+          errBox.style.display = 'block';
+        } else {
+          alert(msg);
+        }
+      };
 
       if (p1.length !== 4 || !/^\d{4}$/.test(p1)) {
-        alert('PIN must be exactly 4 numeric digits.');
+        showErr('PIN must be exactly 4 numeric digits.');
         return;
       }
       if (p1 !== p2) {
-        alert('PIN confirmation does not match.');
+        showErr('PIN confirmation does not match.');
         return;
       }
 
       const res = await apiRequest('/security/set-pin', 'POST', { pin: p1, enable: true });
       if (res && res.success) {
-        alert('App Security PIN enabled successfully! Your app is now locked with your PIN.');
+        APP_STATE.pinUnlockedThisSession = true;
         closeSetPinModal();
         await checkSecurityOnStartup();
+        if (typeof showToast === 'function') {
+          showToast('🔐 4-Digit Security PIN activated!');
+        }
       } else {
-        alert(res?.error || 'Failed to set PIN');
+        showErr(res?.error || 'Failed to set PIN');
       }
     }
 
@@ -9086,7 +9415,7 @@
     }
 
     // ----------------------------------------------------
-    // PHASE 14: DATA EXPORT & MONTHLY STATEMENT REPORTS
+    // PHASE 14: DATA EXPORT & 7-OPTION FINANCIAL STATEMENT
     // ----------------------------------------------------
     async function downloadCsvExport() {
       if (!APP_STATE.token) return;
@@ -9108,73 +9437,333 @@
       }
     }
 
-    async function openStatementModal() {
-      const res = await apiRequest('/reports/summary');
-      if (res && res.success) {
-        renderStatement(res.statement);
-        document.getElementById('statementBackdrop').classList.add('active');
-        document.getElementById('statementModal').classList.add('active');
+    function formatLocalYmd(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatDisplayDate(ymd) {
+      if (!ymd) return '';
+      const parts = ymd.split('-');
+      if (parts.length !== 3) return ymd;
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function getStatementRangeForPreset(preset) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let start = new Date(today);
+      let end = new Date(today);
+      let label = '';
+
+      if (preset === 'this_week') {
+        const dayOfWeek = today.getDay(); // 0=Sun..6=Sat
+        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMon);
+        end = new Date(today);
+        label = `This Week (${formatDisplayDate(formatLocalYmd(start))} – ${formatDisplayDate(formatLocalYmd(end))})`;
+      } else if (preset === 'last_week') {
+        const dayOfWeek = today.getDay();
+        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const thisMon = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMon);
+        start = new Date(thisMon.getFullYear(), thisMon.getMonth(), thisMon.getDate() - 7);
+        end = new Date(thisMon.getFullYear(), thisMon.getMonth(), thisMon.getDate() - 1);
+        label = `Last Week (${formatDisplayDate(formatLocalYmd(start))} – ${formatDisplayDate(formatLocalYmd(end))})`;
+      } else if (preset === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        label = `This Month (${today.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })})`;
+      } else if (preset === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        label = `Last Month (${start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })})`;
+      } else if (preset === 'half_year') {
+        start = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+        end = new Date(today);
+        label = `Half Year (${formatDisplayDate(formatLocalYmd(start))} – ${formatDisplayDate(formatLocalYmd(end))})`;
+      } else if (preset === 'year') {
+        start = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+        end = new Date(today);
+        label = `Year Statement (${formatDisplayDate(formatLocalYmd(start))} – ${formatDisplayDate(formatLocalYmd(end))})`;
       }
+
+      return {
+        startDate: formatLocalYmd(start),
+        endDate: formatLocalYmd(end),
+        label
+      };
+    }
+
+    async function openStatementModal() {
+      document.getElementById('statementBackdrop').classList.add('active');
+      document.getElementById('statementModal').classList.add('active');
+      await selectStatementPreset('this_month');
     }
 
     function closeStatementModal() {
-      document.getElementById('statementBackdrop').classList.remove('active');
-      document.getElementById('statementModal').classList.remove('active');
+      document.getElementById('statementBackdrop')?.classList.remove('active');
+      document.getElementById('statementModal')?.classList.remove('active');
+    }
+
+    async function selectStatementPreset(preset) {
+      APP_STATE.statementPreset = preset;
+      document.querySelectorAll('#stmtPresetGrid .stmt-preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
+      });
+
+      const customBox = document.getElementById('stmtCustomDateBox');
+      if (preset === 'custom') {
+        if (customBox) customBox.style.display = 'block';
+        const todayStr = formatLocalYmd(new Date());
+        const monthStartStr = formatLocalYmd(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+        const startInp = document.getElementById('stmtCustomStart');
+        const endInp = document.getElementById('stmtCustomEnd');
+        if (startInp && !startInp.value) startInp.value = monthStartStr;
+        if (endInp && !endInp.value) endInp.value = todayStr;
+        await applyCustomStatementRange();
+        return;
+      }
+
+      if (customBox) customBox.style.display = 'none';
+      const range = getStatementRangeForPreset(preset);
+      await fetchAndRenderStatement(range.startDate, range.endDate, range.label);
+    }
+
+    async function applyCustomStatementRange() {
+      const startVal = document.getElementById('stmtCustomStart')?.value;
+      const endVal = document.getElementById('stmtCustomEnd')?.value;
+      if (!startVal || !endVal) {
+        alert('Please select both Start Date and End Date.');
+        return;
+      }
+      const label = `Custom (${formatDisplayDate(startVal)} – ${formatDisplayDate(endVal)})`;
+      await fetchAndRenderStatement(startVal, endVal, label);
+    }
+
+    async function fetchAndRenderStatement(startDate, endDate, periodLabel) {
+      const qs = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+        period_label: periodLabel
+      });
+      const res = await apiRequest(`/reports/summary?${qs.toString()}`);
+      if (res && res.success && res.statement) {
+        renderStatement(res.statement);
+      }
     }
 
     function renderStatement(s) {
-      document.getElementById('statementPeriodDisplay').innerText = s.period;
-      document.getElementById('statementUserDisplay').innerText = APP_STATE.user?.name || 'Rahul Verma';
-      document.getElementById('statementGenDate').innerText = `Generated on ${s.generated_at}`;
+      APP_STATE.currentStatement = s;
+      const sym = APP_STATE.currencySymbol || '₹';
 
-      document.getElementById('stmtInflow').innerText = `₹${s.cashflow.income.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('stmtOutflow').innerText = `₹${s.cashflow.expenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-      document.getElementById('stmtSavings').innerText = `₹${s.cashflow.net_savings.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('statementPeriodDisplay').innerText = s.period;
+      document.getElementById('statementPeriodRangeBadge').innerText = `${formatDisplayDate(s.start_date)} – ${formatDisplayDate(s.end_date)}`;
+      document.getElementById('statementUserDisplay').innerText = APP_STATE.user?.name || 'User';
+      document.getElementById('statementGenDate').innerText = `Generated ${s.generated_at}`;
+
+      document.getElementById('stmtInflow').innerText = `${sym}${s.cashflow.income.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('stmtOutflow').innerText = `${sym}${s.cashflow.expenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      document.getElementById('stmtSavings').innerText = `${sym}${s.cashflow.net_savings.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
       // Categories
       const catList = document.getElementById('stmtCategoryList');
       catList.innerHTML = '';
       if (!s.categories || s.categories.length === 0) {
-        catList.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No category spending recorded this month.</div>';
+        catList.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No expenses recorded in this duration.</div>';
       } else {
         s.categories.forEach(c => {
           const row = document.createElement('div');
-          row.style.display = 'flex';
-          row.style.justifyContent = 'space-between';
-          row.style.fontSize = '11px';
-          row.style.borderBottom = '1px solid #1E293B';
-          row.style.padding = '4px 0';
+          row.style.cssText = 'display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border-card); padding:5px 0;';
           row.innerHTML = `
-            <span><span style="color:${c.color};">●</span> ${c.category_name} (${c.count} tx)</span>
-            <strong style="color:#FFF;">₹${c.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
+            <span style="color:var(--text-primary);"><span style="color:${c.color};">●</span> ${c.category_name} <span style="color:var(--text-muted);">(${c.count} tx)</span></span>
+            <strong style="color:var(--text-primary);">${sym}${Number(c.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
           `;
           catList.appendChild(row);
         });
       }
 
-      // Top Expenses
-      const topList = document.getElementById('stmtTopExpensesList');
-      topList.innerHTML = '';
-      if (!s.top_expenses || s.top_expenses.length === 0) {
-        topList.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No major expenses.</div>';
+      // Statement Transactions Preview
+      const txList = s.transactions || s.top_expenses || [];
+      const countBadge = document.getElementById('stmtTxCountBadge');
+      if (countBadge) countBadge.innerText = `${txList.length} ${txList.length === 1 ? 'entry' : 'entries'}`;
+
+      const listEl = document.getElementById('stmtTopExpensesList');
+      listEl.innerHTML = '';
+      if (txList.length === 0) {
+        listEl.innerHTML = '<div style="color:var(--text-muted); font-size:11px;">No transactions found for this selected date range.</div>';
       } else {
-        s.top_expenses.forEach(tx => {
+        const previewLimit = 10;
+        txList.slice(0, previewLimit).forEach(tx => {
+          const isIncome = tx.transaction_type === 'INCOME';
+          const isTransfer = tx.transaction_type === 'TRANSFER';
+          const amtColor = isIncome ? 'var(--color-emerald)' : isTransfer ? 'var(--color-sapphire)' : 'var(--color-ruby)';
+          const sign = isIncome ? '+' : isTransfer ? '' : '-';
+
           const row = document.createElement('div');
-          row.style.display = 'flex';
-          row.style.justifyContent = 'space-between';
-          row.style.fontSize = '11px';
-          row.style.borderBottom = '1px solid #1E293B';
-          row.style.padding = '4px 0';
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; font-size:11.5px; border-bottom:1px solid var(--border-card); padding:6px 0;';
           row.innerHTML = `
-            <div>
-              <div style="font-weight:700; color:#FFF;">${tx.category_name || 'Expense'} - ${tx.note || 'No note'}</div>
+            <div style="min-width:0; padding-right:8px;">
+              <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${tx.category_name || 'Transaction'}${tx.note ? ' — ' + tx.note : ''}</div>
               <div style="font-size:10px; color:var(--text-muted);">${tx.date} • ${tx.account_name || 'Account'}</div>
             </div>
-            <strong style="color:var(--color-ruby);">₹${tx.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
+            <strong style="color:${amtColor}; flex-shrink:0;">${sign}${sym}${Number(tx.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
           `;
-          topList.appendChild(row);
+          listEl.appendChild(row);
         });
+        if (txList.length > previewLimit) {
+          const moreNote = document.createElement('div');
+          moreNote.style.cssText = 'text-align:center; font-size:11px; color:var(--color-sapphire); font-weight:700; padding-top:6px;';
+          moreNote.innerText = `+ ${txList.length - previewLimit} more transactions (All ${txList.length} included in Print / PDF)`;
+          listEl.appendChild(moreNote);
+        }
       }
+    }
+
+    function escapePrintHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function printFinancialStatement() {
+      const s = APP_STATE.currentStatement;
+      if (!s) {
+        alert('Please wait for statement data to load first.');
+        return;
+      }
+      const container = document.getElementById('printOnlyStatementContainer');
+      if (!container) return;
+
+      const sym = APP_STATE.currencySymbol || '₹';
+      const userName = escapePrintHtml(APP_STATE.user?.name || 'Account Holder');
+      const userEmail = escapePrintHtml(APP_STATE.user?.email || '');
+      const txList = s.transactions || [];
+      const totalExpense = Number(s.cashflow.expenses || 0);
+
+      let catRowsHtml = '';
+      if (s.categories && s.categories.length > 0) {
+        catRowsHtml = s.categories.map(c => {
+          const share = totalExpense > 0 ? ((Number(c.total_amount) / totalExpense) * 100).toFixed(1) : '0.0';
+          return `
+            <tr>
+              <td style="padding:7px 10px; border-bottom:1px solid #E2E8F0; font-weight:600; color:#0F172A;">${escapePrintHtml(c.category_name)}</td>
+              <td style="padding:7px 10px; border-bottom:1px solid #E2E8F0; text-align:center; color:#475569;">${c.count}</td>
+              <td style="padding:7px 10px; border-bottom:1px solid #E2E8F0; text-align:right; color:#475569;">${share}%</td>
+              <td style="padding:7px 10px; border-bottom:1px solid #E2E8F0; text-align:right; font-weight:700; color:#0F172A;">${sym}${Number(c.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        catRowsHtml = `<tr><td colspan="4" style="padding:10px; text-align:center; color:#64748B; font-size:12px;">No expense categories in selected period.</td></tr>`;
+      }
+
+      let txRowsHtml = '';
+      if (txList.length > 0) {
+        txRowsHtml = txList.map((tx, idx) => {
+          const isIncome = tx.transaction_type === 'INCOME';
+          const isTransfer = tx.transaction_type === 'TRANSFER';
+          const color = isIncome ? '#059669' : isTransfer ? '#2563EB' : '#DC2626';
+          const sign = isIncome ? '+' : isTransfer ? '' : '-';
+          const rowBg = idx % 2 === 1 ? '#F8FAFC' : '#FFFFFF';
+          const accLabel = isTransfer && tx.target_account_name
+            ? `${tx.account_name} → ${tx.target_account_name}`
+            : (tx.account_name || 'Account');
+          return `
+            <tr style="background:${rowBg}; page-break-inside:avoid;">
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:11px; color:#334155; white-space:nowrap;">${escapePrintHtml(tx.date)}</td>
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:11px; font-weight:600; color:#0F172A;">${escapePrintHtml(tx.category_name)}</td>
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:11px; color:#475569;">${escapePrintHtml(accLabel)}</td>
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:11px; color:#475569;">${escapePrintHtml(tx.note || '—')}</td>
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:10px; font-weight:700; text-transform:uppercase; color:${color};">${escapePrintHtml(tx.transaction_type)}</td>
+              <td style="padding:7px 8px; border-bottom:1px solid #E2E8F0; font-size:11.5px; font-weight:700; text-align:right; color:${color}; white-space:nowrap;">${sign}${sym}${Number(tx.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        txRowsHtml = `<tr><td colspan="6" style="padding:14px; text-align:center; color:#64748B; font-size:12px;">No transactions recorded for this duration.</td></tr>`;
+      }
+
+      container.innerHTML = `
+        <div style="max-width:780px; margin:0 auto; color:#0F172A; font-family:'Plus Jakarta Sans', Arial, sans-serif;">
+          <!-- Statement Top Letterhead -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0F172A; padding-bottom:14px; margin-bottom:18px;">
+            <div>
+              <div style="font-size:22px; font-weight:800; letter-spacing:-0.4px; color:#0F172A;">EXPENSE TRACKER PRO</div>
+              <div style="font-size:12px; font-weight:600; color:#4F46E5; margin-top:2px;">OFFICIAL FINANCIAL STATEMENT</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px; font-weight:700; color:#0F172A;">${userName}</div>
+              ${userEmail ? `<div style="font-size:11px; color:#475569;">${userEmail}</div>` : ''}
+              <div style="font-size:11px; color:#475569; margin-top:4px;"><strong>Period:</strong> ${escapePrintHtml(s.period)}</div>
+              <div style="font-size:10.5px; color:#64748B;">Generated: ${escapePrintHtml(s.generated_at)}</div>
+            </div>
+          </div>
+
+          <!-- 3 Summary KPI Boxes -->
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;">
+            <div style="border:1px solid #CBD5E1; border-radius:8px; padding:12px; background:#F0FDF4;">
+              <div style="font-size:10px; font-weight:800; color:#15803D; text-transform:uppercase; letter-spacing:0.5px;">Total Inflow (Income)</div>
+              <div style="font-size:18px; font-weight:800; color:#059669; margin-top:4px;">${sym}${Number(s.cashflow.income).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            </div>
+            <div style="border:1px solid #CBD5E1; border-radius:8px; padding:12px; background:#FEF2F2;">
+              <div style="font-size:10px; font-weight:800; color:#B91C1C; text-transform:uppercase; letter-spacing:0.5px;">Total Outflow (Expense)</div>
+              <div style="font-size:18px; font-weight:800; color:#DC2626; margin-top:4px;">${sym}${Number(s.cashflow.expenses).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            </div>
+            <div style="border:1px solid #CBD5E1; border-radius:8px; padding:12px; background:#EFF6FF;">
+              <div style="font-size:10px; font-weight:800; color:#1D4ED8; text-transform:uppercase; letter-spacing:0.5px;">Net Savings</div>
+              <div style="font-size:18px; font-weight:800; color:#1E3A8A; margin-top:4px;">${sym}${Number(s.cashflow.net_savings).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            </div>
+          </div>
+
+          <!-- Category Spending Breakdown Table -->
+          <div style="margin-bottom:22px; page-break-inside:avoid;">
+            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.4px;">Category Spending Summary</div>
+            <table style="width:100%; border-collapse:collapse; border:1px solid #CBD5E1; font-size:12px;">
+              <thead>
+                <tr style="background:#F1F5F9;">
+                  <th style="padding:8px 10px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Category</th>
+                  <th style="padding:8px 10px; text-align:center; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Tx Count</th>
+                  <th style="padding:8px 10px; text-align:right; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Share</th>
+                  <th style="padding:8px 10px; text-align:right; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>${catRowsHtml}</tbody>
+            </table>
+          </div>
+
+          <!-- Full Transaction Ledger Table -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.4px;">Transaction Ledger (${txList.length} Total Entries)</div>
+            <table style="width:100%; border-collapse:collapse; border:1px solid #CBD5E1; font-size:11.5px;">
+              <thead>
+                <tr style="background:#F1F5F9;">
+                  <th style="padding:8px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Date</th>
+                  <th style="padding:8px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Category</th>
+                  <th style="padding:8px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Account</th>
+                  <th style="padding:8px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Note</th>
+                  <th style="padding:8px; text-align:left; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Type</th>
+                  <th style="padding:8px; text-align:right; border-bottom:1.5px solid #94A3B8; font-weight:700; color:#334155;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>${txRowsHtml}</tbody>
+            </table>
+          </div>
+
+          <!-- Footer -->
+          <div style="border-top:1px solid #CBD5E1; padding-top:10px; font-size:10px; color:#64748B; text-align:center;">
+            Computer-generated statement from Expense Tracker Pro • Duration: ${escapePrintHtml(formatDisplayDate(s.start_date))} to ${escapePrintHtml(formatDisplayDate(s.end_date))}
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        window.print();
+      }, 60);
     }
 
     // ==============================================
@@ -9899,11 +10488,12 @@
     }
 
     function logoutUser() {
-
+      hidePinLockOverlay();
       localStorage.removeItem('jwt_access_token');
       localStorage.removeItem('user_profile');
       APP_STATE.token = '';
       APP_STATE.user = null;
+      APP_STATE.pinUnlockedThisSession = false;
       showAuthOverlay('LOGIN');
     }
     function hideFloatingAiBtn() {

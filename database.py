@@ -937,6 +937,50 @@ def get_monthly_cashflow_summary(user_id, month, year):
         "savings_rate_pct": round(savings_rate, 1)
     }
 
+def get_date_range_cashflow_summary(user_id, start_date, end_date):
+    """
+    Returns Total Income, Total Expenses, Transfers, and Net Savings
+    for an exact [start_date, end_date] date window (YYYY-MM-DD).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT transaction_type, SUM(amount) as total
+        FROM transactions
+        WHERE user_id = ? AND date >= ? AND date <= ?
+        GROUP BY transaction_type
+    """, (user_id, start_date, end_date))
+    rows = cursor.fetchall()
+    conn.close()
+
+    income = 0.0
+    expenses = 0.0
+    transfers = 0.0
+
+    for r in rows:
+        t = r["transaction_type"]
+        tot = float(r["total"] or 0.0)
+        if t == 'INCOME':
+            income = tot
+        elif t == 'EXPENSE':
+            expenses = tot
+        elif t == 'TRANSFER':
+            transfers = tot
+
+    net_savings = income - expenses
+    savings_rate = (net_savings / income * 100) if income > 0 else 0.0
+
+    return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "income": round(income, 2),
+        "expenses": round(expenses, 2),
+        "transfers": round(transfers, 2),
+        "net_savings": round(net_savings, 2),
+        "savings_rate_pct": round(savings_rate, 1)
+    }
+
 # ==================================================
 # Phase 10: Notifications & Predictive Alert Engine
 # ==================================================
@@ -1476,6 +1520,15 @@ def set_user_app_pin(user_id, pin_code, enable=True):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET app_pin = ?, is_pin_enabled = ? WHERE id = ?", (pin_hash, 1 if enable else 0, user_id))
+    conn.commit()
+    conn.close()
+    return True
+
+def disable_user_app_pin(user_id):
+    """Completely deactivates and clears the user's 4-digit App Security PIN."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET app_pin = NULL, is_pin_enabled = 0 WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
     return True

@@ -1,20 +1,16 @@
-// Service Worker for Expense Tracker Pro 2.0 (Phase 15 PWA)
-const CACHE_NAME = 'expense-pro-v2.8-cache';
+// Service Worker for Expense Tracker Pro 2.0 (Instant App Shell PWA v3.0)
+const CACHE_NAME = 'expense-pro-v3.0-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',
-  '/static/icons/icon.svg',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap'
+  '/static/icons/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching offline mobile app shell');
       return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.warn('[ServiceWorker] Some pre-cache assets could not be fetched:', err);
+        console.warn('[ServiceWorker] Pre-cache note:', err);
       });
     })
   );
@@ -27,7 +23,6 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Removing old cache', key);
             return caches.delete(key);
           }
         })
@@ -39,9 +34,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  if (req.method !== 'GET') return;
+
   const url = new URL(req.url);
 
-  // For API endpoints, prefer network, but catch errors gracefully for offline queue
+  // 1. API endpoints: Strictly Network-Only (never serve stale API responses from SW cache)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(req).catch(() => {
@@ -54,45 +51,51 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For HTML navigation requests, use Network-First to ensure user always gets the latest deployed UI immediately
+  // 2. HTML App Shell (/mobile, /app, /): INSTANT Stale-While-Revalidate (<15ms boot + silent update)
   if (req.mode === 'navigate' || url.pathname === '/mobile' || url.pathname === '/app' || url.pathname === '/') {
     event.respondWith(
-      fetch(req).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        return caches.match(req);
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(req, { ignoreSearch: true }).then((cachedResponse) => {
+          const networkFetch = fetch(req).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(req, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => cachedResponse);
+
+          return cachedResponse || networkFetch;
+        });
       })
     );
     return;
   }
 
-  // Stale-While-Revalidate for static assets (icons, css, fonts)
+  // 3. Static Assets, Google Fonts & Category Thumbnails: Stale-While-Revalidate
   event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      const fetchPromise = fetch(req).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        return cachedResponse;
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(req).then((cachedResponse) => {
+        const isCacheableExternal =
+          url.hostname.includes('fonts.googleapis.com') ||
+          url.hostname.includes('fonts.gstatic.com') ||
+          url.hostname.includes('images.unsplash.com');
+
+        const fetchPromise = fetch(req).then((networkResponse) => {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+            if (networkResponse.type === 'basic' || isCacheableExternal) {
+              cache.put(req, networkResponse.clone());
+            }
+          }
+          return networkResponse;
+        }).catch(() => cachedResponse);
+
+        return cachedResponse || fetchPromise;
       });
-      return cachedResponse || fetchPromise;
     })
   );
 });
 
 // ==============================================
-// Phase 3: Web Push Notification Listeners
+// Web Push Notification Listeners
 // ==============================================
 
 self.addEventListener('push', (event) => {
@@ -125,7 +128,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/mobile';
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

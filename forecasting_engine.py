@@ -728,7 +728,9 @@ class RecommendationsGenerator:
 def calculate_month_end_forecast(
     user_id: int,
     target_date: Optional[Any] = None,
-    db_path: str = "expenses.db"
+    db_path: str = "expenses.db",
+    conn=None,
+    use_cache: bool = False
 ) -> Dict[str, Any]:
     """
     FORECAST ENGINE 2.0
@@ -753,15 +755,19 @@ def calculate_month_end_forecast(
     current_day = today.day
     total_days = get_days_in_month(current_year, current_month)
 
-    # Fast in-memory cache check (60s TTL)
-    cache_key = (user_id, f"{current_year:04d}-{current_month:02d}")
+    # Fast in-memory cache check (only when explicitly enabled; bypassed in single-conn bootstrap for multi-worker accuracy)
+    cache_key = (user_id, f"{current_year:04d}-{current_month:02d}", db_path)
     now_ts = time.time()
-    if cache_key in _forecast_cache:
+    if use_cache and cache_key in _forecast_cache:
         cached_ts, cached_res = _forecast_cache[cache_key]
-        if (now_ts - cached_ts) < 60:
+        if (now_ts - cached_ts) < 15:
             return cached_res
 
-    conn, cursor = get_db_cursor(db_path)
+    owns_conn = conn is None
+    if owns_conn:
+        conn, cursor = get_db_cursor(db_path)
+    else:
+        cursor = conn.cursor()
 
     try:
         # 1. Historical Pipeline: MTD Actuals
@@ -922,7 +928,8 @@ def calculate_month_end_forecast(
         _forecast_cache[cache_key] = (now_ts, forecast_result)
         return forecast_result
     finally:
-        conn.close()
+        if owns_conn:
+            conn.close()
 
 
 def detect_spending_anomalies(user_id: int, db_path: str = "expenses.db") -> List[Dict[str, Any]]:

@@ -18,11 +18,15 @@
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
 
-  <!-- Google Fonts & Material Icons -->
+  <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  </noscript>
   
   <style>
     /* ======================================================== */
@@ -232,13 +236,13 @@
     .app-screen {
       display: none;
       padding: 16px 20px;
-      animation: fadeIn 0.25s ease-out;
+      animation: fadeIn 0.1s ease-out;
     }
     .app-screen.active {
       display: block;
     }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0.4; transform: translateY(3px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -577,6 +581,10 @@
       transform: scale(0.98);
       background: var(--bg-card-subtle);
     }
+    .tx-item {
+      content-visibility: auto;
+      contain-intrinsic-size: 62px;
+    }
     .tx-left {
       display: flex;
       align-items: center;
@@ -667,9 +675,7 @@
       left: 0;
       right: 0;
       height: 72px;
-      background: rgba(11, 15, 25, 0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(11, 15, 25, 0.98);
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
@@ -725,14 +731,15 @@
       transform: scale(0.92);
     }
 
-    /* Flipkart-Style Floating AI Orb Pulse & Float Animation */
+    /* Floating AI Orb Compositor-Only Float Animation (Zero CPU Repaint) */
     @keyframes orbFloatPulse {
-      0% { transform: translateY(0px) scale(1); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); }
-      50% { transform: translateY(-4px) scale(1.04); box-shadow: 0 10px 26px rgba(124, 58, 237, 0.75), 0 0 22px rgba(6, 182, 212, 0.65); }
-      100% { transform: translateY(0px) scale(1); box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45); }
+      0%, 100% { transform: translate3d(0, 0px, 0) scale(1); }
+      50% { transform: translate3d(0, -3px, 0) scale(1.03); }
     }
     .ai-floating-orb {
-      animation: orbFloatPulse 3s ease-in-out infinite;
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55), 0 0 16px rgba(6, 182, 212, 0.45);
+      animation: orbFloatPulse 3.2s ease-in-out infinite;
+      will-change: transform;
     }
     .ai-floating-orb:active {
       transform: scale(0.9) !important;
@@ -746,19 +753,14 @@
       touch-action: manipulation;
     }
 
-    /* Hardware Accelerated GPU Compositing */
-    .app-screen, .bottom-sheet, .fintech-card, #floatingAiBotBtn {
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
+    /* Hardware Accelerated GPU Compositing for Moving Drawers Only */
+    .bottom-sheet, #floatingAiBotBtn {
       backface-visibility: hidden;
     }
 
-    /* Automatically Hide Floating AI Button whenever ANY sheet or modal is open */
+    /* Automatically Hide Floating AI Button whenever ANY sheet or modal is open (O(1) Class Check) */
     body.sheet-open #floatingAiBotBtn,
     body.chat-open #floatingAiBotBtn,
-    body:has(.bottom-sheet.active) #floatingAiBotBtn,
-    body:has(.sheet-backdrop.active) #floatingAiBotBtn,
-    body:has(.auth-overlay:not(.hidden)) #floatingAiBotBtn,
     #floatingAiBotBtn.hidden-by-sheet {
       display: none !important;
       opacity: 0 !important;
@@ -772,12 +774,11 @@
     .sheet-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.68);
       z-index: 100;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.16s ease;
     }
     .sheet-backdrop.active {
       opacity: 1;
@@ -803,8 +804,8 @@
       border-radius: 28px 28px 0 0;
       padding: 16px 20px 24px 20px;
       z-index: 110;
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translate3d(0, 100%, 0);
+      transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
       max-height: 92vh;
       overflow-y: auto;
       color: var(--text-primary);
@@ -1075,9 +1076,7 @@
     .auth-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(11, 15, 25, 0.98);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: #0B0F19;
       z-index: 200;
       padding: 30px 24px;
       display: flex;
@@ -3304,6 +3303,50 @@
     </div>
 
     <!-- ============================================== -->
+    <!-- SHARED NATIVE IN-APP CONFIRMATION SHEET        -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="quickConfirmBackdrop" style="z-index:220;" onclick="closeConfirmSheet()"></div>
+    <div class="bottom-sheet" id="quickConfirmSheet" style="z-index:230;">
+      <div class="sheet-handle"></div>
+      <div style="text-align:center; margin-bottom:16px;">
+        <div id="quickConfirmIconBox" style="width:52px; height:52px; border-radius:16px; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.3); color:#EF4444; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
+          <span class="material-icons-round" id="quickConfirmIcon" style="font-size:26px;">delete_outline</span>
+        </div>
+        <div class="tx-title" id="quickConfirmTitle" style="font-size:17px; margin-bottom:5px;">Confirm Action</div>
+        <div class="tx-meta" id="quickConfirmMessage" style="line-height:1.45; font-size:12.5px;">Are you sure?</div>
+      </div>
+      <button type="button" class="btn-submit-sheet" id="quickConfirmPrimaryBtn" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:9px;">Confirm</button>
+      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeConfirmSheet()">Cancel</button>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- INSTANT IN-APP EDIT TRANSACTION SHEET          -->
+    <!-- ============================================== -->
+    <div class="sheet-backdrop" id="editTxBackdrop" style="z-index:130;" onclick="closeEditTxSheet()"></div>
+    <div class="bottom-sheet" id="editTxSheet" style="z-index:140;">
+      <div class="sheet-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div class="tx-title" style="font-size:17px;">✏️ Edit Transaction</div>
+        <div class="btn-icon-header" onclick="closeEditTxSheet()" style="width:32px; height:32px;">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:700;">Amount (₹)</label>
+        <input type="number" step="0.01" inputmode="decimal" class="form-input-pill" id="editTxAmountInput" placeholder="0.00" style="font-size:20px; font-weight:800; text-align:left;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:700;">Date</label>
+        <input type="date" class="form-input-pill" id="editTxDateInput" style="text-align:left; font-size:13px;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:11px; color:var(--text-muted); margin-bottom:5px; font-weight:700;">Note / Description</label>
+        <input type="text" class="form-input-pill" id="editTxNoteInput" placeholder="Add a short note..." style="text-align:left; font-size:13px;">
+      </div>
+      <button type="button" class="btn-submit-sheet" onclick="saveEditedTx()">Save Changes</button>
+    </div>
+
+    <!-- ============================================== -->
     <!-- EDIT PROFILE DETAILS MODAL                     -->
     <!-- ============================================== -->
     <div class="sheet-backdrop" id="editProfileBackdrop" onclick="closeEditProfileModal()"></div>
@@ -4118,16 +4161,144 @@
       activeCurrency: 'INR',
       currencySymbol: '₹',
       currencies: [],
-      appTheme: (localStorage.getItem('app_theme') && localStorage.getItem('app_theme') !== 'theme-oled') ? localStorage.getItem('app_theme') : 'theme-midnight'
+      appTheme: (localStorage.getItem('app_theme') && localStorage.getItem('app_theme') !== 'theme-oled') ? localStorage.getItem('app_theme') : 'theme-midnight',
+      // Step 1 Local-First Sync Guards
+      mutationVersion: 0,
+      pendingSavePromises: {},
+      pendingBudgetSavePromises: {}
     };
 
     const API_BASE = '/api/v1';
 
-    // Clock
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('statusBarClock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }, 1000);
+    // Persistent Tombstone Engine: Deleted items can NEVER ghost back on reload or slow background sync
+    const LOCAL_TOMBSTONES = {
+      getTxIds() {
+        try { return new Set((JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]')).map(String)); }
+        catch { return new Set(); }
+      },
+      addTxId(id) {
+        if (!id) return;
+        try {
+          const arr = JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]').map(String);
+          const sid = String(id);
+          if (!arr.includes(sid)) {
+            arr.push(sid);
+            localStorage.setItem('tombstone_tx_ids', JSON.stringify(arr.slice(-120)));
+          }
+        } catch (e) {}
+      },
+      removeTxId(id) {
+        try {
+          const arr = JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]').map(String).filter(x => x !== String(id));
+          localStorage.setItem('tombstone_tx_ids', JSON.stringify(arr));
+        } catch (e) {}
+      },
+      getBudgetKeys() {
+        try { return new Set((JSON.parse(localStorage.getItem('tombstone_budget_keys') || '[]')).map(String)); }
+        catch { return new Set(); }
+      },
+      addBudgetKey(key) {
+        if (!key) return;
+        try {
+          const arr = JSON.parse(localStorage.getItem('tombstone_budget_keys') || '[]').map(String);
+          const sk = String(key);
+          if (!arr.includes(sk)) {
+            arr.push(sk);
+            localStorage.setItem('tombstone_budget_keys', JSON.stringify(arr.slice(-100)));
+          }
+        } catch (e) {}
+      },
+      removeBudgetKey(key) {
+        try {
+          const arr = JSON.parse(localStorage.getItem('tombstone_budget_keys') || '[]').map(String).filter(x => x !== String(key));
+          localStorage.setItem('tombstone_budget_keys', JSON.stringify(arr));
+        } catch (e) {}
+      },
+      clearAll() {
+        try {
+          localStorage.removeItem('tombstone_tx_ids');
+          localStorage.removeItem('tombstone_budget_keys');
+        } catch (e) {}
+      }
+    };
+
+    // Unified Single-Store Persistence Helper (Eliminates stale cached_bootstrap vs cached_dashboard mismatch)
+    function persistUnifiedLocalState() {
+      try {
+        const existingRaw = localStorage.getItem('cached_bootstrap');
+        const bObj = existingRaw ? JSON.parse(existingRaw) : {};
+        bObj.accounts = Array.isArray(APP_STATE.accounts) ? APP_STATE.accounts : (bObj.accounts || []);
+        bObj.categories = APP_STATE.categories || bObj.categories;
+        bObj.transactions = Array.isArray(APP_STATE.transactions) ? APP_STATE.transactions.slice(0, 50) : (bObj.transactions || []);
+        bObj.recent_transactions = bObj.transactions.slice(0, 5);
+        bObj.budgets = APP_STATE.budgets || bObj.budgets;
+        bObj.forecast = APP_STATE.forecast || bObj.forecast;
+        if (Array.isArray(APP_STATE.categoryBreakdown)) bObj.breakdown = APP_STATE.categoryBreakdown;
+        if (APP_STATE.categoryTotalExpense !== undefined) {
+          bObj.total_expense = APP_STATE.categoryTotalExpense;
+          if (!bObj.cashflow) bObj.cashflow = {};
+          bObj.cashflow.expenses = APP_STATE.categoryTotalExpense;
+        }
+        if (Array.isArray(APP_STATE.history6m)) bObj.history_6m = APP_STATE.history6m;
+        if (Array.isArray(APP_STATE.weeklyDaily)) bObj.weekly_daily = APP_STATE.weeklyDaily;
+
+        localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
+        localStorage.setItem('cached_accounts', JSON.stringify(bObj.accounts));
+        localStorage.removeItem('cached_dashboard');
+      } catch (e) {}
+    }
+
+    // Native In-App Confirm Sheet Controller (Replaces blocking browser confirm())
+    let _quickConfirmCallback = null;
+    function showConfirmSheet(title, message, confirmLabel = 'Confirm', onConfirm = null, isDanger = true) {
+      _quickConfirmCallback = onConfirm;
+      const tEl = document.getElementById('quickConfirmTitle');
+      const mEl = document.getElementById('quickConfirmMessage');
+      const bEl = document.getElementById('quickConfirmPrimaryBtn');
+      const iconBox = document.getElementById('quickConfirmIconBox');
+      const iconEl = document.getElementById('quickConfirmIcon');
+      if (tEl) tEl.innerText = title;
+      if (mEl) mEl.innerText = message;
+      if (bEl) {
+        bEl.innerText = confirmLabel;
+        bEl.style.background = isDanger
+          ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)'
+          : 'linear-gradient(135deg, #4F46E5 0%, #2563EB 100%)';
+        bEl.onclick = () => {
+          const cb = _quickConfirmCallback;
+          closeConfirmSheet();
+          if (typeof cb === 'function') cb();
+        };
+      }
+      if (iconBox) {
+        iconBox.style.background = isDanger ? 'rgba(239,68,68,0.14)' : 'rgba(59,130,246,0.14)';
+        iconBox.style.borderColor = isDanger ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.3)';
+        iconBox.style.color = isDanger ? '#EF4444' : '#3B82F6';
+      }
+      if (iconEl) iconEl.innerText = isDanger ? 'delete_outline' : 'help_outline';
+
+      document.getElementById('quickConfirmBackdrop')?.classList.add('active');
+      document.getElementById('quickConfirmSheet')?.classList.add('active');
+    }
+    function closeConfirmSheet() {
+      _quickConfirmCallback = null;
+      document.getElementById('quickConfirmBackdrop')?.classList.remove('active');
+      document.getElementById('quickConfirmSheet')?.classList.remove('active');
+    }
+    function closeEditTxSheet() {
+      document.getElementById('editTxBackdrop')?.classList.remove('active');
+      document.getElementById('editTxSheet')?.classList.remove('active');
+    }
+
+    // Low-overhead Status Clock (updates only when minute changes)
+    function refreshStatusClock() {
+      const el = document.getElementById('statusBarClock');
+      if (!el) return;
+      const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (el.innerText !== t) el.innerText = t;
+    }
+    refreshStatusClock();
+    setInterval(refreshStatusClock, 15000);
 
     // Initialization
     window.addEventListener('DOMContentLoaded', async () => {
@@ -4136,7 +4307,7 @@
 
       // Phase 15: Register Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=2.8').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.0').then(reg => {
         reg.update();
       }).catch(err => {
           console.log('[PWA] Service Worker registration note:', err);
@@ -4556,6 +4727,8 @@
       closeGoalContributeModal();
       closeSetPinModal();
       closeDeactivatePinModal();
+      closeConfirmSheet();
+      closeEditTxSheet();
       closeEditProfileModal();
     }
 
@@ -4577,11 +4750,15 @@
       }
 
       try {
-        const res = await fetch(`${API_BASE}${endpoint}`, {
+        const fetchOpts = {
           method,
           headers,
           body: body ? JSON.stringify(body) : null
-        });
+        };
+        if (method !== 'GET') {
+          fetchOpts.keepalive = true;
+        }
+        const res = await fetch(`${API_BASE}${endpoint}`, fetchOpts);
         const data = await res.json();
         if (res.status === 401) {
           logoutUser();
@@ -4681,19 +4858,12 @@
         renderTrajectoryChart(b.forecast);
       }
 
-      // 5. Recent Transactions on Home
-      if (Array.isArray(b.recent_transactions) && b.recent_transactions.length > 0) {
-        renderRecentTx(b.recent_transactions);
-      }
+      const deadTxIds = LOCAL_TOMBSTONES.getTxIds();
+      const deadBudgetKeys = LOCAL_TOMBSTONES.getBudgetKeys();
 
-      // 6. Categories
-      if (b.categories) {
-        APP_STATE.categories = b.categories;
-        try { localStorage.setItem('cached_categories', JSON.stringify(b.categories)); } catch(e) {}
-      }
-
-      // 7. Full Transactions List for Analytics/Transactions Screen
+      // Filter transactions through persistent delete tombstones so deleted items NEVER resurrect
       if (Array.isArray(b.transactions)) {
+        b.transactions = b.transactions.filter(t => t && !deadTxIds.has(String(t.id)));
         b.transactions.forEach(t => {
           t.account_name = formatAccountName(t.account_name);
           if (t.target_account_name) t.target_account_name = formatAccountName(t.target_account_name);
@@ -4701,11 +4871,22 @@
         APP_STATE.transactions = b.transactions;
         renderTransactionsList(b.transactions);
       }
+
       if (Array.isArray(b.recent_transactions)) {
+        b.recent_transactions = b.recent_transactions.filter(t => t && !deadTxIds.has(String(t.id)));
         b.recent_transactions.forEach(t => {
           t.account_name = formatAccountName(t.account_name);
           if (t.target_account_name) t.target_account_name = formatAccountName(t.target_account_name);
         });
+        renderRecentTx(b.recent_transactions);
+      } else if (Array.isArray(b.transactions)) {
+        renderRecentTx(b.transactions.slice(0, 5));
+      }
+
+      // 6. Categories
+      if (b.categories) {
+        APP_STATE.categories = b.categories;
+        try { localStorage.setItem('cached_categories', JSON.stringify(b.categories)); } catch(e) {}
       }
 
       // 8. Analytics Visual Donut Chart & 6M Bar Chart
@@ -4759,6 +4940,9 @@
           homeBadge.style.background = isExceeded ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
         }
         if (Array.isArray(b.budgets.category_budgets)) {
+          b.budgets.category_budgets = b.budgets.category_budgets.filter(cb =>
+            !deadBudgetKeys.has(String(cb.id)) && !deadBudgetKeys.has('cat_' + String(cb.category_id))
+          );
           renderCategoryBudgets(b.budgets.category_budgets);
         }
       }
@@ -4767,14 +4951,16 @@
     }
 
     async function initializeAppData(forceFull = false) {
+      const fetchStartMutationVersion = APP_STATE.mutationVersion;
       try {
-        // Ultra-fast single roundtrip bootstrap endpoint (<20ms backend)
         const res = await apiRequest('/app/bootstrap');
         if (res && res.success && res.bootstrap) {
+          // Stale-fetch guard: if user mutated state while /bootstrap was in flight, do NOT overwrite newer local UI
+          if (!forceFull && fetchStartMutationVersion !== APP_STATE.mutationVersion) {
+            return;
+          }
           applyBootstrapData(res.bootstrap, true);
-          try {
-            localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
-          } catch (e) {}
+          persistUnifiedLocalState();
           return;
         }
       } catch (bootstrapErr) {
@@ -5655,7 +5841,7 @@
       if (!toastEl) {
         toastEl = document.createElement('div');
         toastEl.id = 'globalAppToast';
-        toastEl.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.18);color:#FFF;padding:10px 18px;border-radius:22px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;z-index:999999;opacity:0;pointer-events:none;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);max-width:90vw;white-space:nowrap;';
+        toastEl.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.98);border:1px solid rgba(255,255,255,0.18);color:#FFF;padding:10px 18px;border-radius:22px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;z-index:999999;opacity:0;pointer-events:none;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);max-width:90vw;white-space:nowrap;';
         document.body.appendChild(toastEl);
       }
       const icon = type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'info'));
@@ -5669,6 +5855,7 @@
         toastEl.style.transform = 'translateX(-50%) translateY(20px)';
       }, 2600);
     }
+    window.showAppToast = showToast;
 
     // ----------------------------------------------------
     // PHASE 11: FINANCIAL GOALS & SAVINGS VAULT (ISOLATED)
@@ -6117,16 +6304,21 @@
     }
 
     async function deleteGoal(goalId) {
-      if (!confirm('Are you sure you want to delete this financial goal?')) return;
-      triggerHaptic('medium');
-      userGoals = userGoals.filter(x => String(x.id) !== String(goalId));
-      renderGoals(userGoals);
-      renderSavingsGoalsModalList(userGoals);
-      showToast('Savings goal deleted', 'info');
-
-      apiRequest(`/goals/${goalId}`, 'DELETE').then(() => {
-        try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
-      });
+      showConfirmSheet(
+        'Delete Financial Goal?',
+        'This savings goal tracker will be removed.',
+        'Delete Goal',
+        () => {
+          triggerHaptic('medium');
+          userGoals = userGoals.filter(x => String(x.id) !== String(goalId));
+          renderGoals(userGoals);
+          renderSavingsGoalsModalList(userGoals);
+          try { localStorage.setItem('cached_goals', JSON.stringify(userGoals)); } catch (e) {}
+          showToast('Savings goal deleted', 'info');
+          apiRequest(`/goals/${goalId}`, 'DELETE');
+        },
+        true
+      );
     }
 
     // ----------------------------------------------------
@@ -6216,13 +6408,13 @@
         }, 1200);
       }
 
+      persistUnifiedLocalState();
+
       // Background API Persistence
       apiRequest('/budgets', 'POST', {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         amount: val
-      }).then(() => {
-        loadNotifications();
       });
     }
 
@@ -6356,7 +6548,7 @@
                 </div>
                 <div class="tx-meta" style="font-size:10px;">${cb.is_exceeded ? 'Exceeded' : `₹${(cb.remaining || 0).toLocaleString('en-IN')} left`}</div>
               </div>
-              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteCategoryLimit('${cb.id}')" title="Remove Limit">
+              <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteCategoryLimit('${cb.id || ''}', '${cb.category_id}')" title="Remove Limit">
                 <span class="material-icons-round" style="font-size:16px; color:var(--color-ruby);">delete</span>
               </button>
             </div>
@@ -6394,11 +6586,19 @@
 
       let existing = APP_STATE.budgets.category_budgets.find(cb => String(cb.category_id) === String(catId));
       let tempId = 'temp_' + Date.now();
+      const ymNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+      let spentSoFar = 0;
+      (APP_STATE.transactions || []).forEach(t => {
+        if (t && t.transaction_type === 'EXPENSE' && String(t.category_id) === String(catId) && (t.date || '').startsWith(ymNow)) {
+          spentSoFar += (parseFloat(t.amount) || 0);
+        }
+      });
       if (existing) {
         existing.budget_limit = amount;
-        existing.remaining = Math.max(0, amount - (existing.spent || 0));
-        existing.utilization_pct = Math.round(((existing.spent || 0) / amount) * 100);
-        existing.is_exceeded = (existing.spent || 0) > amount;
+        existing.spent = spentSoFar;
+        existing.remaining = Math.max(0, amount - spentSoFar);
+        existing.utilization_pct = amount > 0 ? Math.round((spentSoFar / amount) * 1000) / 10 : 0;
+        existing.is_exceeded = spentSoFar > amount;
       } else {
         existing = {
           id: tempId,
@@ -6407,10 +6607,10 @@
           category_icon: cat.icon || 'tag',
           category_color: cat.color_hex || cat.color || '#8B5CF6',
           budget_limit: amount,
-          spent: 0,
-          remaining: amount,
-          utilization_pct: 0,
-          is_exceeded: false
+          spent: spentSoFar,
+          remaining: Math.max(0, amount - spentSoFar),
+          utilization_pct: amount > 0 ? Math.round((spentSoFar / amount) * 1000) / 10 : 0,
+          is_exceeded: spentSoFar > amount
         };
         APP_STATE.budgets.category_budgets.unshift(existing);
       }
@@ -6422,8 +6622,14 @@
       }
       showToast(`Limit for ${cat.name} set to ₹${amount.toLocaleString('en-IN')}!`, 'success');
 
-      // Background sync
-      apiRequest('/budgets', 'POST', {
+      // Clear any previous tombstone on this category and persist unified cache immediately
+      LOCAL_TOMBSTONES.removeBudgetKey('cat_' + String(catId));
+      APP_STATE.mutationVersion++;
+      persistUnifiedLocalState();
+
+      // Track pending budget save promise so rapid delete works seamlessly
+      const catKey = String(catId);
+      const savePromise = apiRequest('/budgets', 'POST', {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         amount: amount,
@@ -6431,27 +6637,72 @@
       }).then(res => {
         if (res && res.budget_id && existing) {
           existing.id = res.budget_id;
+          persistUnifiedLocalState();
+          renderCategoryLimitsModalList();
         }
-        loadNotifications();
+        delete APP_STATE.pendingBudgetSavePromises[catKey];
+        return res?.budget_id || null;
+      }).catch(() => {
+        delete APP_STATE.pendingBudgetSavePromises[catKey];
+        return null;
       });
+      APP_STATE.pendingBudgetSavePromises[catKey] = savePromise;
     }
 
-    async function deleteCategoryLimit(budgetId) {
-      if (!confirm('Remove this category spending limit?')) return;
-      triggerHaptic('light');
+    async function deleteCategoryLimit(budgetId, categoryId) {
+      showConfirmSheet(
+        'Remove Category Limit?',
+        'This spending cap will be removed permanently.',
+        'Remove Limit',
+        async () => {
+          triggerHaptic('light');
+          const bIdStr = (budgetId && budgetId !== 'undefined' && budgetId !== 'null') ? String(budgetId) : '';
+          const cIdStr = (categoryId && categoryId !== 'undefined' && categoryId !== 'null') ? String(categoryId) : '';
 
-      // 0ms Optimistic update
-      if (APP_STATE.budgets && APP_STATE.budgets.category_budgets) {
-        APP_STATE.budgets.category_budgets = APP_STATE.budgets.category_budgets.filter(cb => String(cb.id) !== String(budgetId));
-        renderCategoryLimitsModalList();
-        if (typeof renderCategoryBudgets === 'function') {
-          renderCategoryBudgets(APP_STATE.budgets.category_budgets);
-        }
-      }
-      showToast('Category limit removed', 'info');
+          // 1. Tombstone immediately so refresh NEVER resurrects it
+          if (bIdStr) LOCAL_TOMBSTONES.addBudgetKey(bIdStr);
+          if (cIdStr) LOCAL_TOMBSTONES.addBudgetKey('cat_' + cIdStr);
+          APP_STATE.mutationVersion++;
 
-      // Background sync
-      apiRequest(`/budgets/${budgetId}`, 'DELETE');
+          // 2. Remove from memory + all screens + unified cache in 0ms
+          if (APP_STATE.budgets && APP_STATE.budgets.category_budgets) {
+            APP_STATE.budgets.category_budgets = APP_STATE.budgets.category_budgets.filter(cb => {
+              const matchId = bIdStr && String(cb.id) === bIdStr;
+              const matchCat = cIdStr && String(cb.category_id) === cIdStr;
+              return !matchId && !matchCat;
+            });
+            renderCategoryLimitsModalList();
+            if (typeof renderCategoryBudgets === 'function') {
+              renderCategoryBudgets(APP_STATE.budgets.category_budgets);
+            }
+          }
+          persistUnifiedLocalState();
+          showToast('Category limit removed', 'info');
+
+          // 3. Ensure any just-started POST finishes before firing DELETE, then delete cleanly with keepalive
+          try {
+            let finalBudgetId = bIdStr;
+            if (cIdStr && APP_STATE.pendingBudgetSavePromises[cIdStr]) {
+              const resolvedId = await APP_STATE.pendingBudgetSavePromises[cIdStr];
+              if (resolvedId) finalBudgetId = String(resolvedId);
+            }
+
+            let delRes = null;
+            if (finalBudgetId && !finalBudgetId.startsWith('temp_')) {
+              delRes = await apiRequest(`/budgets/${finalBudgetId}`, 'DELETE');
+            }
+            if ((!delRes || !delRes.success) && cIdStr) {
+              const now = new Date();
+              await apiRequest(`/budgets/category/${cIdStr}?month=${now.getMonth() + 1}&year=${now.getFullYear()}`, 'DELETE');
+            }
+            if (finalBudgetId) LOCAL_TOMBSTONES.removeBudgetKey(finalBudgetId);
+            if (cIdStr) LOCAL_TOMBSTONES.removeBudgetKey('cat_' + cIdStr);
+          } catch (err) {
+            console.warn('Category limit background delete note:', err);
+          }
+        },
+        true
+      );
     }
 
 
@@ -6723,19 +6974,23 @@
 
       // 2. Compute current month's expenses & income
       const now = new Date();
-      const currentYearMonth = now.toISOString().slice(0, 7);
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const daysElapsed = Math.max(1, now.getDate());
 
       let currentMonthExpenses = 0;
       let currentMonthIncome = 0;
       const catTotals = {};
+      const catSpentById = {};
 
       APP_STATE.transactions.forEach(t => {
         if (!t.date || !t.date.startsWith(currentYearMonth)) return;
         const amt = parseFloat(t.amount) || 0;
         if (t.transaction_type === 'EXPENSE') {
           currentMonthExpenses += amt;
+          if (t.category_id) {
+            catSpentById[String(t.category_id)] = (catSpentById[String(t.category_id)] || 0) + amt;
+          }
           const cName = t.category_name || 'Others';
           if (!catTotals[cName]) {
             catTotals[cName] = {
@@ -6752,6 +7007,21 @@
           currentMonthIncome += amt;
         }
       });
+
+      // Keep Category Budgets progress 100% synced in 0ms
+      if (APP_STATE.budgets && Array.isArray(APP_STATE.budgets.category_budgets)) {
+        APP_STATE.budgets.category_budgets.forEach(cb => {
+          const spent = catSpentById[String(cb.category_id)] || 0;
+          const lim = parseFloat(cb.budget_limit) || 0;
+          cb.spent = spent;
+          cb.remaining = Math.max(0, lim - spent);
+          cb.utilization_pct = lim > 0 ? Math.round((spent / lim) * 1000) / 10 : 0;
+          cb.is_exceeded = spent > lim;
+        });
+        if (typeof renderCategoryBudgets === 'function') {
+          renderCategoryBudgets(APP_STATE.budgets.category_budgets);
+        }
+      }
 
       // 3. Update Home Screen (Total Expense, Budget Progress, Forecast, Recent Tx)
       const homeExp = document.getElementById('homeTotalExpenseDisplay');
@@ -6859,20 +7129,9 @@
       const fcCap = document.getElementById('fcSafeDailyCap');
       if (fcCap) fcCap.innerText = `₹${(APP_STATE.forecast.safe_daily_cap || 0).toFixed(1)}/day`;
 
-      // 6. Synchronize with localStorage
-      try {
-        const cached = localStorage.getItem('cached_bootstrap');
-        const bObj = cached ? JSON.parse(cached) : {};
-        bObj.transactions = APP_STATE.transactions.slice(0, 50);
-        bObj.recent_transactions = APP_STATE.transactions.slice(0, 5);
-        bObj.accounts = APP_STATE.accounts;
-        bObj.total_expense = currentMonthExpenses;
-        if (!bObj.cashflow) bObj.cashflow = {};
-        bObj.cashflow.expenses = currentMonthExpenses;
-        bObj.breakdown = slices;
-        bObj.forecast = APP_STATE.forecast;
-        localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
-      } catch (e) {}
+      // 6. Synchronize cleanly with unified single-store localStorage
+      APP_STATE.categoryTotalExpense = currentMonthExpenses;
+      persistUnifiedLocalState();
     }
 
     function renderHistoryBarChart(history) {
@@ -7138,12 +7397,15 @@
 
     function renderRecentTx(transactions) {
       const container = document.getElementById('homeRecentTxList');
+      if (!container) return;
       container.innerHTML = '';
       if (!transactions || transactions.length === 0) {
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No transactions recorded yet. Tap + to add.</div>';
         return;
       }
-      transactions.forEach(tx => container.appendChild(createTxElement(tx, true)));
+      const frag = document.createDocumentFragment();
+      transactions.forEach(tx => frag.appendChild(createTxElement(tx, true)));
+      container.appendChild(frag);
     }
 
     function renderTransactionsList(transactions = null) {
@@ -7165,7 +7427,9 @@
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:30px;">No transactions found for this filter.</div>';
         return;
       }
-      filtered.forEach(tx => container.appendChild(createTxElement(tx, true)));
+      const frag = document.createDocumentFragment();
+      filtered.forEach(tx => frag.appendChild(createTxElement(tx, true)));
+      container.appendChild(frag);
     }
 
     function createTxElement(tx, allowDelete = false) {
@@ -7205,7 +7469,7 @@
           <img src="${imgUrl}" 
                alt="${visual.displayName || tx.category_name || 'Category'}" 
                class="tx-img"
-               loading="lazy" 
+               loading="lazy" decoding="async" 
                referrerpolicy="no-referrer"
                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
@@ -7305,85 +7569,154 @@
       ACTIVE_TX = null;
     }
 
+    let EDITING_TX = null;
+
     async function deleteActiveTx() {
       if (!ACTIVE_TX) return;
       const txToDelete = { ...ACTIVE_TX };
-      const txId = txToDelete.id;
+      const txId = String(txToDelete.id);
       const amount = parseFloat(txToDelete.amount) || 0;
       const type = txToDelete.transaction_type;
       const accId = txToDelete.account_id;
 
-      if (!confirm(`Delete this transaction of ₹${amount.toLocaleString('en-IN', {minimumFractionDigits: 2})} and restore balance?`)) {
+      showConfirmSheet(
+        'Delete Transaction?',
+        `Remove ₹${amount.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${txToDelete.category_name || 'Transaction'}) and restore account balance?`,
+        'Delete & Restore',
+        async () => {
+          closeTxDetailModal();
+          triggerHaptic('medium');
+
+          // 1. Tombstone immediately so refresh or slow background bootstrap NEVER brings it back
+          LOCAL_TOMBSTONES.addTxId(txId);
+          APP_STATE.mutationVersion++;
+
+          // 2. Remove from DOM instantly
+          document.querySelectorAll(`[data-tx-id="${txId}"]`).forEach(el => el.remove());
+
+          // 3. Reverse account balance FIRST, then run unified optimistic sync + persist
+          if (Array.isArray(APP_STATE.accounts)) {
+            const acc = APP_STATE.accounts.find(a => a.id === accId);
+            if (acc) {
+              if (type === 'EXPENSE') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
+              else if (type === 'INCOME') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+              renderAccountPillsAndNetWorth();
+            }
+          }
+          syncAllScreensOptimistically(txToDelete, false);
+          persistUnifiedLocalState();
+
+          showToast('Transaction deleted & balance restored', 'success');
+
+          // 4. Resolve any in-flight temp- ID before firing keepalive DELETE to server
+          try {
+            let realId = txId;
+            if (txId.startsWith('temp-') && APP_STATE.pendingSavePromises[txId]) {
+              const resolved = await APP_STATE.pendingSavePromises[txId];
+              if (resolved) {
+                realId = String(resolved);
+                LOCAL_TOMBSTONES.addTxId(realId);
+              }
+            }
+            if (!realId.startsWith('temp-') && !realId.startsWith('offline-')) {
+              const res = await apiRequest(`/transactions/${realId}`, 'DELETE');
+              if (res && (res.success || res.error === 'Transaction not found')) {
+                LOCAL_TOMBSTONES.removeTxId(txId);
+                LOCAL_TOMBSTONES.removeTxId(realId);
+              }
+            }
+          } catch (err) {
+            console.warn('Delete sync note:', err);
+          }
+        },
+        true
+      );
+    }
+
+    function promptEditActiveTx() {
+      if (!ACTIVE_TX) return;
+      EDITING_TX = { ...ACTIVE_TX };
+      closeTxDetailModal();
+      document.getElementById('editTxAmountInput').value = EDITING_TX.amount || '';
+      document.getElementById('editTxDateInput').value = (EDITING_TX.date || '').slice(0, 10);
+      document.getElementById('editTxNoteInput').value = EDITING_TX.note || '';
+      document.getElementById('editTxBackdrop').classList.add('active');
+      document.getElementById('editTxSheet').classList.add('active');
+      setTimeout(() => document.getElementById('editTxAmountInput')?.focus(), 180);
+    }
+
+    async function saveEditedTx() {
+      if (!EDITING_TX) return;
+      const oldTx = { ...EDITING_TX };
+      const oldId = String(oldTx.id);
+      const newAmount = parseFloat(document.getElementById('editTxAmountInput').value);
+      const newDate = document.getElementById('editTxDateInput').value || oldTx.date;
+      const newNote = document.getElementById('editTxNoteInput').value.trim();
+
+      if (!newAmount || newAmount <= 0) {
+        showToast('Enter a valid amount greater than 0', 'warning');
         return;
       }
 
-      // 1. INSTANT 0ms OPTIMISTIC UI: Close sheet immediately
-      closeTxDetailModal();
+      closeEditTxSheet();
+      triggerHaptic('success');
+      APP_STATE.mutationVersion++;
 
-      // 2. Animate out and remove from DOM immediately
-      const domItems = document.querySelectorAll(`[data-tx-id="${txId}"]`);
-      domItems.forEach(el => {
-        el.style.transition = 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)';
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(-24px) scale(0.96)';
-        setTimeout(() => el.remove(), 230);
-      });
+      const updatedTx = {
+        ...oldTx,
+        amount: newAmount,
+        date: newDate,
+        note: newNote
+      };
 
-      // 3. INSTANT 0ms MULTI-SCREEN SYNC
-      syncAllScreensOptimistically(txToDelete, false);
-
+      // Update account balance delta in 0ms
+      const oldAmt = parseFloat(oldTx.amount) || 0;
+      const delta = newAmount - oldAmt;
       if (Array.isArray(APP_STATE.accounts)) {
-        const acc = APP_STATE.accounts.find(a => a.id === accId);
+        const acc = APP_STATE.accounts.find(a => a.id === oldTx.account_id);
         if (acc) {
-          if (type === 'EXPENSE') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
-          else if (type === 'INCOME') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
+          if (oldTx.transaction_type === 'EXPENSE') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - delta);
+          else if (oldTx.transaction_type === 'INCOME') acc.current_balance = (parseFloat(acc.current_balance) || 0) + delta;
           renderAccountPillsAndNetWorth();
         }
       }
 
-      if (typeof showToast === 'function') {
-        showToast('Transaction deleted & balance restored', 'success');
-      }
-
-      // 4. Send background DELETE call without freezing UI
-      try {
-        const res = await apiRequest(`/transactions/${txId}`, 'DELETE');
-        if (!res || !res.success) {
-          if (typeof showToast === 'function') {
-            showToast(res?.error || 'Failed to delete transaction. Reverting...', 'error');
-          }
-          await initializeAppData(true);
-        }
-      } catch (err) {
-        console.error('Delete transaction network error:', err);
-      }
-    }
-
-    async function promptEditActiveTx() {
-      if (!ACTIVE_TX) return;
-      const newAmount = prompt('Enter new amount (₹):', ACTIVE_TX.amount);
-      if (!newAmount) return;
-      const newNote = prompt('Enter new note/description:', ACTIVE_TX.note || '');
+      syncAllScreensOptimistically(oldTx, false);
+      syncAllScreensOptimistically(updatedTx, true);
+      persistUnifiedLocalState();
+      showToast('Transaction updated!', 'success');
 
       const payload = {
-        account_id: ACTIVE_TX.account_id,
-        target_account_id: ACTIVE_TX.target_account_id,
-        category_id: ACTIVE_TX.category_id,
-        subcategory_id: ACTIVE_TX.subcategory_id,
-        transaction_type: ACTIVE_TX.transaction_type,
-        amount: parseFloat(newAmount),
-        date: ACTIVE_TX.date,
+        account_id: oldTx.account_id,
+        target_account_id: oldTx.target_account_id,
+        category_id: oldTx.category_id,
+        subcategory_id: oldTx.subcategory_id,
+        transaction_type: oldTx.transaction_type,
+        amount: newAmount,
+        date: newDate,
         note: newNote,
-        tag: ACTIVE_TX.tag
+        tag: oldTx.tag
       };
 
-      const res = await apiRequest(`/transactions/${ACTIVE_TX.id}`, 'PUT', payload);
-      if (res && res.success) {
-        closeTxDetailModal();
-        await initializeAppData();
-      } else {
-        alert(res?.error || 'Failed to update transaction');
+      try {
+        let realId = oldId;
+        if (oldId.startsWith('temp-') && APP_STATE.pendingSavePromises[oldId]) {
+          const resolved = await APP_STATE.pendingSavePromises[oldId];
+          if (resolved) realId = String(resolved);
+        }
+        const res = await apiRequest(`/transactions/${realId}`, 'PUT', payload);
+        if (res && res.success && res.transaction_id) {
+          updatedTx.id = res.transaction_id;
+          const idx = (APP_STATE.transactions || []).findIndex(t => String(t.id) === String(oldTx.id));
+          if (idx !== -1) APP_STATE.transactions[idx].id = res.transaction_id;
+          renderRecentTx((APP_STATE.transactions || []).slice(0, 5));
+          renderTransactionsList(APP_STATE.transactions);
+          persistUnifiedLocalState();
+        }
+      } catch (err) {
+        console.warn('Edit sync note:', err);
       }
+      EDITING_TX = null;
     }
 
     // ----------------------------------------------------
@@ -8005,13 +8338,15 @@
         return;
       }
 
+      const clientUuid = 'cu-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       const payload = {
         account_id: APP_STATE.sheetAccountId,
         transaction_type: APP_STATE.sheetType,
         amount: amount,
         date: APP_STATE.sheetDate || new Date().toISOString().slice(0, 10),
         note: document.getElementById('sheetNoteInput').value.trim(),
-        tag: document.getElementById('sheetTagInput').value.trim()
+        tag: document.getElementById('sheetTagInput').value.trim(),
+        client_uuid: clientUuid
       };
 
       if (APP_STATE.sheetType === 'TRANSFER') {
@@ -8043,8 +8378,10 @@
         }
       }
 
+      const tempId = 'temp-' + Date.now();
       const tempTx = {
-        id: 'temp-' + Date.now(),
+        id: tempId,
+        client_uuid: clientUuid,
         transaction_type: payload.transaction_type,
         amount: payload.amount,
         date: payload.date,
@@ -8058,39 +8395,45 @@
         is_optimistic: true
       };
 
-      // 0ms INSTANT MULTI-SCREEN SYNC
-      syncAllScreensOptimistically(tempTx, true);
+      APP_STATE.mutationVersion++;
 
+      // Update account balance BEFORE persisting unified cache so cached_bootstrap has exact balance!
       if (acc) {
         if (payload.transaction_type === 'EXPENSE') acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amount);
         else if (payload.transaction_type === 'INCOME') acc.current_balance = (parseFloat(acc.current_balance) || 0) + amount;
         renderAccountPillsAndNetWorth();
       }
 
+      // 0ms INSTANT MULTI-SCREEN SYNC + Unified Persistence
+      syncAllScreensOptimistically(tempTx, true);
+      persistUnifiedLocalState();
+
       if (typeof showToast === 'function') {
         showToast(`₹${amount.toLocaleString('en-IN')} recorded instantly!`, 'success');
       }
 
-      // ========================================================
-      // 3. Send Network Call Quietly in Background
-      // ========================================================
-      try {
-        const res = await apiRequest('/transactions', 'POST', payload);
+      // Background keepalive persistence with tempId -> realId resolution
+      const savePromise = apiRequest('/transactions', 'POST', payload).then(res => {
+        delete APP_STATE.pendingSavePromises[tempId];
         if (res && res.success) {
-          if (res.transaction && res.transaction.id) {
-            tempTx.id = res.transaction.id;
+          const realId = res.transaction_id || res.transaction?.id;
+          if (realId) {
+            tempTx.id = realId;
             delete tempTx.is_optimistic;
+            document.querySelectorAll(`[data-tx-id="${tempId}"]`).forEach(el => {
+              el.setAttribute('data-tx-id', realId);
+            });
+            persistUnifiedLocalState();
           }
-          refreshDashboardData();
-        } else {
-          if (typeof showToast === 'function') {
-            showToast(res?.error || 'Failed to save transaction on server. Reverting...', 'error');
-          }
-          await initializeAppData(true);
+          return realId || null;
         }
-      } catch (err) {
+        return null;
+      }).catch(err => {
+        delete APP_STATE.pendingSavePromises[tempId];
         console.warn('Background transaction post error:', err);
-      }
+        return null;
+      });
+      APP_STATE.pendingSavePromises[tempId] = savePromise;
     }
 
     // ----------------------------------------------------
@@ -9043,22 +9386,37 @@
     }
 
     async function payRecurringBill(billId) {
-      if (!confirm('Record this recurring payment and deduct amount from your account?')) return;
-      const res = await apiRequest(`/recurring/${billId}/pay`, 'POST');
-      if (res && res.success) {
-        alert(res.message);
-        await initializeAppData();
-      } else {
-        alert(res?.error || 'Payment failed');
-      }
+      showConfirmSheet(
+        'Record Recurring Payment?',
+        'Amount will be deducted from your linked account and scheduled for next cycle.',
+        'Pay & Record',
+        async () => {
+          const res = await apiRequest(`/recurring/${billId}/pay`, 'POST');
+          if (res && res.success) {
+            showToast(res.message || 'Bill paid!', 'success');
+            await initializeAppData(true);
+          } else {
+            showToast(res?.error || 'Payment failed', 'error');
+          }
+        },
+        false
+      );
     }
 
     async function deleteRecurringBill(billId) {
-      if (!confirm('Remove this recurring bill tracker?')) return;
-      const res = await apiRequest(`/recurring/${billId}`, 'DELETE');
-      if (res && res.success) {
-        await initializeAppData();
-      }
+      showConfirmSheet(
+        'Remove Recurring Bill?',
+        'This bill reminder will be permanently deleted.',
+        'Remove Bill',
+        async () => {
+          const res = await apiRequest(`/recurring/${billId}`, 'DELETE');
+          if (res && res.success) {
+            showToast('Recurring bill removed', 'info');
+            await initializeAppData(true);
+          }
+        },
+        true
+      );
     }
 
     // ----------------------------------------------------
@@ -10491,8 +10849,17 @@
       hidePinLockOverlay();
       localStorage.removeItem('jwt_access_token');
       localStorage.removeItem('user_profile');
+      localStorage.removeItem('cached_bootstrap');
+      localStorage.removeItem('cached_accounts');
+      localStorage.removeItem('cached_categories');
+      localStorage.removeItem('cached_dashboard');
+      localStorage.removeItem('cached_goals');
+      LOCAL_TOMBSTONES.clearAll();
       APP_STATE.token = '';
       APP_STATE.user = null;
+      APP_STATE.transactions = [];
+      APP_STATE.accounts = [];
+      APP_STATE.budgets = null;
       APP_STATE.pinUnlockedThisSession = false;
       showAuthOverlay('LOGIN');
     }
@@ -10540,20 +10907,17 @@
       showFloatingAiBtn();
     }
 
-    // Universal Reactive Observer: Guarantees Floating AI Button is NEVER visible when any sheet/keypad/chat is open
+    // Lightweight Direct-Modal Observer: Watches ONLY top-level modal/overlay nodes (Zero subtree scan = 0ms lag!)
     try {
-      const globalSheetObserver = new MutationObserver(() => {
+      const sheetClassObserver = new MutationObserver(() => {
         const hasOpenSheet = !!document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
         const btn = document.getElementById('floatingAiBotBtn');
-        if (!btn) return;
-        if (hasOpenSheet) {
-          btn.style.display = 'none';
-        } else {
-          btn.style.display = 'flex';
-        }
+        if (btn) btn.style.display = hasOpenSheet ? 'none' : 'flex';
       });
       window.addEventListener('DOMContentLoaded', () => {
-        globalSheetObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        document.querySelectorAll('.bottom-sheet, .sheet-backdrop, .auth-overlay').forEach(node => {
+          sheetClassObserver.observe(node, { attributes: true, attributeFilter: ['class'] });
+        });
       });
     } catch (obsErr) {
       console.warn('Sheet observer notice:', obsErr);

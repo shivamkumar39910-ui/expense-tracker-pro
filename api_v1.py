@@ -1820,23 +1820,59 @@ def get_app_bootstrap():
             "accounts": accounts
         }
 
-        # 3. Cashflow (single GROUP BY on current month)
+        # 3 & 8 Merged. 6-Month History + Current Month Cashflow in ONE batched GROUP BY query
+        months_list = []
+        for i in range(5, -1, -1):
+            m = today.month - i
+            y = today.year
+            while m <= 0:
+                m += 12
+                y -= 1
+            months_list.append((y, m))
+        earliest_y, earliest_m = months_list[0]
+        start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
+
         cursor.execute("""
-            SELECT transaction_type, SUM(amount) as total
+            SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
             FROM transactions
-            WHERE user_id = ? AND date LIKE ?
-            GROUP BY transaction_type
-        """, (user_id, pattern))
-        inc_tot, exp_tot, trf_tot = 0.0, 0.0, 0.0
-        for cf_r in cursor.fetchall():
-            t_type = cf_r["transaction_type"]
-            val = float(cf_r["total"] or 0.0)
-            if t_type == 'INCOME':
-                inc_tot = val
-            elif t_type == 'EXPENSE':
-                exp_tot = val
-            elif t_type == 'TRANSFER':
-                trf_tot = val
+            WHERE user_id = ? AND date >= ?
+            GROUP BY SUBSTR(date, 1, 7), transaction_type
+        """, (user_id, start_date_str))
+        hist_rows = cursor.fetchall()
+
+        monthly_totals = {}
+        for r in hist_rows:
+            ym = str(r["ym"])[:7]
+            ttype = r["transaction_type"]
+            tot = float(r["total"] or 0.0)
+            if ym not in monthly_totals:
+                monthly_totals[ym] = {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0}
+            monthly_totals[ym][ttype] = tot
+
+        history_6m = []
+        for y, m in months_list:
+            ym_key = f"{y:04d}-{m:02d}"
+            d = monthly_totals.get(ym_key, {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0})
+            inc = round(d.get("INCOME", 0.0), 2)
+            exp = round(d.get("EXPENSE", 0.0), 2)
+            net_savings = round(inc - exp, 2)
+            savings_rate = round((net_savings / inc * 100), 1) if inc > 0 else 0.0
+            month_label = date(y, m, 1).strftime("%b %y")
+            history_6m.append({
+                "label": month_label,
+                "month": m,
+                "year": y,
+                "income": inc,
+                "expenses": exp,
+                "net_savings": net_savings,
+                "savings_rate_pct": savings_rate
+            })
+
+        cur_ym_key = f"{year:04d}-{month:02d}"
+        cur_m_data = monthly_totals.get(cur_ym_key, {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0})
+        inc_tot = float(cur_m_data.get("INCOME", 0.0))
+        exp_tot = float(cur_m_data.get("EXPENSE", 0.0))
+        trf_tot = float(cur_m_data.get("TRANSFER", 0.0))
         net_sav = inc_tot - exp_tot
         sav_rate = (net_sav / inc_tot * 100) if inc_tot > 0 else 0.0
         cashflow = {
@@ -1880,9 +1916,9 @@ def get_app_bootstrap():
             "income": [c for c in cats if c["type"] == 'INCOME']
         }
 
-        # 5. Transactions (top 50)
+        # 5. Transactions (top 50, includes client_uuid for optimistic deduplication)
         cursor.execute("""
-            SELECT t.id, t.transaction_type, t.amount, t.date, t.note,
+            SELECT t.id, t.client_uuid, t.transaction_type, t.amount, t.date, t.note,
                    t.account_id, t.category_id, t.subcategory_id,
                    a.name as account_name,
                    c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
@@ -1977,54 +2013,7 @@ def get_app_bootstrap():
             "category_budgets": category_budgets
         }
 
-        # 8. 6-Month History
-        months_list = []
-        for i in range(5, -1, -1):
-            m = today.month - i
-            y = today.year
-            while m <= 0:
-                m += 12
-                y -= 1
-            months_list.append((y, m))
-        earliest_y, earliest_m = months_list[0]
-        start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
-
-        cursor.execute("""
-            SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
-            FROM transactions
-            WHERE user_id = ? AND date >= ?
-            GROUP BY SUBSTR(date, 1, 7), transaction_type
-        """, (user_id, start_date_str))
-        hist_rows = cursor.fetchall()
-
-        monthly_totals = {}
-        for r in hist_rows:
-            ym = str(r["ym"])[:7]
-            ttype = r["transaction_type"]
-            tot = float(r["total"] or 0.0)
-            if ym not in monthly_totals:
-                monthly_totals[ym] = {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0}
-            monthly_totals[ym][ttype] = tot
-
-        history_6m = []
-        for y, m in months_list:
-            ym_key = f"{y:04d}-{m:02d}"
-            d = monthly_totals.get(ym_key, {"INCOME": 0.0, "EXPENSE": 0.0, "TRANSFER": 0.0})
-            inc = round(d.get("INCOME", 0.0), 2)
-            exp = round(d.get("EXPENSE", 0.0), 2)
-            net_savings = round(inc - exp, 2)
-            savings_rate = round((net_savings / inc * 100), 1) if inc > 0 else 0.0
-            month_label = date(y, m, 1).strftime("%b %y")
-            history_6m.append({
-                "label": month_label,
-                "month": m,
-                "year": y,
-                "income": inc,
-                "expenses": exp,
-                "net_savings": net_savings,
-                "savings_rate_pct": savings_rate
-            })
-
+        # 8. history_6m already computed cleanly in merged Step 3 above
         # 9. Unread notifications count (single lightweight scalar query)
         cursor.execute("""
             SELECT COUNT(*) as cnt FROM notifications

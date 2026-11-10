@@ -1,5 +1,5 @@
-// Service Worker for Expense Tracker Pro 2.0 (Instant App Shell PWA v3.1)
-const CACHE_NAME = 'expense-pro-v3.1-cache';
+// Service Worker for Expense Tracker Pro 2.0 (Fast Live App Shell PWA v3.2)
+const CACHE_NAME = 'expense-pro-v3.2-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',
@@ -27,9 +27,14 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clientList) => {
+        clientList.forEach((client) => {
+          try { client.postMessage({ type: 'SW_ACTIVATED', cache: CACHE_NAME }); } catch (e) {}
+        });
+      })
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -51,7 +56,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. HTML App Shell (/mobile, /app, /): INSTANT Stale-While-Revalidate (<15ms boot + silent update)
+  // 2. HTML App Shell (/mobile, /app, /): Fast Network-First (850ms timeout -> cache fallback)
+  //    Ensures latest code updates apply immediately on open/refresh while staying resilient offline.
   if (req.mode === 'navigate' || url.pathname === '/mobile' || url.pathname === '/app' || url.pathname === '/') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -61,9 +67,35 @@ self.addEventListener('fetch', (event) => {
               cache.put(req, networkResponse.clone());
             }
             return networkResponse;
-          }).catch(() => cachedResponse);
+          });
 
-          return cachedResponse || networkFetch;
+          if (!cachedResponse) {
+            return networkFetch.catch(() => caches.match('/mobile'));
+          }
+
+          return new Promise((resolve) => {
+            let settled = false;
+            const fallbackTimer = setTimeout(() => {
+              if (!settled) {
+                settled = true;
+                resolve(cachedResponse);
+              }
+            }, 850);
+
+            networkFetch.then((res) => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(fallbackTimer);
+                resolve(res);
+              }
+            }).catch(() => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(fallbackTimer);
+                resolve(cachedResponse);
+              }
+            });
+          });
         });
       })
     );

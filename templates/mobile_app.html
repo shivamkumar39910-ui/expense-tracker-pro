@@ -2344,8 +2344,8 @@
             <circle id="fcSvgProjDot" cx="295" cy="80" r="4.5" fill="#10B981"/>
 
             <!-- Interactive Floating Callout Badge -->
-            <g id="fcTrajectoryCallout" style="transition:transform 0.08s ease-out; pointer-events:none;">
-              <rect id="fcCalloutRect" x="-60" y="-28" width="120" height="22" rx="6" ry="6" fill="#06B6D4" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.4))"/>
+            <g id="fcTrajectoryCallout" style="pointer-events:none;">
+              <rect id="fcCalloutRect" x="-60" y="-28" width="120" height="22" rx="6" ry="6" fill="#06B6D4" stroke="rgba(0,0,0,0.28)" stroke-width="0.8"/>
               <text id="fcCalloutText" x="0" y="-14" fill="#030712" font-size="9" font-weight="800" text-anchor="middle" dominant-baseline="middle">Day 1: ₹0 Spent</text>
             </g>
           </svg>
@@ -4140,6 +4140,11 @@
       accounts: [],
       categories: { expense: [], income: [] },
       transactions: [],
+      history6m: [],
+      weeklyDaily: [],
+      budgets: null,
+      categoryBreakdown: [],
+      categoryTotalExpense: 0,
       forecast: null,
       activeTxFilter: 'ALL',
       // Sheet Entry State
@@ -4176,7 +4181,7 @@
         try { return new Set((JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]')).map(String)); }
         catch { return new Set(); }
       },
-      addTxId(id) {
+      addTxId(id, txMeta = null) {
         if (!id) return;
         try {
           const arr = JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]').map(String);
@@ -4185,12 +4190,42 @@
             arr.push(sid);
             localStorage.setItem('tombstone_tx_ids', JSON.stringify(arr.slice(-120)));
           }
+          if (txMeta) {
+            const metaMap = this.getTxMetaMap();
+            metaMap[sid] = {
+              id: sid,
+              amount: parseFloat(txMeta.amount) || 0,
+              transaction_type: txMeta.transaction_type || 'EXPENSE',
+              date: txMeta.date || '',
+              category_id: txMeta.category_id || null,
+              category_name: txMeta.category_name || 'Others',
+              ts: Date.now()
+            };
+            localStorage.setItem('tombstone_tx_meta', JSON.stringify(metaMap));
+          }
         } catch (e) {}
+      },
+      getTxMetaMap() {
+        try {
+          const raw = JSON.parse(localStorage.getItem('tombstone_tx_meta') || '{}');
+          const now = Date.now();
+          const clean = {};
+          Object.keys(raw).forEach(k => {
+            if (raw[k] && (now - (raw[k].ts || 0)) < 45000) clean[k] = raw[k];
+          });
+          return clean;
+        } catch { return {}; }
       },
       removeTxId(id) {
         try {
-          const arr = JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]').map(String).filter(x => x !== String(id));
+          const sid = String(id);
+          const arr = JSON.parse(localStorage.getItem('tombstone_tx_ids') || '[]').map(String).filter(x => x !== sid);
           localStorage.setItem('tombstone_tx_ids', JSON.stringify(arr));
+          const metaMap = this.getTxMetaMap();
+          if (metaMap[sid]) {
+            delete metaMap[sid];
+            localStorage.setItem('tombstone_tx_meta', JSON.stringify(metaMap));
+          }
         } catch (e) {}
       },
       getBudgetKeys() {
@@ -4217,10 +4252,183 @@
       clearAll() {
         try {
           localStorage.removeItem('tombstone_tx_ids');
+          localStorage.removeItem('tombstone_tx_meta');
           localStorage.removeItem('tombstone_budget_keys');
+          localStorage.removeItem('pending_tx_creates');
+          localStorage.removeItem('pending_tx_edits');
+          localStorage.removeItem('pending_budget_override');
         } catch (e) {}
       }
     };
+
+    // Pending Write Ledger: Keeps optimistic creates/edits/budget updates 100% consistent across rapid refresh
+    const LOCAL_PENDING_OPS = {
+      getCreates() {
+        try {
+          const arr = JSON.parse(localStorage.getItem('pending_tx_creates') || '[]');
+          const now = Date.now();
+          const valid = arr.filter(x => x && x.client_uuid && (now - (x.ts || 0)) < 45000);
+          if (valid.length !== arr.length) localStorage.setItem('pending_tx_creates', JSON.stringify(valid));
+          return valid;
+        } catch { return []; }
+      },
+      addCreate(tx) {
+        if (!tx || !tx.client_uuid) return;
+        try {
+          const arr = this.getCreates().filter(x => x.client_uuid !== tx.client_uuid);
+          arr.push({ client_uuid: tx.client_uuid, tx, ts: Date.now() });
+          localStorage.setItem('pending_tx_creates', JSON.stringify(arr.slice(-30)));
+        } catch (e) {}
+      },
+      removeCreate(clientUuid) {
+        if (!clientUuid) return;
+        try {
+          const arr = this.getCreates().filter(x => x.client_uuid !== clientUuid);
+          localStorage.setItem('pending_tx_creates', JSON.stringify(arr));
+        } catch (e) {}
+      },
+      getEdits() {
+        try {
+          const raw = JSON.parse(localStorage.getItem('pending_tx_edits') || '{}');
+          const now = Date.now();
+          const clean = {};
+          let changed = false;
+          Object.keys(raw).forEach(k => {
+            if (raw[k] && (now - (raw[k].ts || 0)) < 45000) clean[k] = raw[k];
+            else changed = true;
+          });
+          if (changed) localStorage.setItem('pending_tx_edits', JSON.stringify(clean));
+          return clean;
+        } catch { return {}; }
+      },
+      addEdit(txId, oldTx, newTx) {
+        if (!txId) return;
+        try {
+          const map = this.getEdits();
+          map[String(txId)] = { id: String(txId), oldTx, newTx, ts: Date.now() };
+          localStorage.setItem('pending_tx_edits', JSON.stringify(map));
+        } catch (e) {}
+      },
+      removeEdit(txId) {
+        if (!txId) return;
+        try {
+          const map = this.getEdits();
+          if (map[String(txId)]) {
+            delete map[String(txId)];
+            localStorage.setItem('pending_tx_edits', JSON.stringify(map));
+          }
+        } catch (e) {}
+      },
+      setBudgetOverride(amount) {
+        try {
+          localStorage.setItem('pending_budget_override', JSON.stringify({ overall_budget: parseFloat(amount) || 0, ts: Date.now() }));
+        } catch (e) {}
+      },
+      getBudgetOverride() {
+        try {
+          const raw = JSON.parse(localStorage.getItem('pending_budget_override') || 'null');
+          if (!raw || (Date.now() - (raw.ts || 0)) > 25000) {
+            localStorage.removeItem('pending_budget_override');
+            return null;
+          }
+          return raw;
+        } catch { return null; }
+      },
+      clearBudgetOverride() {
+        try { localStorage.removeItem('pending_budget_override'); } catch (e) {}
+      },
+      hasAny() {
+        return this.getCreates().length > 0 || Object.keys(this.getEdits()).length > 0 || Boolean(this.getBudgetOverride());
+      }
+    };
+
+    function ensureHistory6mInitialized() {
+      if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length === 6) {
+        return APP_STATE.history6m;
+      }
+      const now = new Date();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const buckets = [];
+      for (let i = 5; i >= 0; i--) {
+        let m = (now.getMonth() + 1) - i;
+        let y = now.getFullYear();
+        while (m <= 0) { m += 12; y -= 1; }
+        buckets.push({
+          label: `${monthNames[m - 1]} ${String(y).slice(-2)}`,
+          month: m,
+          year: y,
+          income: 0,
+          expenses: 0,
+          net_savings: 0,
+          savings_rate_pct: 0
+        });
+      }
+      if (Array.isArray(APP_STATE.transactions)) {
+        APP_STATE.transactions.forEach(t => {
+          if (!t || !t.date) return;
+          const ty = parseInt(String(t.date).slice(0, 4));
+          const tm = parseInt(String(t.date).slice(5, 7));
+          const b = buckets.find(x => x.year === ty && x.month === tm);
+          if (!b) return;
+          const amt = parseFloat(t.amount) || 0;
+          if (t.transaction_type === 'EXPENSE') b.expenses += amt;
+          else if (t.transaction_type === 'INCOME') b.income += amt;
+        });
+        buckets.forEach(b => {
+          b.net_savings = Math.round((b.income - b.expenses) * 100) / 100;
+          b.savings_rate_pct = b.income > 0 ? Math.round((b.net_savings / b.income) * 1000) / 10 : 0;
+        });
+      }
+      APP_STATE.history6m = buckets;
+      return APP_STATE.history6m;
+    }
+
+    function ensureForecastInitialized() {
+      const now = new Date();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const daysElapsed = Math.max(1, now.getDate());
+      const daysLeft = Math.max(1, daysInMonth - daysElapsed);
+      const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      let mtdSpend = (APP_STATE.forecast && APP_STATE.forecast.mtd_actual_spend !== undefined)
+        ? parseFloat(APP_STATE.forecast.mtd_actual_spend) || 0
+        : ((APP_STATE.budgets && APP_STATE.budgets.total_spent !== undefined)
+            ? parseFloat(APP_STATE.budgets.total_spent) || 0
+            : (APP_STATE.categoryTotalExpense || 0));
+
+      if (mtdSpend === 0 && Array.isArray(APP_STATE.transactions) && APP_STATE.transactions.length > 0) {
+        APP_STATE.transactions.forEach(t => {
+          if (t && t.transaction_type === 'EXPENSE' && t.date && String(t.date).startsWith(currentYM)) {
+            mtdSpend += parseFloat(t.amount) || 0;
+          }
+        });
+      }
+
+      const budgetLimit = (APP_STATE.budgets && parseFloat(APP_STATE.budgets.overall_budget))
+        || (APP_STATE.forecast && parseFloat(APP_STATE.forecast.monthly_budget))
+        || 0;
+      const dailyVelocity = mtdSpend / daysElapsed;
+      const projEnd = mtdSpend + (dailyVelocity * (daysInMonth - daysElapsed));
+      const safeDailyCap = budgetLimit > 0 ? Math.max(0, (budgetLimit - mtdSpend) / daysLeft) : 0;
+
+      if (!APP_STATE.forecast || typeof APP_STATE.forecast !== 'object') {
+        APP_STATE.forecast = {};
+      }
+      const f = APP_STATE.forecast;
+      if (f.mtd_actual_spend === undefined) f.mtd_actual_spend = mtdSpend;
+      if (f.projected_month_end_spend === undefined) f.projected_month_end_spend = Math.round(projEnd * 100) / 100;
+      if (f.estimated_month_end === undefined) f.estimated_month_end = f.projected_month_end_spend;
+      if (f.daily_spending_velocity === undefined) f.daily_spending_velocity = Math.round(dailyVelocity * 100) / 100;
+      if (f.daily_run_rate === undefined) f.daily_run_rate = f.daily_spending_velocity;
+      if (f.monthly_budget === undefined) f.monthly_budget = budgetLimit;
+      if (f.budget === undefined) f.budget = f.monthly_budget;
+      if (f.safe_daily_spend === undefined) f.safe_daily_spend = Math.round(safeDailyCap * 10) / 10;
+      if (f.safe_today === undefined) f.safe_today = f.safe_daily_spend;
+      if (f.safe_daily_cap === undefined) f.safe_daily_cap = f.safe_daily_spend;
+      f.days_elapsed = daysElapsed;
+      f.total_days_in_month = daysInMonth;
+      return f;
+    }
 
     // Unified Single-Store Persistence Helper (Saves complete snapshot across ALL 5 tabs)
     function persistUnifiedLocalState() {
@@ -4342,6 +4550,13 @@
             showPinLockOverlay();
           }
           applyBootstrapData(parsed, false);
+          if (!Array.isArray(APP_STATE.history6m) || APP_STATE.history6m.length === 0) {
+            renderHistoryBarChart(ensureHistory6mInitialized());
+          }
+          if (!APP_STATE.forecast) {
+            const initFc = ensureForecastInitialized();
+            renderForecastDetails(initFc);
+          }
         } else {
           const cachedCats = localStorage.getItem('cached_categories');
           if (cachedCats) APP_STATE.categories = JSON.parse(cachedCats);
@@ -4353,6 +4568,9 @@
             renderGoals(userGoals);
             renderSavingsGoalsModalList(userGoals);
           }
+          renderHistoryBarChart(ensureHistory6mInitialized());
+          const initFc = ensureForecastInitialized();
+          renderForecastDetails(initFc);
         }
       } catch (cacheErr) {
         console.warn('Instant cache hydration notice:', cacheErr);
@@ -4364,7 +4582,22 @@
     // Background Network Sync on App Launch (non-blocking)
     window.addEventListener('DOMContentLoaded', () => {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.1').then(reg => {
+        let refreshingForSw = false;
+        const triggerSwUpgradeReload = () => {
+          if (refreshingForSw) return;
+          if (!sessionStorage.getItem('sw_upgraded_v3_2')) {
+            refreshingForSw = true;
+            sessionStorage.setItem('sw_upgraded_v3_2', '1');
+            window.location.reload();
+          }
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', triggerSwUpgradeReload);
+        navigator.serviceWorker.addEventListener('message', (evt) => {
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.2-cache') {
+            triggerSwUpgradeReload();
+          }
+        });
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.2').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -4374,6 +4607,9 @@
 
       if (APP_STATE.token && APP_STATE.user) {
         initializeAppData().catch(console.error);
+        if (LOCAL_PENDING_OPS.hasAny() || LOCAL_TOMBSTONES.getTxIds().size > 0) {
+          setTimeout(() => initializeAppData(true).catch(() => {}), 2200);
+        }
         if (navigator.onLine && APP_STATE.offlineQueue && APP_STATE.offlineQueue.length > 0) {
           triggerManualSync().catch(console.warn);
         }
@@ -4699,14 +4935,12 @@
           if (Array.isArray(APP_STATE.categoryBreakdown) && APP_STATE.categoryBreakdown.length > 0) {
             renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense, true);
           }
-          if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
-            renderHistoryBarChart(APP_STATE.history6m);
-          }
+          renderHistoryBarChart(ensureHistory6mInitialized());
           try { renderTransactionsList(); } catch (e) {}
         }
         if (targetId === 'tab-ai') {
-          try { renderForecastDetails(APP_STATE.forecast); } catch (e) {}
-          try { renderTrajectoryChart(APP_STATE.forecast); } catch (e) {}
+          const fc = APP_STATE.forecast || ensureForecastInitialized();
+          try { renderForecastDetails(fc); } catch (e) {}
           try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
         }
       } catch (err) {
@@ -4838,8 +5072,157 @@
       }
     }
 
+    function applyDeltaToBootstrapAggregates(b, tx, sign) {
+      if (!b || !tx || !sign) return;
+      const amt = (parseFloat(tx.amount) || 0) * sign;
+      if (!amt) return;
+      const now = new Date();
+      const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const txDate = String(tx.date || curYM + '-01').slice(0, 10);
+      const txYM = txDate.slice(0, 7);
+      const txY = parseInt(txDate.slice(0, 4));
+      const txM = parseInt(txDate.slice(5, 7));
+
+      if (tx.transaction_type === 'EXPENSE') {
+        if (txYM === curYM) {
+          if (!b.cashflow) b.cashflow = {};
+          b.cashflow.expenses = Math.max(0, Math.round(((parseFloat(b.cashflow.expenses) || 0) + amt) * 100) / 100);
+          b.total_expense = Math.max(0, Math.round(((parseFloat(b.total_expense) || 0) + amt) * 100) / 100);
+          if (b.budgets) {
+            b.budgets.total_spent = b.cashflow.expenses;
+            if (Array.isArray(b.budgets.category_budgets) && tx.category_id) {
+              b.budgets.category_budgets.forEach(cb => {
+                if (String(cb.category_id) === String(tx.category_id)) {
+                  cb.spent = Math.max(0, (parseFloat(cb.spent) || 0) + amt);
+                  const lim = parseFloat(cb.budget_limit) || 0;
+                  cb.remaining = Math.max(0, lim - cb.spent);
+                  cb.utilization_pct = lim > 0 ? Math.round((cb.spent / lim) * 1000) / 10 : 0;
+                  cb.is_exceeded = cb.spent > lim;
+                }
+              });
+            }
+          }
+          if (b.forecast) {
+            const newMtd = Math.max(0, Math.round(((parseFloat(b.forecast.mtd_actual_spend) || 0) + amt) * 100) / 100);
+            const daysEl = Math.max(1, b.forecast.days_elapsed || now.getDate());
+            const newVel = newMtd / daysEl;
+            const newProj = Math.max(newMtd, (parseFloat(b.forecast.projected_month_end_spend) || 0) + amt);
+            b.forecast.mtd_actual_spend = newMtd;
+            b.forecast.daily_spending_velocity = Math.round(newVel * 100) / 100;
+            b.forecast.daily_run_rate = b.forecast.daily_spending_velocity;
+            b.forecast.projected_month_end_spend = Math.round(newProj * 100) / 100;
+            b.forecast.estimated_month_end = b.forecast.projected_month_end_spend;
+          }
+          if (Array.isArray(b.breakdown)) {
+            const cName = tx.category_name || 'Others';
+            const slice = b.breakdown.find(s => s.name === cName);
+            if (slice) {
+              slice.amount = Math.max(0, (parseFloat(slice.amount) || 0) + amt);
+              slice.count = Math.max(0, (slice.count || 0) + sign);
+            } else if (sign > 0) {
+              b.breakdown.push({
+                name: cName,
+                amount: amt,
+                percentage: 0,
+                color: tx.category_color || '#6B7280',
+                icon: tx.category_icon || 'category',
+                count: 1
+              });
+            }
+            const totalBd = b.breakdown.reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
+            b.breakdown = b.breakdown.filter(s => (parseFloat(s.amount) || 0) > 0);
+            b.breakdown.forEach(s => {
+              s.percentage = totalBd > 0 ? Math.round((s.amount / totalBd) * 1000) / 10 : 0;
+            });
+          }
+        }
+        if (Array.isArray(b.history_6m)) {
+          const hBucket = b.history_6m.find(m => m.year === txY && m.month === txM);
+          if (hBucket) {
+            hBucket.expenses = Math.max(0, Math.round(((parseFloat(hBucket.expenses) || 0) + amt) * 100) / 100);
+          }
+        }
+        if (Array.isArray(b.weekly_daily)) {
+          const wDay = b.weekly_daily.find(d => d.date === txDate);
+          if (wDay) {
+            wDay.expenses = Math.max(0, Math.round(((parseFloat(wDay.expenses) || 0) + amt) * 100) / 100);
+          }
+        }
+      } else if (tx.transaction_type === 'INCOME' && txYM === curYM) {
+        if (!b.cashflow) b.cashflow = {};
+        b.cashflow.income = Math.max(0, Math.round(((parseFloat(b.cashflow.income) || 0) + amt) * 100) / 100);
+      }
+    }
+
+    function reconcileBackgroundBootstrap(b) {
+      if (!b) return;
+      const deadTxIds = LOCAL_TOMBSTONES.getTxIds();
+      const deadMetaMap = LOCAL_TOMBSTONES.getTxMetaMap();
+      const serverTxs = Array.isArray(b.transactions) ? b.transactions : [];
+      const serverTxIds = new Set(serverTxs.map(t => String(t.id)));
+
+      // 1. Subtract any deleted tx still sitting in server snapshot before filtering list
+      deadTxIds.forEach(did => {
+        if (serverTxIds.has(did) && deadMetaMap[did]) {
+          applyDeltaToBootstrapAggregates(b, deadMetaMap[did], -1);
+        }
+      });
+
+      // 2. Apply pending creates if not yet committed & returned by server
+      const serverUuids = new Set(serverTxs.map(t => t && t.client_uuid).filter(Boolean));
+      const pendingCreates = LOCAL_PENDING_OPS.getCreates();
+      pendingCreates.forEach(p => {
+        if (serverUuids.has(p.client_uuid)) {
+          LOCAL_PENDING_OPS.removeCreate(p.client_uuid);
+        } else if (!deadTxIds.has(String(p.tx.id))) {
+          if (!Array.isArray(b.transactions)) b.transactions = [];
+          b.transactions.unshift(p.tx);
+          applyDeltaToBootstrapAggregates(b, p.tx, +1);
+        }
+      });
+
+      // 3. Apply pending edits if server transaction still has older amount/date
+      const pendingEdits = LOCAL_PENDING_OPS.getEdits();
+      Object.values(pendingEdits).forEach(ed => {
+        const idx = (b.transactions || []).findIndex(t => String(t.id) === String(ed.id));
+        if (idx !== -1) {
+          const srv = b.transactions[idx];
+          const sameAmt = Math.abs((parseFloat(srv.amount) || 0) - (parseFloat(ed.newTx.amount) || 0)) < 0.01;
+          const sameDate = String(srv.date || '').slice(0, 10) === String(ed.newTx.date || '').slice(0, 10);
+          if (sameAmt && sameDate) {
+            LOCAL_PENDING_OPS.removeEdit(ed.id);
+          } else {
+            applyDeltaToBootstrapAggregates(b, srv, -1);
+            b.transactions[idx] = { ...srv, ...ed.newTx, id: srv.id };
+            applyDeltaToBootstrapAggregates(b, ed.newTx, +1);
+          }
+        }
+      });
+
+      // 4. Preserve pending Monthly Budget edit if server hasn't committed it yet
+      const bOverride = LOCAL_PENDING_OPS.getBudgetOverride();
+      if (bOverride && b.budgets) {
+        if (Math.abs((parseFloat(b.budgets.overall_budget) || 0) - bOverride.overall_budget) < 0.01) {
+          LOCAL_PENDING_OPS.clearBudgetOverride();
+        } else {
+          b.budgets.overall_budget = bOverride.overall_budget;
+          if (!b.forecast) b.forecast = {};
+          b.forecast.monthly_budget = bOverride.overall_budget;
+          b.forecast.budget = bOverride.overall_budget;
+        }
+      }
+
+      if (Array.isArray(b.transactions)) {
+        b.transactions.sort((a, x) => String(x.date || '').localeCompare(String(a.date || '')) || (Number(x.id) || 0) - (Number(a.id) || 0));
+        b.recent_transactions = b.transactions.slice(0, 5);
+      }
+    }
+
     function applyBootstrapData(b, isBackground = false) {
       if (!b) return;
+      if (isBackground) {
+        reconcileBackgroundBootstrap(b);
+      }
 
       // 1. User Currency
       if (b.currency) {
@@ -5496,12 +5879,14 @@
     }
 
     function renderTrajectoryChart(f) {
+      if (!f) f = ensureForecastInitialized();
       if (!f) return;
-      const budget = f.monthly_budget || 0;
-      const mtd = f.mtd_actual_spend || 0;
-      const proj = f.projected_month_end_spend || 0;
-      const day = f.days_elapsed || 1;
-      const totalDays = f.total_days_in_month || 30;
+      const budget = parseFloat(f.monthly_budget) || (APP_STATE.budgets ? parseFloat(APP_STATE.budgets.overall_budget) : 0) || 0;
+      const mtd = parseFloat(f.mtd_actual_spend) || 0;
+      const proj = (f.projected_month_end_spend !== undefined) ? (parseFloat(f.projected_month_end_spend) || 0) : (parseFloat(f.estimated_month_end) || 0);
+      const nowD = new Date();
+      const day = f.days_elapsed || Math.max(1, nowD.getDate());
+      const totalDays = f.total_days_in_month || new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
 
       const maxVal = Math.max(budget * 1.15, proj * 1.15, mtd * 1.15, 1000);
       const getY = val => Math.max(10, Math.min(95, 95 - (val / maxVal * 80)));
@@ -6502,7 +6887,7 @@
       triggerHaptic('success');
 
       if (!APP_STATE.budgets) APP_STATE.budgets = {};
-      if (!APP_STATE.forecast) APP_STATE.forecast = {};
+      ensureForecastInitialized();
       const nowD = new Date();
       const daysInM = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
       const daysLeftM = Math.max(1, daysInM - nowD.getDate());
@@ -6542,6 +6927,7 @@
         }, 1200);
       }
 
+      LOCAL_PENDING_OPS.setBudgetOverride(val);
       persistUnifiedLocalState();
 
       // Background API Persistence
@@ -6549,6 +6935,8 @@
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         amount: val
+      }).then(res => {
+        if (res && res.success) LOCAL_PENDING_OPS.clearBudgetOverride();
       });
     }
 
@@ -7218,14 +7606,18 @@
           monthly_budget: budgetLimit
         };
       }
+      APP_STATE.forecast.days_elapsed = daysElapsed;
+      APP_STATE.forecast.total_days_in_month = daysInMonth;
       APP_STATE.forecast.mtd_actual_spend = currentMonthExpenses;
       APP_STATE.forecast.projected_month_end_spend = Math.round(projectedMonthEnd * 100) / 100;
       APP_STATE.forecast.estimated_month_end = Math.round(projectedMonthEnd * 100) / 100;
-      APP_STATE.forecast.daily_run_rate = Math.round(dailyVelocity * 100) / 100;
+      APP_STATE.forecast.daily_spending_velocity = Math.round(dailyVelocity * 100) / 100;
+      APP_STATE.forecast.daily_run_rate = APP_STATE.forecast.daily_spending_velocity;
       APP_STATE.forecast.safe_today = Math.round(safeDailyCap * 10) / 10;
       APP_STATE.forecast.safe_daily_spend = Math.round(safeDailyCap * 10) / 10;
       APP_STATE.forecast.safe_daily_cap = Math.round(safeDailyCap * 10) / 10;
       APP_STATE.forecast.monthly_budget = budgetLimit;
+      APP_STATE.forecast.budget = budgetLimit;
 
       const optPct = budgetLimit > 0 ? (projectedMonthEnd / budgetLimit) * 100 : 0;
       if (budgetLimit > 0 && optPct > 110) {
@@ -7258,21 +7650,26 @@
       APP_STATE.categoryTotalExpense = currentMonthExpenses;
       renderDonutChart(slices, currentMonthExpenses, true);
 
-      // Update current month in 6M History
-      if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
-        const lastM = APP_STATE.history6m[APP_STATE.history6m.length - 1];
-        if (lastM) {
-          lastM.expenses = currentMonthExpenses;
-          renderHistoryBarChart(APP_STATE.history6m);
+      // Update matching month (current or historical) in 6M Monthly Expense History
+      ensureHistory6mInitialized();
+      const txYear = tx.date ? parseInt(String(tx.date).slice(0, 4)) : now.getFullYear();
+      const txMonth = tx.date ? parseInt(String(tx.date).slice(5, 7)) : (now.getMonth() + 1);
+      const targetBucket = APP_STATE.history6m.find(m => m.year === txYear && m.month === txMonth);
+      if (targetBucket && tx.transaction_type === 'EXPENSE') {
+        if (txYear === now.getFullYear() && txMonth === (now.getMonth() + 1) && (APP_STATE.transactions || []).length < 50) {
+          targetBucket.expenses = currentMonthExpenses;
+        } else {
+          targetBucket.expenses = Math.max(0, Math.round(((parseFloat(targetBucket.expenses) || 0) + (isAddition ? amount : -amount)) * 100) / 100);
         }
+      } else if (APP_STATE.history6m.length > 0 && (APP_STATE.transactions || []).length < 50) {
+        APP_STATE.history6m[APP_STATE.history6m.length - 1].expenses = currentMonthExpenses;
       }
+      renderHistoryBarChart(APP_STATE.history6m);
 
       // Render All Transactions List
       renderTransactionsList(APP_STATE.transactions);
 
-      // 5. Update Insights Screen (Tab 4) Completely at 0ms
-      renderForecastDetails(APP_STATE.forecast);
-      renderTrajectoryChart(APP_STATE.forecast);
+      // 5. Update Insights Screen Weekly Bar (updateForecastUI above already rendered Forecast Details & Trajectory SVG)
       renderWeeklyDailyBarChart();
 
       // 6. Synchronize cleanly with unified single-store localStorage
@@ -7733,8 +8130,8 @@
           closeTxDetailModal();
           triggerHaptic('medium');
 
-          // 1. Tombstone immediately so refresh or slow background bootstrap NEVER brings it back
-          LOCAL_TOMBSTONES.addTxId(txId);
+          // 1. Tombstone + tx metadata immediately so rapid refresh NEVER reverts history/trajectory totals
+          LOCAL_TOMBSTONES.addTxId(txId, txToDelete);
           APP_STATE.mutationVersion++;
 
           // 2. Remove from DOM instantly
@@ -7827,6 +8224,7 @@
         }
       }
 
+      LOCAL_PENDING_OPS.addEdit(oldId, oldTx, updatedTx);
       syncAllScreensOptimistically(oldTx, false);
       syncAllScreensOptimistically(updatedTx, true);
       persistUnifiedLocalState();
@@ -7851,6 +8249,8 @@
           if (resolved) realId = String(resolved);
         }
         const res = await apiRequest(`/transactions/${realId}`, 'PUT', payload);
+        LOCAL_PENDING_OPS.removeEdit(oldId);
+        LOCAL_PENDING_OPS.removeEdit(realId);
         if (res && res.success && res.transaction_id) {
           updatedTx.id = res.transaction_id;
           const idx = (APP_STATE.transactions || []).findIndex(t => String(t.id) === String(oldTx.id));
@@ -8550,7 +8950,8 @@
         renderAccountPillsAndNetWorth();
       }
 
-      // 0ms INSTANT MULTI-SCREEN SYNC + Unified Persistence
+      // 0ms INSTANT MULTI-SCREEN SYNC + Unified Persistence + Pending Create Guard
+      LOCAL_PENDING_OPS.addCreate(tempTx);
       syncAllScreensOptimistically(tempTx, true);
       persistUnifiedLocalState();
 
@@ -8562,6 +8963,7 @@
       const savePromise = apiRequest('/transactions', 'POST', payload).then(res => {
         delete APP_STATE.pendingSavePromises[tempId];
         if (res && res.success) {
+          LOCAL_PENDING_OPS.removeCreate(clientUuid);
           const realId = res.transaction_id || res.transaction?.id;
           if (realId) {
             tempTx.id = realId;
@@ -8830,6 +9232,8 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+          renderHistoryBarChart(ensureHistory6mInitialized());
+          renderForecastDetails(ensureForecastInitialized());
           await initializeAppData();
 
           if (typeof showToast === 'function') {
@@ -8907,6 +9311,8 @@
               localStorage.setItem('user_profile', JSON.stringify(res.user));
               document.getElementById('authOverlay').classList.add('hidden');
               updateUserUI();
+              renderHistoryBarChart(ensureHistory6mInitialized());
+              renderForecastDetails(ensureForecastInitialized());
               await initializeAppData();
               if (typeof showToast === 'function') {
                 showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
@@ -8947,6 +9353,8 @@
 
             document.getElementById('authOverlay').classList.add('hidden');
             updateUserUI();
+            renderHistoryBarChart(ensureHistory6mInitialized());
+            renderForecastDetails(ensureForecastInitialized());
             await initializeAppData();
             if (typeof showToast === 'function') {
               showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
@@ -9231,6 +9639,8 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+          renderHistoryBarChart(ensureHistory6mInitialized());
+          renderForecastDetails(ensureForecastInitialized());
           await initializeAppData();
 
           if (typeof showToast === 'function') {
@@ -9647,7 +10057,7 @@
           APP_STATE.offlineQueue = [];
           localStorage.removeItem('expense_offline_queue');
           updateSyncBadge();
-          await refreshDashboardData();
+          await initializeAppData(true);
         } else if (res.status === 400 || (data && data.error)) {
           // Stale or invalid items purged to prevent stuck queue
           APP_STATE.offlineQueue = [];
@@ -10351,7 +10761,8 @@
           APP_STATE.currencySymbol = res.currency.symbol;
           updateCurrencyUI();
           closeCurrencyModal();
-          await refreshDashboardData();
+          persistUnifiedLocalState();
+          await initializeAppData(true);
         }
       } catch (err) {
         alert("Failed to update currency preference.");
@@ -10531,7 +10942,7 @@
           alert(`✅ Transaction Confirmed & Recorded!\n₹${amount.toFixed(2)} recorded to ledger.`);
           closeReceiptScannerModal();
           cancelReceiptReview();
-          await refreshDashboardData();
+          await initializeAppData(true);
         } else {
           alert(res?.error || 'Failed to record transaction.');
         }
@@ -10816,7 +11227,7 @@
           triggerHaptic('heavy');
           alert(`✅ Verified & Saved to Ledger!\n₹${amount.toFixed(2)} recorded.`);
           closeSmsParserModal();
-          await refreshDashboardData();
+          await initializeAppData(true);
         } else {
           alert(res?.error || 'Failed to save transaction.');
         }
@@ -10982,7 +11393,7 @@
         if (res && res.success) {
           alert(`✅ '${title}' is now tracked as a recurring bill!`);
           loadSubscriptionsOverview();
-          await refreshDashboardData();
+          await initializeAppData(true);
         } else {
           alert(res?.error || "Failed to convert subscription.");
         }
@@ -11004,6 +11415,11 @@
       APP_STATE.token = '';
       APP_STATE.user = null;
       APP_STATE.transactions = [];
+      APP_STATE.history6m = [];
+      APP_STATE.weeklyDaily = [];
+      APP_STATE.categoryBreakdown = [];
+      APP_STATE.categoryTotalExpense = 0;
+      APP_STATE.forecast = null;
       APP_STATE.accounts = [];
       APP_STATE.budgets = null;
       APP_STATE.pinUnlockedThisSession = false;

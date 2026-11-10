@@ -1235,8 +1235,10 @@ def generate_predictive_notifications(user_id):
 # Phase 11: Financial Goals & Savings Vault
 # ==================================================
 
-def get_financial_goals(user_id):
-    conn = get_db_connection()
+def get_financial_goals(user_id, conn=None):
+    owns_conn = conn is None
+    if owns_conn:
+        conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT * FROM financial_goals 
@@ -1244,7 +1246,8 @@ def get_financial_goals(user_id):
         ORDER BY is_completed ASC, id DESC
     """, (user_id,))
     rows = cursor.fetchall()
-    conn.close()
+    if owns_conn:
+        conn.close()
 
     goals = []
     today_d = date.today()

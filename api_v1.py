@@ -1780,12 +1780,20 @@ def get_app_bootstrap():
     cursor = conn.cursor()
 
     try:
-        # 1. User Currency (using existing pooled connection)
-        cursor.execute("SELECT currency_code, currency_symbol FROM users WHERE id = ?", (user_id,))
+        # 1. User Currency & Security Shield Settings (single query)
+        cursor.execute(
+            "SELECT currency_code, currency_symbol, app_pin, is_pin_enabled, privacy_mode FROM users WHERE id = ?",
+            (user_id,)
+        )
         u_row = cursor.fetchone()
         curr_code = u_row["currency_code"] if (u_row and u_row["currency_code"]) else "INR"
         curr_sym = u_row["currency_symbol"] if (u_row and u_row["currency_symbol"]) else "₹"
         curr = {"code": curr_code, "symbol": curr_sym}
+        security_settings = {
+            "has_pin": bool(u_row and u_row["app_pin"]),
+            "is_pin_enabled": bool(u_row and u_row["is_pin_enabled"]),
+            "privacy_mode": bool(u_row and u_row["privacy_mode"])
+        }
 
         # 2. Accounts & Net Worth (derived in-memory from 1 query)
         cursor.execute("""
@@ -1924,24 +1932,25 @@ def get_app_bootstrap():
                 "count": r["tx_count"]
             })
 
-        # 7. Budgets (includes exact b.id AND zero N+1 query!)
-        cursor.execute("""
-            SELECT amount FROM budgets
-            WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)
-        """, (user_id, month, year))
-        overall_row = cursor.fetchone()
-        overall_budget = float(overall_row["amount"]) if overall_row else 0.0
-
+        # 7. Budgets (1 single LEFT JOIN query gets overall + all category limits + zero N+1)
         days_in_month = calendar.monthrange(year, month)[1]
         days_remaining = max(1, days_in_month - today.day)
 
         cursor.execute("""
             SELECT b.id, b.category_id, b.amount, c.name as category_name, c.icon as category_icon, c.color_hex as category_color
             FROM budgets b
-            JOIN categories c ON b.category_id = c.id
+            LEFT JOIN categories c ON b.category_id = c.id
             WHERE b.user_id = ? AND b.month = ? AND b.year = ?
         """, (user_id, month, year))
-        cat_budget_rows = cursor.fetchall()
+        all_budget_rows = cursor.fetchall()
+
+        overall_budget = 0.0
+        cat_budget_rows = []
+        for brow in all_budget_rows:
+            if brow["category_id"] is None or brow["category_id"] == 0:
+                overall_budget = float(brow["amount"] or 0.0)
+            elif brow["category_name"]:
+                cat_budget_rows.append(brow)
 
         category_budgets = []
         for cb in cat_budget_rows:
@@ -2049,10 +2058,14 @@ def get_app_bootstrap():
                 "is_today": (cur_d == today)
             })
 
+        # 11. Goals included right in single bootstrap connection
+        goals_list = database.get_financial_goals(user_id, conn=conn)
+
         return jsonify({
             "success": True,
             "bootstrap": {
                 "currency": curr,
+                "security": security_settings,
                 "accounts": accounts,
                 "net_worth": net_worth,
                 "cashflow": cashflow,
@@ -2061,6 +2074,7 @@ def get_app_bootstrap():
                 "recent_transactions": tx_rows[:5],
                 "transactions": tx_rows,
                 "budgets": budget_data,
+                "goals": goals_list,
                 "breakdown": breakdown,
                 "total_expense": round(total_expense, 2),
                 "history_6m": history_6m,
@@ -2113,7 +2127,9 @@ def handle_goals():
         icon=icon
     )
 
-    return jsonify({"success": True, "goal_id": goal_id, "message": "Goal created successfully"}), 201
+    goals_after = database.get_financial_goals(user_id)
+    created_goal = next((g for g in goals_after if g["id"] == goal_id), None)
+    return jsonify({"success": True, "goal_id": goal_id, "goal": created_goal, "message": "Goal created successfully"}), 201
 
 @api_v1.route('/goals/<int:goal_id>/deposit', methods=['POST'])
 @token_required

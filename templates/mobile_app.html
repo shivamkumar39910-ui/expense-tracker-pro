@@ -176,6 +176,7 @@
         box-shadow: none !important;
         border: none !important;
         background: var(--bg-app) !important;
+        overflow: hidden !important;
       }
       .mobile-status-bar {
         display: none !important;
@@ -781,11 +782,13 @@
       z-index: 100;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.16s ease;
+      visibility: hidden;
+      transition: opacity 0.16s ease, visibility 0.16s ease;
     }
     .sheet-backdrop.active {
       opacity: 1;
       pointer-events: auto;
+      visibility: visible;
     }
     
     #quickEntrySheet {
@@ -808,13 +811,17 @@
       padding: 16px 20px 24px 20px;
       z-index: 110;
       transform: translate3d(0, 100%, 0);
-      transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+      transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0.18s ease;
       max-height: 92vh;
       overflow-y: auto;
       color: var(--text-primary);
+      visibility: hidden !important;
+      pointer-events: none !important;
     }
     .bottom-sheet.active {
       transform: translateY(0);
+      visibility: visible !important;
+      pointer-events: auto !important;
     }
     .sheet-handle {
       width: 40px;
@@ -4600,6 +4607,7 @@
       }
 
       updateUserUI();
+      closeAllSheets();
       try {
         const cachedBootstrap = localStorage.getItem('cached_bootstrap');
         if (cachedBootstrap) {
@@ -4652,7 +4660,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       if ('serviceWorker' in navigator) {
         let refreshingForSw = false;
-        const triggerSwUpgradeReload = (verKey = 'v3_6') => {
+        const triggerSwUpgradeReload = (verKey = 'v3_7') => {
           if (refreshingForSw) return;
           const flag = 'sw_upgraded_' + verKey;
           if (!sessionStorage.getItem(flag)) {
@@ -4661,15 +4669,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_6'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_7'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.6-cache') {
-            triggerSwUpgradeReload('v3_6');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.7-cache') {
+            triggerSwUpgradeReload('v3_7');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.6').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.7').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -4998,6 +5006,7 @@
 
     function switchTab(tabId, pushHistory = true) {
       try {
+        closeAllSheets();
         triggerHaptic('light');
 
         // Normalize aliases for 5-element nav
@@ -5081,23 +5090,8 @@
     });
 
     function closeAllSheets() {
-      closeAddCategoryModal();
-      closeAddSubcategoryModal();
-      closeAiChatModal();
-      closeQuickEntrySheet();
-      closeAccountStatementSheet();
-      closeTxDetailModal();
-      closeNotificationsSheet();
-      closeStatementModal();
-      closeCurrencyModal();
-      closeReceiptScannerModal();
-      closeNewGoalModal();
-      closeGoalContributeModal();
-      closeSetPinModal();
-      closeDeactivatePinModal();
-      closeConfirmSheet();
-      closeEditTxSheet();
-      closeEditProfileModal();
+      document.querySelectorAll('.bottom-sheet.active').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.sheet-backdrop.active').forEach(el => el.classList.remove('active'));
     }
 
     function renderAiPredictionHero() {
@@ -9605,6 +9599,7 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+      closeAllSheets();
           renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
           renderWeeklyDailyBarChart();
@@ -9686,6 +9681,7 @@
               localStorage.setItem('user_profile', JSON.stringify(res.user));
               document.getElementById('authOverlay').classList.add('hidden');
               updateUserUI();
+      closeAllSheets();
               renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
               renderHistoryBarChart(ensureHistory6mInitialized());
               renderWeeklyDailyBarChart();
@@ -9730,6 +9726,7 @@
 
             document.getElementById('authOverlay').classList.add('hidden');
             updateUserUI();
+      closeAllSheets();
             renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
             renderHistoryBarChart(ensureHistory6mInitialized());
             renderWeeklyDailyBarChart();
@@ -10018,6 +10015,7 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
+      closeAllSheets();
           renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
           renderWeeklyDailyBarChart();
@@ -10116,6 +10114,7 @@
             localStorage.setItem('user_profile', JSON.stringify(APP_STATE.user));
           }
           updateUserUI();
+      closeAllSheets();
           closeEditProfileModal();
           triggerHaptic('medium');
           alert('Profile updated successfully!');

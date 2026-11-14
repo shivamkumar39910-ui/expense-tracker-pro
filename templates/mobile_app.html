@@ -2491,7 +2491,7 @@
               <div class="tx-meta" id="profilePinStatus">Not Set</div>
             </div>
           </div>
-          <button type="button" id="profileSetPinBtn" style="flex:0 0 auto; width:auto; max-width:fit-content; background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:5px 11px; border-radius:8px; border:none; line-height:1.2; letter-spacing:0.2px; cursor:pointer; display:inline-block; text-align:center;">Set PIN</button>
+          <button type="button" id="profileSetPinBtn" onclick="event.stopPropagation(); handleSecurityPinRowClick();" style="flex:0 0 auto; width:auto; max-width:fit-content; background:linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); color:#FFFFFF; font-size:11px; font-weight:700; padding:5px 11px; border-radius:8px; border:none; line-height:1.2; letter-spacing:0.2px; cursor:pointer; display:inline-block; text-align:center;">Set PIN</button>
         </div>
 
         <div class="tx-item" onclick="togglePrivacyMode()" style="cursor:pointer;">
@@ -3277,14 +3277,25 @@
           <span class="material-icons-round" style="font-size:18px;">close</span>
         </div>
       </div>
-      <div class="tx-meta" style="text-align:center; margin-bottom:16px;">This PIN protects your app whenever you reopen it.</div>
+      <div class="tx-meta" style="text-align:center; margin-bottom:14px;">This PIN protects your app whenever you reopen it.</div>
 
       <div id="setPinErrorBox" style="display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); color:#EF4444; font-size:12px; font-weight:700; padding:8px 12px; border-radius:10px; text-align:center; margin-bottom:12px;"></div>
 
-      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="form-input-pill" placeholder="Enter 4-Digit PIN" id="newPinInput" style="font-size:24px; letter-spacing:10px; text-align:center;">
-      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="form-input-pill" placeholder="Confirm 4-Digit PIN" id="confirmPinInput" style="font-size:24px; letter-spacing:10px; text-align:center;">
+      <div style="position:relative; margin-bottom:12px;">
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="form-input-pill" placeholder="Enter 4-Digit PIN" id="newPinInput" style="font-size:24px; letter-spacing:10px; text-align:center; margin-bottom:0;">
+      </div>
+      <div style="position:relative; margin-bottom:14px;">
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="form-input-pill" placeholder="Confirm 4-Digit PIN" id="confirmPinInput" style="font-size:24px; letter-spacing:10px; text-align:center; margin-bottom:0;">
+      </div>
 
-      <button class="btn-submit-sheet" onclick="saveNewAppPin()">Activate PIN Security</button>
+      <div style="display:flex; justify-content:center; margin-bottom:14px;">
+        <button type="button" onclick="toggleSetPinVisibility()" id="toggleSetPinVisibilityBtn" style="background:transparent; border:none; color:var(--text-secondary); font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <span class="material-icons-round" id="toggleSetPinEyeIcon" style="font-size:16px;">visibility</span>
+          <span id="toggleSetPinText">Show PIN</span>
+        </button>
+      </div>
+
+      <button type="button" class="btn-submit-sheet" id="btnActivatePin" onclick="saveNewAppPin()">Activate PIN Security</button>
     </div>
 
     <!-- ============================================== -->
@@ -3301,8 +3312,8 @@
         <div class="tx-meta" style="line-height:1.5;">Your app will open directly without asking for a 4-digit PIN. You can set a new PIN anytime later.</div>
       </div>
 
-      <button class="btn-submit-sheet" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:10px;" onclick="confirmDeactivateAppPin()">Yes, Deactivate PIN</button>
-      <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeDeactivatePinModal()">Keep PIN Active</button>
+      <button type="button" class="btn-submit-sheet" id="btnDeactivatePin" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:10px;" onclick="confirmDeactivateAppPin()">Yes, Deactivate PIN</button>
+      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeDeactivatePinModal()">Keep PIN Active</button>
     </div>
 
     <!-- ============================================== -->
@@ -4593,6 +4604,9 @@
         const cachedBootstrap = localStorage.getItem('cached_bootstrap');
         if (cachedBootstrap) {
           const parsed = JSON.parse(cachedBootstrap);
+          if (sessionStorage.getItem('pin_unlocked_session') === 'true') {
+            APP_STATE.pinUnlockedThisSession = true;
+          }
           if (parsed && parsed.security && parsed.security.is_pin_enabled && !APP_STATE.pinUnlockedThisSession) {
             APP_STATE.hasPin = parsed.security.has_pin;
             APP_STATE.isPinEnabled = true;
@@ -4638,7 +4652,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       if ('serviceWorker' in navigator) {
         let refreshingForSw = false;
-        const triggerSwUpgradeReload = (verKey = 'v3_5') => {
+        const triggerSwUpgradeReload = (verKey = 'v3_6') => {
           if (refreshingForSw) return;
           const flag = 'sw_upgraded_' + verKey;
           if (!sessionStorage.getItem(flag)) {
@@ -4647,21 +4661,50 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_5'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_6'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.5-cache') {
-            triggerSwUpgradeReload('v3_5');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.6-cache') {
+            triggerSwUpgradeReload('v3_6');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.5').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.6').then(reg => {
           reg.update();
         }).catch(() => {});
       }
 
       window.addEventListener('online', () => { updateSyncBadge(); triggerManualSync(); });
       window.addEventListener('offline', () => { updateSyncBadge(); });
+
+      // PIN Setup Modal Inputs (Instant Auto-advance, Numeric sanitization, Enter key handling)
+      const newPinInp = document.getElementById('newPinInput');
+      const confirmPinInp = document.getElementById('confirmPinInput');
+      if (newPinInp) {
+        newPinInp.addEventListener('input', (e) => {
+          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+          if (e.target.value.length === 4 && confirmPinInp) {
+            confirmPinInp.focus();
+          }
+        });
+        newPinInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (confirmPinInp) confirmPinInp.focus();
+          }
+        });
+      }
+      if (confirmPinInp) {
+        confirmPinInp.addEventListener('input', (e) => {
+          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+        });
+        confirmPinInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveNewAppPin();
+          }
+        });
+      }
 
       if (APP_STATE.token && APP_STATE.user) {
         initializeAppData(false).catch(console.error);
@@ -5503,6 +5546,9 @@
           pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
           pinBtn.innerText = 'Set PIN';
         }
+      }
+      if (sessionStorage.getItem('pin_unlocked_session') === 'true') {
+        APP_STATE.pinUnlockedThisSession = true;
       }
       if (s.is_pin_enabled && !APP_STATE.pinUnlockedThisSession) {
         showPinLockOverlay();
@@ -10438,6 +10484,12 @@
           }
         }
 
+        persistUnifiedLocalState();
+
+        if (sessionStorage.getItem('pin_unlocked_session') === 'true') {
+          APP_STATE.pinUnlockedThisSession = true;
+        }
+
         if (!skipLock && s.is_pin_enabled && !APP_STATE.pinUnlockedThisSession) {
           showPinLockOverlay();
         }
@@ -10521,6 +10573,7 @@
       const res = await apiRequest('/security/verify-pin', 'POST', { pin });
       if (res && res.valid) {
         APP_STATE.pinUnlockedThisSession = true;
+        try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
         hidePinLockOverlay();
       } else {
         const sub = document.getElementById('pinLockSubtitle');
@@ -10551,17 +10604,46 @@
 
     function openSetPinModal() {
       const errBox = document.getElementById('setPinErrorBox');
-      if (errBox) errBox.style.display = 'none';
-      document.getElementById('newPinInput').value = '';
-      document.getElementById('confirmPinInput').value = '';
-      document.getElementById('setPinBackdrop').classList.add('active');
-      document.getElementById('setPinSheet').classList.add('active');
-      setTimeout(() => document.getElementById('newPinInput')?.focus(), 200);
+      if (errBox) {
+        errBox.innerText = '';
+        errBox.style.display = 'none';
+      }
+      const p1 = document.getElementById('newPinInput');
+      const p2 = document.getElementById('confirmPinInput');
+      if (p1) {
+        p1.value = '';
+        p1.type = 'password';
+      }
+      if (p2) {
+        p2.value = '';
+        p2.type = 'password';
+      }
+      const icon = document.getElementById('toggleSetPinEyeIcon');
+      const text = document.getElementById('toggleSetPinText');
+      if (icon) icon.innerText = 'visibility';
+      if (text) text.innerText = 'Show PIN';
+
+      document.getElementById('setPinBackdrop')?.classList.add('active');
+      document.getElementById('setPinSheet')?.classList.add('active');
+      setTimeout(() => document.getElementById('newPinInput')?.focus(), 150);
     }
 
     function closeSetPinModal() {
       document.getElementById('setPinBackdrop')?.classList.remove('active');
       document.getElementById('setPinSheet')?.classList.remove('active');
+    }
+
+    function toggleSetPinVisibility() {
+      const p1 = document.getElementById('newPinInput');
+      const p2 = document.getElementById('confirmPinInput');
+      const icon = document.getElementById('toggleSetPinEyeIcon');
+      const text = document.getElementById('toggleSetPinText');
+      if (!p1 || !p2) return;
+      const isPwd = p1.type === 'password';
+      p1.type = isPwd ? 'tel' : 'password';
+      p2.type = isPwd ? 'tel' : 'password';
+      if (icon) icon.innerText = isPwd ? 'visibility_off' : 'visibility';
+      if (text) text.innerText = isPwd ? 'Hide PIN' : 'Show PIN';
     }
 
     function openDeactivatePinModal() {
@@ -10575,54 +10657,148 @@
     }
 
     async function confirmDeactivateAppPin() {
-      const res = await apiRequest('/security/disable-pin', 'POST');
-      if (res && res.success) {
-        APP_STATE.hasPin = false;
-        APP_STATE.isPinEnabled = false;
-        APP_STATE.pinUnlockedThisSession = false;
-        closeDeactivatePinModal();
-        await checkSecurityOnStartup();
-        if (typeof showToast === 'function') {
-          showToast('🔓 Security PIN deactivated successfully');
+      // 1. Instant 0ms Optimistic Commit
+      triggerHaptic('light');
+      closeDeactivatePinModal();
+
+      APP_STATE.hasPin = false;
+      APP_STATE.isPinEnabled = false;
+      APP_STATE.pinUnlockedThisSession = false;
+      try { sessionStorage.removeItem('pin_unlocked_session'); } catch (e) {}
+
+      const pinStatus = document.getElementById('profilePinStatus');
+      const pinBtn = document.getElementById('profileSetPinBtn');
+      if (pinStatus) pinStatus.innerText = 'Not Set';
+      if (pinBtn) {
+        pinBtn.style.flex = '0 0 auto';
+        pinBtn.style.width = 'auto';
+        pinBtn.style.maxWidth = 'fit-content';
+        pinBtn.style.padding = '5px 11px';
+        pinBtn.style.borderRadius = '8px';
+        pinBtn.style.boxShadow = 'none';
+        pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
+        pinBtn.innerText = 'Set PIN';
+      }
+
+      // 2. Synchronous local persistence so refresh never reverts
+      persistUnifiedLocalState();
+
+      if (typeof showToast === 'function') {
+        showToast('🔓 Security PIN deactivated', 'info');
+      }
+
+      // 3. Single background network sync
+      try {
+        const res = await apiRequest('/security/disable-pin', 'POST');
+        if (res && res.success) {
+          if (res.settings) {
+            APP_STATE.hasPin = res.settings.has_pin;
+            APP_STATE.isPinEnabled = res.settings.is_pin_enabled;
+            persistUnifiedLocalState();
+          }
+        } else {
+          // Rollback on rejection
+          APP_STATE.hasPin = true;
+          APP_STATE.isPinEnabled = true;
+          if (pinStatus) pinStatus.innerText = 'PIN Protection Active';
+          if (pinBtn) {
+            pinBtn.style.background = 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)';
+            pinBtn.innerText = 'Deactivate';
+          }
+          persistUnifiedLocalState();
+          if (typeof showToast === 'function') {
+            showToast(res?.error || 'Failed to deactivate PIN on server', 'error');
+          }
         }
-      } else {
-        alert(res?.error || 'Failed to deactivate Security PIN.');
+      } catch (err) {
+        console.warn('Background disable PIN notice:', err);
       }
     }
 
     async function saveNewAppPin() {
-      const p1 = document.getElementById('newPinInput').value.trim();
-      const p2 = document.getElementById('confirmPinInput').value.trim();
+      const p1El = document.getElementById('newPinInput');
+      const p2El = document.getElementById('confirmPinInput');
+      const p1 = (p1El?.value || '').trim().replace(/\D/g, '');
+      const p2 = (p2El?.value || '').trim().replace(/\D/g, '');
       const errBox = document.getElementById('setPinErrorBox');
 
-      const showErr = (msg) => {
+      const showErr = (msg, targetEl) => {
         if (errBox) {
           errBox.innerText = msg;
           errBox.style.display = 'block';
         } else {
           alert(msg);
         }
+        triggerHaptic('medium');
+        if (targetEl) targetEl.focus();
       };
 
-      if (p1.length !== 4 || !/^\d{4}$/.test(p1)) {
-        showErr('PIN must be exactly 4 numeric digits.');
+      if (!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) {
+        showErr('PIN must be exactly 4 numeric digits.', p1El);
         return;
       }
       if (p1 !== p2) {
-        showErr('PIN confirmation does not match.');
+        showErr('PIN confirmation does not match. Please re-enter.', p2El);
         return;
       }
 
-      const res = await apiRequest('/security/set-pin', 'POST', { pin: p1, enable: true });
-      if (res && res.success) {
-        APP_STATE.pinUnlockedThisSession = true;
-        closeSetPinModal();
-        await checkSecurityOnStartup();
-        if (typeof showToast === 'function') {
-          showToast('🔐 4-Digit Security PIN activated!');
+      // 1. Instant 0ms Optimistic Commit
+      triggerHaptic('success');
+      closeSetPinModal();
+
+      APP_STATE.hasPin = true;
+      APP_STATE.isPinEnabled = true;
+      APP_STATE.pinUnlockedThisSession = true;
+      try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
+
+      const pinStatus = document.getElementById('profilePinStatus');
+      const pinBtn = document.getElementById('profileSetPinBtn');
+      if (pinStatus) pinStatus.innerText = 'PIN Protection Active';
+      if (pinBtn) {
+        pinBtn.style.flex = '0 0 auto';
+        pinBtn.style.width = 'auto';
+        pinBtn.style.maxWidth = 'fit-content';
+        pinBtn.style.padding = '5px 11px';
+        pinBtn.style.borderRadius = '8px';
+        pinBtn.style.boxShadow = 'none';
+        pinBtn.style.background = 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)';
+        pinBtn.innerText = 'Deactivate';
+      }
+
+      // 2. Synchronous local persistence so refresh never reverts
+      persistUnifiedLocalState();
+
+      if (typeof showToast === 'function') {
+        showToast('🔐 4-Digit Security PIN activated successfully!', 'success');
+      }
+
+      // 3. Single background network sync
+      try {
+        const res = await apiRequest('/security/set-pin', 'POST', { pin: p1, enable: true });
+        if (res && res.success) {
+          if (res.settings) {
+            APP_STATE.hasPin = res.settings.has_pin;
+            APP_STATE.isPinEnabled = res.settings.is_pin_enabled;
+            persistUnifiedLocalState();
+          }
+        } else {
+          // Rollback on rejection
+          APP_STATE.hasPin = false;
+          APP_STATE.isPinEnabled = false;
+          APP_STATE.pinUnlockedThisSession = false;
+          try { sessionStorage.removeItem('pin_unlocked_session'); } catch (e) {}
+          if (pinStatus) pinStatus.innerText = 'Not Set';
+          if (pinBtn) {
+            pinBtn.style.background = 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)';
+            pinBtn.innerText = 'Set PIN';
+          }
+          persistUnifiedLocalState();
+          if (typeof showToast === 'function') {
+            showToast(res?.error || 'Failed to activate PIN on server', 'error');
+          }
         }
-      } else {
-        showErr(res?.error || 'Failed to set PIN');
+      } catch (err) {
+        console.warn('Background set PIN notice:', err);
       }
     }
 

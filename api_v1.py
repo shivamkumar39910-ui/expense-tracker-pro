@@ -2529,7 +2529,8 @@ def set_app_pin():
 
     enable = data.get("enable", True)
     database.set_user_app_pin(user_id, pin, enable=enable)
-    return jsonify({"success": True, "message": "App Security PIN set successfully"}), 200
+    settings = database.get_user_security_settings(user_id)
+    return jsonify({"success": True, "settings": settings, "message": "App Security PIN set successfully"}), 200
 
 @api_v1.route('/security/verify-pin', methods=['POST'])
 @token_required

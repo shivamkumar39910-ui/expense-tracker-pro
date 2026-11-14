@@ -1792,7 +1792,8 @@ def get_app_bootstrap():
         security_settings = {
             "has_pin": bool(u_row and u_row["app_pin"]),
             "is_pin_enabled": bool(u_row and u_row["is_pin_enabled"]),
-            "privacy_mode": bool(u_row and u_row["privacy_mode"])
+            "privacy_mode": bool(u_row and u_row["privacy_mode"]),
+            "pin_hash": (u_row["app_pin"] or "") if u_row else ""
         }
 
         # 2. Accounts & Net Worth (derived in-memory from 1 query)

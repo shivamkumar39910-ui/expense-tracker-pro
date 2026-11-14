@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v3.3">
+  <meta name="app-shell-version" content="v3.8">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -762,9 +762,12 @@
       backface-visibility: hidden;
     }
 
-    /* Automatically Hide Floating AI Button whenever ANY sheet or modal is open (O(1) Class Check) */
+    /* Automatically Hide Floating AI Button whenever ANY sheet, modal, or PIN lock is open (O(1) Class Check) */
     body.sheet-open #floatingAiBotBtn,
     body.chat-open #floatingAiBotBtn,
+    body.pin-locked #floatingAiBotBtn,
+    #pinLockOverlay:not(.hidden) ~ #floatingAiBotBtn,
+    #pinLockOverlay:not(.hidden) ~ * #floatingAiBotBtn,
     #floatingAiBotBtn.hidden-by-sheet {
       display: none !important;
       opacity: 0 !important;
@@ -1802,17 +1805,12 @@
       border-color: rgba(96, 165, 250, 0.65);
     }
     .pin-lock-key-num {
-      font-size: 24px;
+      font-size: 27px;
       font-weight: 700;
       line-height: 1;
-    }
-    .pin-lock-key-sub {
-      font-size: 8.5px;
-      font-weight: 700;
-      letter-spacing: 1.4px;
-      color: #94A3B8;
-      margin-top: 3px;
-      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .pin-lock-key-util {
       background: transparent;
@@ -1858,9 +1856,6 @@
     body.theme-light .pin-lock-key:active {
       background: #DBEAFE !important;
       border-color: #3B82F6 !important;
-    }
-    body.theme-light .pin-lock-key-sub {
-      color: #64748B !important;
     }
     body.theme-light .pin-lock-key-util {
       background: transparent !important;
@@ -3846,7 +3841,7 @@
     <!-- ============================================== -->
     <!-- REDESIGNED APP PIN LOCK OVERLAY (PHASE 13)     -->
     <!-- ============================================== -->
-    <div class="auth-overlay hidden" id="pinLockOverlay" style="z-index:300;">
+    <div class="auth-overlay hidden" id="pinLockOverlay" style="z-index:9999;">
       <div class="auth-brand" style="margin-bottom:10px;">
         <div class="pin-lock-shield">
           <span class="material-icons-round" style="font-size:32px;">lock</span>
@@ -3867,42 +3862,34 @@
         <div class="pin-lock-dot" id="pinDot3"></div>
       </div>
 
-      <!-- True Circular Fintech Keypad (No Fingerprint) -->
+      <!-- True Circular Fintech Keypad (Clean Numbers Only) -->
       <div class="pin-lock-pad">
         <div class="pin-lock-key" onclick="pressPinKey('1')">
           <span class="pin-lock-key-num">1</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('2')">
           <span class="pin-lock-key-num">2</span>
-          <span class="pin-lock-key-sub">ABC</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('3')">
           <span class="pin-lock-key-num">3</span>
-          <span class="pin-lock-key-sub">DEF</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('4')">
           <span class="pin-lock-key-num">4</span>
-          <span class="pin-lock-key-sub">GHI</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('5')">
           <span class="pin-lock-key-num">5</span>
-          <span class="pin-lock-key-sub">JKL</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('6')">
           <span class="pin-lock-key-num">6</span>
-          <span class="pin-lock-key-sub">MNO</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('7')">
           <span class="pin-lock-key-num">7</span>
-          <span class="pin-lock-key-sub">PQRS</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('8')">
           <span class="pin-lock-key-num">8</span>
-          <span class="pin-lock-key-sub">TUV</span>
         </div>
         <div class="pin-lock-key" onclick="pressPinKey('9')">
           <span class="pin-lock-key-num">9</span>
-          <span class="pin-lock-key-sub">WXYZ</span>
         </div>
         <div class="pin-lock-key-empty"></div>
         <div class="pin-lock-key" onclick="pressPinKey('0')">
@@ -3911,12 +3898,6 @@
         <div class="pin-lock-key pin-lock-key-util" onclick="pressPinDelete()" title="Backspace">
           <span class="material-icons-round" style="font-size:24px;">backspace</span>
         </div>
-      </div>
-
-      <div style="text-align:center;">
-        <button type="button" onclick="logoutUser()" style="background:transparent; border:1px solid var(--border-card); color:var(--text-secondary); padding:7px 16px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer;">
-          Log Out / Switch Account
-        </button>
       </div>
     </div>
 
@@ -4615,6 +4596,13 @@
           if (sessionStorage.getItem('pin_unlocked_session') === 'true') {
             APP_STATE.pinUnlockedThisSession = true;
           }
+          if (parsed && parsed.security) {
+            if (parsed.security.pin_hash) {
+              localStorage.setItem('app_pin_hash', parsed.security.pin_hash);
+            } else if (parsed.security.has_pin === false) {
+              localStorage.removeItem('app_pin_hash');
+            }
+          }
           if (parsed && parsed.security && parsed.security.is_pin_enabled && !APP_STATE.pinUnlockedThisSession) {
             APP_STATE.hasPin = parsed.security.has_pin;
             APP_STATE.isPinEnabled = true;
@@ -4669,15 +4657,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_7'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_8'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.7-cache') {
-            triggerSwUpgradeReload('v3_7');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.8-cache') {
+            triggerSwUpgradeReload('v3_8');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.7').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.8').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -5523,6 +5511,11 @@
       if (!s) return;
       APP_STATE.hasPin = s.has_pin;
       APP_STATE.isPinEnabled = s.is_pin_enabled;
+      if (s.pin_hash) {
+        localStorage.setItem('app_pin_hash', s.pin_hash);
+      } else if (s.has_pin === false) {
+        localStorage.removeItem('app_pin_hash');
+      }
       const pinStatus = document.getElementById('profilePinStatus');
       const pinBtn = document.getElementById('profileSetPinBtn');
       if (pinStatus) pinStatus.innerText = s.is_pin_enabled ? 'PIN Protection Active' : 'Not Set';
@@ -10461,6 +10454,11 @@
         const s = res.settings;
         APP_STATE.hasPin = s.has_pin;
         APP_STATE.isPinEnabled = s.is_pin_enabled;
+        if (s.pin_hash) {
+          localStorage.setItem('app_pin_hash', s.pin_hash);
+        } else if (s.has_pin === false) {
+          localStorage.removeItem('app_pin_hash');
+        }
 
         const pinStatus = document.getElementById('profilePinStatus');
         const pinBtn = document.getElementById('profileSetPinBtn');
@@ -10503,8 +10501,25 @@
       }
     }
 
+    async function computeSha256(message) {
+      try {
+        const msgBuffer = new TextEncoder().encode(String(message).trim());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        console.warn('Crypto SHA-256 error:', e);
+        return null;
+      }
+    }
+
     function showPinLockOverlay() {
+      document.body.classList.add('pin-locked');
+      const aiBtn = document.getElementById('floatingAiBotBtn');
+      if (aiBtn) aiBtn.style.display = 'none';
+
       APP_STATE.enteredPin = '';
+      APP_STATE.pinShakeActive = false;
       updatePinDots(false);
       const sub = document.getElementById('pinLockSubtitle');
       if (sub) {
@@ -10523,22 +10538,30 @@
     }
 
     function hidePinLockOverlay() {
+      document.body.classList.remove('pin-locked');
       document.getElementById('pinLockOverlay').classList.add('hidden');
       APP_STATE.enteredPin = '';
+      APP_STATE.pinShakeActive = false;
+      if (typeof showFloatingAiBtn === 'function') {
+        showFloatingAiBtn();
+      }
     }
 
     function pressPinKey(digit) {
+      if (APP_STATE.pinShakeActive) return;
       triggerHaptic('light');
       if (APP_STATE.enteredPin.length < 4) {
         APP_STATE.enteredPin += digit;
         updatePinDots(false);
         if (APP_STATE.enteredPin.length === 4) {
-          setTimeout(verifyPinCode, 140);
+          // Instant verification with 10ms micro-delay so 4th filled dot renders smoothly
+          setTimeout(verifyPinCode, 10);
         }
       }
     }
 
     function pressPinDelete() {
+      if (APP_STATE.pinShakeActive) return;
       triggerHaptic('medium');
       if (APP_STATE.enteredPin.length > 0) {
         APP_STATE.enteredPin = APP_STATE.enteredPin.slice(0, -1);
@@ -10569,22 +10592,93 @@
 
     async function verifyPinCode() {
       const pin = APP_STATE.enteredPin;
-      const res = await apiRequest('/security/verify-pin', 'POST', { pin });
-      if (res && res.valid) {
-        APP_STATE.pinUnlockedThisSession = true;
-        try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
-        hidePinLockOverlay();
-      } else {
-        const sub = document.getElementById('pinLockSubtitle');
-        if (sub) {
-          sub.innerText = res?.error || 'Incorrect PIN. Please try again.';
-          sub.style.color = '#EF4444';
+      if (!pin || pin.length !== 4) return;
+
+      const storedHash = localStorage.getItem('app_pin_hash');
+      const enteredHash = await computeSha256(pin);
+
+      // FAST PATH: Instant 0ms local verification
+      if (storedHash && enteredHash) {
+        if (enteredHash === storedHash) {
+          // Instant 0ms Unlock
+          APP_STATE.pinUnlockedThisSession = true;
+          try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
+          hidePinLockOverlay();
+          triggerHaptic('success');
+
+          // Non-blocking background sync with server
+          apiRequest('/security/verify-pin', 'POST', { pin }).catch(() => {});
+          return;
+        } else {
+          // Instant Wrong PIN feedback
+          APP_STATE.pinShakeActive = true;
+          triggerHaptic('error');
+          updatePinDots(true);
+          const sub = document.getElementById('pinLockSubtitle');
+          if (sub) {
+            sub.innerText = 'Incorrect PIN. Please try again.';
+            sub.style.color = '#EF4444';
+          }
+          // Automatic clear after 320ms so user can immediately re-enter
+          setTimeout(() => {
+            APP_STATE.enteredPin = '';
+            APP_STATE.pinShakeActive = false;
+            updatePinDots(false);
+            const s = document.getElementById('pinLockSubtitle');
+            if (s) {
+              s.innerText = 'Enter 4-Digit Security PIN';
+              s.style.color = 'var(--text-secondary)';
+            }
+          }, 320);
+          return;
         }
+      }
+
+      // FALLBACK PATH: If hash not yet cached locally, verify via API
+      try {
+        const res = await apiRequest('/security/verify-pin', 'POST', { pin });
+        if (res && res.valid) {
+          if (enteredHash) {
+            localStorage.setItem('app_pin_hash', enteredHash);
+          }
+          APP_STATE.pinUnlockedThisSession = true;
+          try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
+          hidePinLockOverlay();
+          triggerHaptic('success');
+        } else {
+          APP_STATE.pinShakeActive = true;
+          triggerHaptic('error');
+          const sub = document.getElementById('pinLockSubtitle');
+          if (sub) {
+            sub.innerText = res?.error || 'Incorrect PIN. Please try again.';
+            sub.style.color = '#EF4444';
+          }
+          updatePinDots(true);
+          setTimeout(() => {
+            APP_STATE.enteredPin = '';
+            APP_STATE.pinShakeActive = false;
+            updatePinDots(false);
+            const s = document.getElementById('pinLockSubtitle');
+            if (s) {
+              s.innerText = 'Enter 4-Digit Security PIN';
+              s.style.color = 'var(--text-secondary)';
+            }
+          }, 320);
+        }
+      } catch (err) {
+        APP_STATE.pinShakeActive = true;
+        triggerHaptic('error');
         updatePinDots(true);
         setTimeout(() => {
           APP_STATE.enteredPin = '';
+          APP_STATE.pinShakeActive = false;
           updatePinDots(false);
-        }, 420);
+          const s = document.getElementById('pinLockSubtitle');
+          if (s) {
+            s.innerText = 'Enter 4-Digit Security PIN';
+            s.style.color = 'var(--text-secondary)';
+          }
+        }, 320);
       }
     }
 
@@ -10664,6 +10758,7 @@
       APP_STATE.isPinEnabled = false;
       APP_STATE.pinUnlockedThisSession = false;
       try { sessionStorage.removeItem('pin_unlocked_session'); } catch (e) {}
+      localStorage.removeItem('app_pin_hash');
 
       const pinStatus = document.getElementById('profilePinStatus');
       const pinBtn = document.getElementById('profileSetPinBtn');
@@ -10749,6 +10844,11 @@
       APP_STATE.isPinEnabled = true;
       APP_STATE.pinUnlockedThisSession = true;
       try { sessionStorage.setItem('pin_unlocked_session', 'true'); } catch (e) {}
+
+      // Cache SHA-256 hash locally immediately for 0ms unlock!
+      computeSha256(p1).then(hash => {
+        if (hash) localStorage.setItem('app_pin_hash', hash);
+      });
 
       const pinStatus = document.getElementById('profilePinStatus');
       const pinBtn = document.getElementById('profileSetPinBtn');
@@ -11986,6 +12086,11 @@
     }
 
     function showFloatingAiBtn() {
+      const isPinLocked = document.body.classList.contains('pin-locked') || !document.getElementById('pinLockOverlay')?.classList.contains('hidden');
+      if (isPinLocked) {
+        hideFloatingAiBtn();
+        return;
+      }
       const isAnySheetOpen = document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
       if (!isAnySheetOpen) {
         const btn = document.getElementById('floatingAiBotBtn');
@@ -12027,6 +12132,12 @@
     // Lightweight Direct-Modal Observer: Watches ONLY top-level modal/overlay nodes (Zero subtree scan = 0ms lag!)
     try {
       const sheetClassObserver = new MutationObserver(() => {
+        const isPinLocked = document.body.classList.contains('pin-locked') || !document.getElementById('pinLockOverlay')?.classList.contains('hidden');
+        if (isPinLocked) {
+          const btn = document.getElementById('floatingAiBotBtn');
+          if (btn) btn.style.display = 'none';
+          return;
+        }
         const hasOpenSheet = !!document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
         const btn = document.getElementById('floatingAiBotBtn');
         if (btn) btn.style.display = hasOpenSheet ? 'none' : 'flex';

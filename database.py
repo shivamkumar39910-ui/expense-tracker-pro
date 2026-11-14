@@ -1555,11 +1555,12 @@ def get_user_security_settings(user_id):
     row = cursor.fetchone()
     conn.close()
     if not row:
-        return {"has_pin": False, "is_pin_enabled": False, "privacy_mode": False}
+        return {"has_pin": False, "is_pin_enabled": False, "privacy_mode": False, "pin_hash": ""}
     return {
         "has_pin": bool(row["app_pin"]),
         "is_pin_enabled": bool(row["is_pin_enabled"]),
-        "privacy_mode": bool(row["privacy_mode"])
+        "privacy_mode": bool(row["privacy_mode"]),
+        "pin_hash": row["app_pin"] or ""
     }
 
 def update_user_security_settings(user_id, is_pin_enabled=None, privacy_mode=None):

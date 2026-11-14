@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.0">
+  <meta name="app-shell-version" content="v4.1">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2580,7 +2580,7 @@
         <span>Home</span>
       </div>
       <div class="nav-tab" id="nav-tab-analytics" onclick="switchTab('tab-analytics')" title="Analytics">
-        <span class="material-icons-round">pie_chart</span>
+        <span class="material-icons-round">bar_chart</span>
         <span>Analytics</span>
       </div>
       
@@ -2591,7 +2591,7 @@
 
       <!-- Insights Tab -->
       <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="Insights">
-        <span class="material-icons-round">auto_awesome</span>
+        <span class="material-icons-round">trending_up</span>
         <span>Insights</span>
       </div>
 
@@ -4660,15 +4660,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_0'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_1'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.0-cache') {
-            triggerSwUpgradeReload('v4_0');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.1-cache') {
+            triggerSwUpgradeReload('v4_1');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.0').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=4.1').then(reg => {
           reg.update();
         }).catch(() => {});
       }

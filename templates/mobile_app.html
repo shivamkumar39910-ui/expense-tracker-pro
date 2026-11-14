@@ -237,14 +237,9 @@
     .app-screen {
       display: none;
       padding: 16px 20px;
-      animation: fadeIn 0.1s ease-out;
     }
     .app-screen.active {
       display: block;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0.4; transform: translateY(3px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     /* App Header */
@@ -4636,7 +4631,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       if ('serviceWorker' in navigator) {
         let refreshingForSw = false;
-        const triggerSwUpgradeReload = (verKey = 'v3_3') => {
+        const triggerSwUpgradeReload = (verKey = 'v3_4') => {
           if (refreshingForSw) return;
           const flag = 'sw_upgraded_' + verKey;
           if (!sessionStorage.getItem(flag)) {
@@ -4645,15 +4640,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_3'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v3_4'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.3-cache') {
-            triggerSwUpgradeReload('v3_3');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v3.4-cache') {
+            triggerSwUpgradeReload('v3_4');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=3.3').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=3.4').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -4663,9 +4658,6 @@
 
       if (APP_STATE.token && APP_STATE.user) {
         initializeAppData(false).catch(console.error);
-        if (LOCAL_PENDING_OPS.hasAny() || LOCAL_TOMBSTONES.getTxIds().size > 0) {
-          setTimeout(() => initializeAppData(false).catch(() => {}), 2200);
-        }
         if (navigator.onLine && APP_STATE.offlineQueue && APP_STATE.offlineQueue.length > 0) {
           triggerManualSync().catch(console.warn);
         }
@@ -4993,19 +4985,27 @@
             APP_STATE._txListDirty = false;
             try { applyTxSearch(); } catch (e) {}
           }
-          if (!Array.isArray(APP_STATE.categoryBreakdown)) {
+          if (Array.isArray(APP_STATE.categoryBreakdown)) {
+            renderDonutChart(APP_STATE.categoryBreakdown, APP_STATE.categoryTotalExpense, true);
+          } else {
             const bd = ensureBreakdownInitialized();
             renderDonutChart(bd, APP_STATE.categoryTotalExpense, true);
           }
-          if (!Array.isArray(APP_STATE.history6m) || APP_STATE.history6m.length === 0) {
+          if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) {
+            renderHistoryBarChart(APP_STATE.history6m);
+          } else {
             renderHistoryBarChart(ensureHistory6mInitialized());
           }
         }
         if (targetId === 'tab-ai') {
-          if (!APP_STATE.forecast) {
+          if (APP_STATE.forecast) {
+            try { renderTrajectoryChart(APP_STATE.forecast); } catch (e) {}
+          } else {
             try { updateForecastUI(ensureForecastInitialized()); } catch (e) {}
           }
-          if (!Array.isArray(APP_STATE.weeklyDaily) || APP_STATE.weeklyDaily.length !== 7) {
+          if (Array.isArray(APP_STATE.weeklyDaily) && APP_STATE.weeklyDaily.length === 7) {
+            try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
+          } else {
             try { renderWeeklyDailyBarChart(); } catch (e) {}
           }
         }
@@ -5427,21 +5427,16 @@
         try { localStorage.setItem('cached_categories', JSON.stringify(b.categories)); } catch(e) {}
       }
 
-      // 8. Analytics Visual Donut Chart (0ms skipAnim) & 6M Bar Chart & Insights Weekly Chart
+      // 8. Visual Charts State Sync
       if (Array.isArray(b.breakdown)) {
         APP_STATE.categoryBreakdown = b.breakdown;
         APP_STATE.categoryTotalExpense = (b.total_expense !== undefined) ? b.total_expense : expTotal;
-        renderDonutChart(b.breakdown, APP_STATE.categoryTotalExpense, true);
       }
       if (Array.isArray(b.history_6m)) {
         APP_STATE.history6m = b.history_6m;
-        renderHistoryBarChart(b.history_6m);
       }
       if (Array.isArray(b.weekly_daily)) {
         APP_STATE.weeklyDaily = b.weekly_daily;
-        renderWeeklyDailyBarChart(b.weekly_daily);
-      } else {
-        renderWeeklyDailyBarChart();
       }
 
       // 9. Unread Notifications Count
@@ -5474,12 +5469,9 @@
         applySecuritySettingsState(b.security, isBackground);
       }
 
-      // 13. Hydrate Home Budget, Budgets Tab, Insights Hero + Trajectory, and Profile Badges together at 0ms
-      syncBudgetAndProfileUI();
-      if (APP_STATE.forecast) {
-        updateForecastUI(APP_STATE.forecast);
-      }
-
+      // 13. ULTRA-FAST 0ms ATOMIC MULTI-SCREEN COMMIT
+      // Commits Home, Budgets, Insights Trajectory, Donut, 6M History, and Profile simultaneously
+      commitAllScreensAtomic();
       applyPrivacyMode();
     }
 
@@ -5900,10 +5892,11 @@
       const baseEl = document.getElementById('fcWmaBaseline');
       if (baseEl) baseEl.innerText = `₹${(f.baseline_wma_history || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
+      // Commit Trajectory Chart SVG FIRST at 0ms, then populate auxiliary lists
+      renderTrajectoryChart(f);
       renderCategoryDrivers(f.category_forecasts);
       renderUpcomingBills(f.upcoming_recurring);
       renderRecommendations(f.recommendations);
-      renderTrajectoryChart(f);
     }
 
     function renderCategoryDrivers(cats) {
@@ -7055,8 +7048,7 @@
       }
 
       APP_STATE.mutationVersion++;
-      syncBudgetAndProfileUI();
-      updateForecastUI(APP_STATE.forecast);
+      commitAllScreensAtomic();
 
       // Feedback Toast
       showToast(`Monthly budget set to ₹${val.toLocaleString('en-IN')}!`, 'success');
@@ -7220,7 +7212,7 @@
             </div>
           </div>
           <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
-            <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:width 0.4s ease;"></div>
+            <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:none;"></div>
           </div>
         `;
         container.appendChild(item);
@@ -7283,11 +7275,7 @@
 
       input.value = '';
       renderCategoryLimitsModalList();
-      if (typeof syncBudgetAndProfileUI === 'function') {
-        syncBudgetAndProfileUI();
-      } else if (typeof renderCategoryBudgets === 'function') {
-        renderCategoryBudgets(APP_STATE.budgets.category_budgets);
-      }
+      commitAllScreensAtomic();
       showToast(`Limit for ${cat.name} set to ₹${amount.toLocaleString('en-IN')}!`, 'success');
 
       // Clear any previous tombstone on this category and persist unified cache immediately
@@ -7340,11 +7328,7 @@
               return !matchId && !matchCat;
             });
             renderCategoryLimitsModalList();
-            if (typeof syncBudgetAndProfileUI === 'function') {
-              syncBudgetAndProfileUI();
-            } else if (typeof renderCategoryBudgets === 'function') {
-              renderCategoryBudgets(APP_STATE.budgets.category_budgets);
-            }
+            commitAllScreensAtomic();
           }
           persistUnifiedLocalState();
           showToast('Category limit removed', 'info');
@@ -7406,7 +7390,7 @@
       '#6366F1'  // High-Brightness Indigo
     ];
 
-    function renderDonutChart(slices, totalExpense, skipAnim = false) {
+    function renderDonutChart(slices, totalExpense, skipAnim = true) {
       APP_STATE.categoryBreakdown = slices;
       APP_STATE.categoryTotalExpense = totalExpense;
 
@@ -7654,26 +7638,21 @@
     }
 
     // ----------------------------------------------------
-    // ULTRA-FAST 0ms CROSS-SCREEN SYNCHRONIZATION ENGINE
+    // ULTRA-FAST 0ms UNIFIED ATOMIC MULTI-SCREEN PIPELINE
+    // Commits all 5 screens (Home, Analytics, Budgets, Insights, Profile)
+    // in one single synchronous paint pass with ZERO millisecond stagger.
     // ----------------------------------------------------
-    function syncAllScreensOptimistically(tx, isAddition = true, opts = {}) {
-      if (!tx) return;
-      const skipRender = Boolean(opts && opts.skipRender);
-      const amount = parseFloat(tx.amount) || 0;
-
-      // 1. In-memory transactions array update
-      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
-      if (isAddition) {
-        APP_STATE.transactions = [tx, ...APP_STATE.transactions.filter(t => t.id !== tx.id)];
-      } else {
-        APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== tx.id);
-      }
-
-      // 2. Compute current month's expenses & income
+    function commitAllScreensAtomic() {
+      // 1. PURE IN-MEMORY DERIVATION (Zero DOM / Canvas / SVG writes in this step)
       const now = new Date();
-      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const curY = now.getFullYear();
+      const curM = now.getMonth() + 1;
+      const currentYearMonth = `${curY}-${String(curM).padStart(2, '0')}`;
+      const daysInMonth = new Date(curY, curM, 0).getDate();
       const daysElapsed = Math.max(1, now.getDate());
+      const daysRemaining = Math.max(1, daysInMonth - now.getDate());
+
+      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
 
       let currentMonthExpenses = 0;
       let currentMonthIncome = 0;
@@ -7681,7 +7660,7 @@
       const catSpentById = {};
 
       APP_STATE.transactions.forEach(t => {
-        if (!t.date || !t.date.startsWith(currentYearMonth)) return;
+        if (!t || !t.date || !String(t.date).startsWith(currentYearMonth)) return;
         const amt = parseFloat(t.amount) || 0;
         if (t.transaction_type === 'EXPENSE') {
           currentMonthExpenses += amt;
@@ -7705,8 +7684,36 @@
         }
       });
 
-      // Keep Category Budgets progress 100% synced in 0ms
-      if (APP_STATE.budgets && Array.isArray(APP_STATE.budgets.category_budgets)) {
+      // Update Category Breakdown Slices
+      const slices = Object.values(catTotals).map(c => ({
+        ...c,
+        percentage: currentMonthExpenses > 0 ? Math.round((c.amount / currentMonthExpenses) * 1000) / 10 : 0
+      }));
+      slices.sort((a, b) => b.amount - a.amount);
+      APP_STATE.categoryBreakdown = slices;
+      APP_STATE.categoryTotalExpense = currentMonthExpenses;
+      if (currentMonthIncome > 0 || APP_STATE.monthlyIncome === undefined) {
+        APP_STATE.monthlyIncome = currentMonthIncome;
+      }
+
+      // Update Budgets Model
+      if (!APP_STATE.budgets) APP_STATE.budgets = {};
+      const budgetLimit = parseFloat(APP_STATE.budgets.overall_budget) || (APP_STATE.forecast ? parseFloat(APP_STATE.forecast.monthly_budget) : 0) || 0;
+      const remaining = Math.max(0, budgetLimit - currentMonthExpenses);
+      const utilPct = budgetLimit > 0 ? Math.round((currentMonthExpenses / budgetLimit) * 100) : 0;
+      const isExceeded = budgetLimit > 0 && currentMonthExpenses > budgetLimit;
+      const safeDailyCap = budgetLimit > 0 ? Math.max(0, remaining / daysRemaining) : 0;
+
+      APP_STATE.budgets.overall_budget = budgetLimit;
+      APP_STATE.budgets.total_spent = currentMonthExpenses;
+      APP_STATE.budgets.remaining = remaining;
+      APP_STATE.budgets.utilization_pct = utilPct;
+      APP_STATE.budgets.is_exceeded = isExceeded;
+      APP_STATE.budgets.days_remaining = daysRemaining;
+      APP_STATE.budgets.safe_daily_cap = Math.round(safeDailyCap * 100) / 100;
+
+      // Update Category Budgets Model
+      if (Array.isArray(APP_STATE.budgets.category_budgets)) {
         APP_STATE.budgets.category_budgets.forEach(cb => {
           const spent = catSpentById[String(cb.category_id)] || 0;
           const lim = parseFloat(cb.budget_limit) || 0;
@@ -7717,32 +7724,10 @@
         });
       }
 
-      // Compute Category Breakdown & Top Driver FIRST so Forecast Details / AI Suggestion reflect latest tx at 0ms!
-      const slices = Object.values(catTotals).map(c => ({
-        ...c,
-        percentage: currentMonthExpenses > 0 ? Math.round((c.amount / currentMonthExpenses) * 1000) / 10 : 0
-      }));
-      slices.sort((a, b) => b.amount - a.amount);
-      APP_STATE.categoryBreakdown = slices;
-      APP_STATE.categoryTotalExpense = currentMonthExpenses;
-      APP_STATE.monthlyIncome = currentMonthIncome;
-
-      if (!APP_STATE.budgets) APP_STATE.budgets = {};
-      const budgetLimit = parseFloat(APP_STATE.budgets.overall_budget) || (APP_STATE.forecast ? parseFloat(APP_STATE.forecast.monthly_budget) : 0) || 0;
-      const remaining = Math.max(0, budgetLimit - currentMonthExpenses);
-      const utilPct = budgetLimit > 0 ? Math.round((currentMonthExpenses / budgetLimit) * 100) : 0;
-      const isExceeded = budgetLimit > 0 && currentMonthExpenses > budgetLimit;
-      APP_STATE.budgets.overall_budget = budgetLimit;
-      APP_STATE.budgets.total_spent = currentMonthExpenses;
-      APP_STATE.budgets.remaining = remaining;
-      APP_STATE.budgets.utilization_pct = utilPct;
-      APP_STATE.budgets.is_exceeded = isExceeded;
-
-      // Update Home Forecast & Top Driver BEFORE rendering Forecast UI
-      const daysLeft = Math.max(1, daysInMonth - daysElapsed);
+      // Update Forecast Model
       const dailyVelocity = currentMonthExpenses / daysElapsed;
-      const projectedMonthEnd = currentMonthExpenses + (dailyVelocity * (daysInMonth - daysElapsed));
-      const safeDailyCap = daysLeft > 0 ? Math.max(0, (budgetLimit - currentMonthExpenses) / daysLeft) : 0;
+      const projectedMonthEnd = Math.round((currentMonthExpenses + (dailyVelocity * (daysInMonth - daysElapsed))) * 100) / 100;
+
       if (!APP_STATE.forecast) {
         APP_STATE.forecast = {
           days_elapsed: daysElapsed,
@@ -7753,8 +7738,8 @@
       APP_STATE.forecast.days_elapsed = daysElapsed;
       APP_STATE.forecast.total_days_in_month = daysInMonth;
       APP_STATE.forecast.mtd_actual_spend = currentMonthExpenses;
-      APP_STATE.forecast.projected_month_end_spend = Math.round(projectedMonthEnd * 100) / 100;
-      APP_STATE.forecast.estimated_month_end = Math.round(projectedMonthEnd * 100) / 100;
+      APP_STATE.forecast.projected_month_end_spend = projectedMonthEnd;
+      APP_STATE.forecast.estimated_month_end = projectedMonthEnd;
       APP_STATE.forecast.daily_spending_velocity = Math.round(dailyVelocity * 100) / 100;
       APP_STATE.forecast.daily_run_rate = APP_STATE.forecast.daily_spending_velocity;
       APP_STATE.forecast.safe_today = Math.round(safeDailyCap * 10) / 10;
@@ -7762,6 +7747,7 @@
       APP_STATE.forecast.safe_daily_cap = Math.round(safeDailyCap * 10) / 10;
       APP_STATE.forecast.monthly_budget = budgetLimit;
       APP_STATE.forecast.budget = budgetLimit;
+
       if (slices.length > 0) {
         APP_STATE.forecast.top_spending_driver = {
           category: slices[0].name,
@@ -7784,38 +7770,188 @@
         APP_STATE.forecast.ai_one_liner = `Daily safe spend is ₹${safeDailyCap.toFixed(1)}/day across remaining days.`;
       }
 
-      // Always keep matching 6M History month bucket synced in memory (even if skipRender)
+      // Synchronize 6M History in memory
       ensureHistory6mInitialized();
-      const txYear = tx.date ? parseInt(String(tx.date).slice(0, 4)) : now.getFullYear();
-      const txMonth = tx.date ? parseInt(String(tx.date).slice(5, 7)) : (now.getMonth() + 1);
-      const targetBucket = APP_STATE.history6m.find(m => m.year === txYear && m.month === txMonth);
-      if (targetBucket && tx.transaction_type === 'EXPENSE') {
-        if (txYear === now.getFullYear() && txMonth === (now.getMonth() + 1) && (APP_STATE.transactions || []).length < 50) {
-          targetBucket.expenses = currentMonthExpenses;
-        } else {
-          targetBucket.expenses = Math.max(0, Math.round(((parseFloat(targetBucket.expenses) || 0) + (isAddition ? amount : -amount)) * 100) / 100);
-        }
-      } else if (APP_STATE.history6m.length > 0 && (APP_STATE.transactions || []).length < 50) {
+      const targetBucket = APP_STATE.history6m.find(m => m.year === curY && m.month === curM);
+      if (targetBucket) {
+        targetBucket.expenses = currentMonthExpenses;
+      } else if (APP_STATE.history6m.length > 0) {
         APP_STATE.history6m[APP_STATE.history6m.length - 1].expenses = currentMonthExpenses;
       }
 
-      if (skipRender) return;
-
-      // 3. Render Home Screen (Total Expense, Cashflow hidden counters, Budget Progress, Forecast, Recent Tx)
-      const homeExp = document.getElementById('homeTotalExpenseDisplay');
-      if (homeExp) {
-        setMaskableText('homeTotalExpenseDisplay', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
-      }
-      setMaskableText('cfIncomeVal', `₹${currentMonthIncome.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      // 2. SYNCHRONOUS SINGLE-PASS DOM COMMIT (All screens committed in 1 single frame)
+      // A. Home Screen Core Numbers & Budget
+      setMaskableText('homeTotalExpenseDisplay', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+      setMaskableText('cfIncomeVal', `₹${(APP_STATE.monthlyIncome || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
       setMaskableText('cfExpenseVal', `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
 
-      syncBudgetAndProfileUI();
-      renderRecentTx(APP_STATE.transactions.slice(0, 5));
-      updateForecastUI(APP_STATE.forecast);
+      const homeSpent = document.getElementById('homeBudgetSpentDisplay');
+      if (homeSpent) homeSpent.innerText = `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const homeLimit = document.getElementById('homeBudgetLimitDisplay');
+      if (homeLimit) homeLimit.innerText = `₹${budgetLimit.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const homeRem = document.getElementById('homeBudgetRemainingDisplay');
+      if (homeRem) homeRem.innerText = `₹${remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const homeDays = document.getElementById('homeBudgetDaysDisplay');
+      if (homeDays) homeDays.innerText = daysRemaining;
+      const homeBar = document.getElementById('homeBudgetProgressBar');
+      if (homeBar) {
+        homeBar.style.width = `${Math.min(100, utilPct)}%`;
+        homeBar.style.background = isExceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+      }
+      const homeBadge = document.getElementById('homeBudgetPercentBadge');
+      if (homeBadge) {
+        homeBadge.innerText = `${Math.min(100, utilPct)}% Used`;
+        homeBadge.style.color = isExceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+        homeBadge.style.background = isExceeded ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)';
+      }
 
-      // 4. Render Analytics Charts + Defer All Transactions DOM if hidden
+      // B. Home Est. Month-END Hero Card
+      const fProj = document.getElementById('forecastProjectedVal');
+      if (fProj) fProj.innerText = `₹${projectedMonthEnd.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const fSpeed = document.getElementById('forecastSpeedVal');
+      if (fSpeed) fSpeed.innerText = `₹${safeDailyCap.toFixed(1)} / day safe pace`;
+      const fAdvice = document.getElementById('forecastAdviceText');
+      if (fAdvice) fAdvice.innerText = (APP_STATE.forecast.ai_one_liner || '').replace(/^[💡🎉📊🔥⚠️\s]+/, '').trim();
+      const fBadge = document.getElementById('forecastRiskBadge');
+      const fDot = document.getElementById('forecastRiskDot');
+      if (fBadge && fDot) {
+        if (budgetLimit > 0 && optPct > 110) {
+          fDot.style.background = '#EF4444';
+          fDot.style.color = '#EF4444';
+          fBadge.style.background = 'rgba(239, 68, 68, 0.22)';
+          fBadge.style.borderColor = 'rgba(239, 68, 68, 0.55)';
+          fBadge.style.boxShadow = '0 0 12px rgba(239,68,68,0.4)';
+        } else if (budgetLimit > 0 && optPct >= 90) {
+          fDot.style.background = '#F59E0B';
+          fDot.style.color = '#F59E0B';
+          fBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          fBadge.style.borderColor = 'rgba(245, 158, 11, 0.55)';
+          fBadge.style.boxShadow = '0 0 12px rgba(245,158,11,0.35)';
+        } else {
+          fDot.style.background = '#10B981';
+          fDot.style.color = '#10B981';
+          fBadge.style.background = 'rgba(16, 185, 129, 0.18)';
+          fBadge.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+          fBadge.style.boxShadow = '0 0 12px rgba(16,185,129,0.35)';
+        }
+      }
+
+      // C. Budgets Tab Displays
+      const bLimit = document.getElementById('budgetLimitDisplay');
+      if (bLimit) bLimit.innerText = `₹${budgetLimit.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const bSpent = document.getElementById('budgetSpentDisplay');
+      if (bSpent) bSpent.innerText = `₹${currentMonthExpenses.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const bRem = document.getElementById('budgetRemainingDisplay');
+      if (bRem) bRem.innerText = `₹${remaining.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const bBar = document.getElementById('budgetProgressBar');
+      if (bBar) {
+        bBar.style.width = `${Math.min(100, utilPct)}%`;
+        bBar.style.background = isExceeded ? 'var(--color-ruby)' : 'var(--color-emerald)';
+      }
+      const bDaily = document.getElementById('budgetDailyCapDisplay');
+      if (bDaily) bDaily.innerText = `₹${safeDailyCap.toFixed(2)} / day`;
+      const bDays = document.getElementById('budgetDaysLeftDisplay');
+      if (bDays) bDays.innerText = daysRemaining;
+
+      // D. Profile Tab Badges
+      const profileMbBadge = document.getElementById('profileMonthlyBudgetBadge');
+      if (profileMbBadge) profileMbBadge.innerText = budgetLimit > 0 ? `₹${budgetLimit.toLocaleString('en-IN')}` : 'Set Budget';
+      const profileMbSub = document.getElementById('profileMonthlyBudgetSubtitle');
+      if (profileMbSub) {
+        profileMbSub.innerText = budgetLimit > 0
+          ? `₹${currentMonthExpenses.toLocaleString('en-IN')} of ₹${budgetLimit.toLocaleString('en-IN')} (${utilPct}% used)`
+          : 'Set monthly spending limit & AI over-limit alerts';
+      }
+      const catBudgetsList = Array.isArray(APP_STATE.budgets.category_budgets) ? APP_STATE.budgets.category_budgets : [];
+      const profileCatBadge = document.getElementById('profileCategoryLimitBadge');
+      if (profileCatBadge) profileCatBadge.innerText = `${catBudgetsList.length} Active`;
+      const gBadge = document.getElementById('profileGoalsBadge');
+      if (gBadge && typeof userGoals !== 'undefined' && Array.isArray(userGoals)) {
+        const activeCount = userGoals.filter(g => !g.is_completed).length;
+        gBadge.innerText = `${activeCount} Active`;
+      }
+
+      // E. Insights Screen Metrics
+      const fcProjEl = document.getElementById('fcMonthEndProjectedDisplay');
+      if (fcProjEl) fcProjEl.innerText = `₹${projectedMonthEnd.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      const surplusEl = document.getElementById('fcSurplusDisplay');
+      if (surplusEl) {
+        if (budgetLimit > 0) {
+          if (projectedMonthEnd <= budgetLimit) {
+            const surplus = budgetLimit - projectedMonthEnd;
+            const savePct = Math.round((surplus / budgetLimit) * 100);
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#10B981;">trending_down</span><span style="color:#10B981;">Projected Savings: +₹${surplus.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${savePct}% of budget saved)</span>`;
+          } else {
+            const overrun = projectedMonthEnd - budgetLimit;
+            const overrunPct = Math.round((overrun / budgetLimit) * 100);
+            surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${overrunPct}% over budget)</span>`;
+          }
+        } else {
+          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#38BDF8;">info</span><span style="color:#38BDF8;">No monthly budget ceiling configured</span>`;
+        }
+      }
+      const mtdEl = document.getElementById('fcMtdSpend');
+      if (mtdEl) mtdEl.innerText = `₹${dailyVelocity.toFixed(1)}/day`;
+      const capEl = document.getElementById('fcSafeDailyCap');
+      if (capEl) capEl.innerText = `₹${safeDailyCap.toFixed(1)}/day`;
+      const deepBadge = document.getElementById('forecastDeepRiskBadge');
+      if (deepBadge) {
+        if (budgetLimit > 0 && optPct > 110) {
+          deepBadge.className = 'forecast-risk-pill risk-danger';
+          deepBadge.innerText = 'DANGER';
+        } else if (budgetLimit > 0 && optPct >= 90) {
+          deepBadge.className = 'forecast-risk-pill risk-warning';
+          deepBadge.innerText = 'CAUTION';
+        } else {
+          deepBadge.className = 'forecast-risk-pill risk-safe';
+          deepBadge.innerText = 'SAFE';
+        }
+      }
+      const topCatName = slices.length > 0 ? slices[0].name : 'None';
+      const topCatAmt = slices.length > 0 ? slices[0].amount : 0;
+      const topNameEl = document.getElementById('fcTopDriverName');
+      const topAmtEl = document.getElementById('fcTopDriverAmount');
+      const topPctEl = document.getElementById('fcTopDriverPct');
+      if (topNameEl) topNameEl.innerText = topCatName;
+      if (topAmtEl) topAmtEl.innerText = `₹${topCatAmt.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      if (topPctEl) {
+        const catPctOfBudget = budgetLimit > 0 ? Math.round((topCatAmt / budgetLimit) * 100) : 0;
+        topPctEl.innerText = `${catPctOfBudget}% of budget`;
+      }
+      const aiSugEl = document.getElementById('fcAiSuggestionText');
+      if (aiSugEl) {
+        if (topCatAmt > 0 && projectedMonthEnd > budgetLimit) {
+          aiSugEl.innerText = `Reduce ${topCatName} pace to finish within your ₹${budgetLimit.toLocaleString('en-IN')} budget.`;
+        } else if (topCatAmt > 0) {
+          aiSugEl.innerText = `Keep ${topCatName} steady at current pace to protect your savings.`;
+        } else {
+          aiSugEl.innerText = `Daily safe spending is ₹${safeDailyCap.toFixed(1)}/day across remaining days.`;
+        }
+      }
+
+      // F. Insights Trajectory SVG (SAME FRAME, ZERO MS DIFFERENCE)
+      renderTrajectoryChart(APP_STATE.forecast);
+
+      // G. Canvases Commit (Analytics Donut, 6M Bar, Insights Daily Bar)
       renderDonutChart(slices, currentMonthExpenses, true);
       renderHistoryBarChart(APP_STATE.history6m);
+      renderWeeklyDailyBarChart();
+
+      // H. Dynamic Lists Commit
+      renderRecentTx(APP_STATE.transactions.slice(0, 5));
+      if (typeof renderCategoryBudgets === 'function') {
+        renderCategoryBudgets(catBudgetsList);
+      }
+
+      if (APP_STATE.forecast.category_forecasts) {
+        renderCategoryDrivers(APP_STATE.forecast.category_forecasts);
+      }
+      if (APP_STATE.forecast.upcoming_recurring) {
+        renderUpcomingBills(APP_STATE.forecast.upcoming_recurring);
+      }
+      if (APP_STATE.forecast.recommendations) {
+        renderRecommendations(APP_STATE.forecast.recommendations);
+      }
 
       const analyticsScreen = document.getElementById('tab-analytics');
       if (analyticsScreen && analyticsScreen.classList.contains('active')) {
@@ -7825,11 +7961,35 @@
         APP_STATE._txListDirty = true;
       }
 
-      // 5. Render Insights Weekly Daily Chart (0ms)
-      renderWeeklyDailyBarChart();
+      // I. Defer Heavy Local Storage Writes to Microtask (Zero frame lag)
+      if (typeof queueMicrotask === 'function') {
+        queueMicrotask(() => persistUnifiedLocalState());
+      } else {
+        setTimeout(() => persistUnifiedLocalState(), 0);
+      }
+    }
 
-      // 6. Synchronize cleanly with unified single-store localStorage
-      persistUnifiedLocalState();
+    // ----------------------------------------------------
+    // ULTRA-FAST 0ms CROSS-SCREEN OPTIMISTIC SYNCHRONIZER
+    // ----------------------------------------------------
+    function syncAllScreensOptimistically(tx, isAddition = true, opts = {}) {
+      if (!tx) return;
+      const skipRender = Boolean(opts && opts.skipRender);
+
+      // In-memory transactions update
+      if (!Array.isArray(APP_STATE.transactions)) APP_STATE.transactions = [];
+      const txIdStr = String(tx.id);
+      if (isAddition) {
+        APP_STATE.transactions = [
+          tx,
+          ...APP_STATE.transactions.filter(t => String(t.id) !== txIdStr && (!tx.client_uuid || t.client_uuid !== tx.client_uuid))
+        ];
+      } else {
+        APP_STATE.transactions = APP_STATE.transactions.filter(t => String(t.id) !== txIdStr && (!tx.client_uuid || t.client_uuid !== tx.client_uuid));
+      }
+
+      if (skipRender) return;
+      commitAllScreensAtomic();
     }
 
     function renderHistoryBarChart(history) {
@@ -10014,7 +10174,7 @@
                 </div>
               </div>
               <div style="width:100%; background:var(--bg-card-subtle); height:6px; border-radius:3px; overflow:hidden;">
-                <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:width 0.4s ease;"></div>
+                <div style="width:${progressWidth}%; height:100%; background:${barColor}; border-radius:3px; transition:none;"></div>
               </div>
             `;
             container.appendChild(item);

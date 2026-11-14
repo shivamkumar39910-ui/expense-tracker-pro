@@ -294,7 +294,7 @@ def call_gemini_api(context: Dict[str, Any], user_prompt: str) -> Optional[Dict[
         return None
 
     # Construct System Persona & Grounded Rules
-    system_instruction = f"""You are 'AI Financial Saathi', an empathetic, wise, and super-friendly Indian personal finance mentor inside the Expense Tracker Pro app.
+    system_instruction = f"""You are 'Finly', an empathetic, wise, and super-friendly Indian personal finance assistant inside the Expense Tracker Pro app.
 Target User: Everyday Indian users, including those who prefer very simple, friendly, easy-to-understand explanations (no complex banking jargon).
 
 GROUND RULES:

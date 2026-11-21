@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.2">
+  <meta name="app-shell-version" content="v4.3">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4349,10 +4349,14 @@
       }
     };
 
-    function ensureHistory6mInitialized() {
-      if (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length === 6) {
-        return APP_STATE.history6m;
-      }
+    function getLocalDateString(d = new Date()) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function computeHistory6mBuckets() {
       const now = new Date();
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const buckets = [];
@@ -4370,24 +4374,118 @@
           savings_rate_pct: 0
         });
       }
+
+      // Seed with server history if available
+      const serverHist = APP_STATE._serverHistory6m || APP_STATE.history6m;
+      if (Array.isArray(serverHist)) {
+        serverHist.forEach(sh => {
+          if (!sh) return;
+          const b = buckets.find(x => x.year === sh.year && x.month === sh.month);
+          if (b) {
+            b.income = parseFloat(sh.income) || 0;
+            b.expenses = parseFloat(sh.expenses) || 0;
+          }
+        });
+      }
+
+      // Map in-memory transactions
+      const txMonthly = {};
       if (Array.isArray(APP_STATE.transactions)) {
         APP_STATE.transactions.forEach(t => {
           if (!t || !t.date) return;
-          const ty = parseInt(String(t.date).slice(0, 4));
-          const tm = parseInt(String(t.date).slice(5, 7));
-          const b = buckets.find(x => x.year === ty && x.month === tm);
-          if (!b) return;
+          const ym = String(t.date).slice(0, 7);
+          if (!txMonthly[ym]) txMonthly[ym] = { EXPENSE: 0, INCOME: 0 };
           const amt = parseFloat(t.amount) || 0;
-          if (t.transaction_type === 'EXPENSE') b.expenses += amt;
-          else if (t.transaction_type === 'INCOME') b.income += amt;
-        });
-        buckets.forEach(b => {
-          b.net_savings = Math.round((b.income - b.expenses) * 100) / 100;
-          b.savings_rate_pct = b.income > 0 ? Math.round((b.net_savings / b.income) * 1000) / 10 : 0;
+          if (t.transaction_type === 'EXPENSE') txMonthly[ym].EXPENSE += amt;
+          else if (t.transaction_type === 'INCOME') txMonthly[ym].INCOME += amt;
         });
       }
+
+      const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      buckets.forEach(b => {
+        const ymKey = `${b.year}-${String(b.month).padStart(2, '0')}`;
+        const txData = txMonthly[ymKey];
+        if (ymKey === curYM) {
+          if (txData) {
+            b.expenses = Math.round(txData.EXPENSE * 100) / 100;
+            b.income = Math.round(txData.INCOME * 100) / 100;
+          }
+        } else {
+          if (txData) {
+            b.expenses = Math.max(b.expenses, Math.round(txData.EXPENSE * 100) / 100);
+            b.income = Math.max(b.income, Math.round(txData.INCOME * 100) / 100);
+          }
+        }
+        b.net_savings = Math.round((b.income - b.expenses) * 100) / 100;
+        b.savings_rate_pct = b.income > 0 ? Math.round((b.net_savings / b.income) * 1000) / 10 : 0;
+      });
+
       APP_STATE.history6m = buckets;
-      return APP_STATE.history6m;
+      return buckets;
+    }
+
+    function ensureHistory6mInitialized() {
+      return computeHistory6mBuckets();
+    }
+
+    function computeWeeklyDailyBuckets() {
+      const now = new Date();
+      const currentDayIndex = now.getDay();
+      const diffToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const todayStr = getLocalDateString(now);
+
+      const buckets = dayNames.map((name, idx) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + idx);
+        const dateStr = getLocalDateString(d);
+        return {
+          day: name,
+          date: dateStr,
+          is_today: (dateStr === todayStr),
+          expenses: 0
+        };
+      });
+
+      // Map server values if available
+      const sMap = {};
+      const serverSource = APP_STATE._serverWeeklyDaily || APP_STATE.weeklyDaily;
+      if (Array.isArray(serverSource)) {
+        serverSource.forEach(item => {
+          if (item && item.date) {
+            sMap[String(item.date).slice(0, 10)] = parseFloat(item.expenses) || 0;
+          }
+        });
+      }
+
+      // Map in-memory transactions
+      const txDailyTotals = {};
+      if (Array.isArray(APP_STATE.transactions)) {
+        APP_STATE.transactions.forEach(t => {
+          if (!t || t.transaction_type !== 'EXPENSE' || !t.date) return;
+          const tDate = String(t.date).slice(0, 10);
+          txDailyTotals[tDate] = (txDailyTotals[tDate] || 0) + (parseFloat(t.amount) || 0);
+        });
+      }
+
+      buckets.forEach(b => {
+        const txTotal = txDailyTotals[b.date];
+        const sTotal = sMap[b.date];
+        if (txTotal !== undefined) {
+          b.expenses = Math.round(txTotal * 100) / 100;
+        } else if (sTotal !== undefined) {
+          b.expenses = Math.round(sTotal * 100) / 100;
+        } else {
+          b.expenses = 0;
+        }
+      });
+
+      APP_STATE.weeklyDaily = buckets;
+      return buckets;
     }
 
     function ensureBreakdownInitialized() {
@@ -4660,15 +4758,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_2'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_3'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.2-cache') {
-            triggerSwUpgradeReload('v4_2');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.3-cache') {
+            triggerSwUpgradeReload('v4_3');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.2').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=4.3').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -5041,22 +5139,20 @@
             const bd = ensureBreakdownInitialized();
             renderDonutChart(bd, APP_STATE.categoryTotalExpense, true);
           }
-          const histData = (Array.isArray(APP_STATE.history6m) && APP_STATE.history6m.length > 0) ? APP_STATE.history6m : ensureHistory6mInitialized();
-          renderHistoryBarChart(histData);
+          renderHistoryBarChart(computeHistory6mBuckets());
           requestAnimationFrame(() => {
             try {
-              renderHistoryBarChart(APP_STATE.history6m || ensureHistory6mInitialized());
+              renderHistoryBarChart(computeHistory6mBuckets());
             } catch (e) {}
           });
         }
         if (targetId === 'tab-ai') {
           const fc = APP_STATE.forecast || ensureForecastInitialized();
           try { renderTrajectoryChart(fc); } catch (e) {}
-          const wk = (Array.isArray(APP_STATE.weeklyDaily) && APP_STATE.weeklyDaily.length === 7) ? APP_STATE.weeklyDaily : null;
-          try { renderWeeklyDailyBarChart(wk); } catch (e) {}
+          renderWeeklyDailyBarChart(computeWeeklyDailyBuckets());
           requestAnimationFrame(() => {
             try { renderTrajectoryChart(APP_STATE.forecast || ensureForecastInitialized()); } catch (e) {}
-            try { renderWeeklyDailyBarChart(APP_STATE.weeklyDaily); } catch (e) {}
+            try { renderWeeklyDailyBarChart(computeWeeklyDailyBuckets()); } catch (e) {}
           });
         }
       } catch (err) {
@@ -5468,9 +5564,11 @@
         APP_STATE.categoryTotalExpense = (b.total_expense !== undefined) ? b.total_expense : expTotal;
       }
       if (Array.isArray(b.history_6m)) {
+        APP_STATE._serverHistory6m = b.history_6m;
         APP_STATE.history6m = b.history_6m;
       }
       if (Array.isArray(b.weekly_daily)) {
+        APP_STATE._serverWeeklyDaily = b.weekly_daily;
         APP_STATE.weeklyDaily = b.weekly_daily;
       }
 
@@ -7432,7 +7530,7 @@
 
 
     // ----------------------------------------------------
-    // PHASE 11: VISUAL CHARTS (DONUT & 6M TRENDS)
+    // PHASE 11: VISUAL CHARTS (DONUT, 6M TRENDS & WEEKLY DAILY)
     // ----------------------------------------------------
     async function loadVisualCharts() {
       // 1. Category Breakdown Donut Chart
@@ -7443,8 +7541,16 @@
 
       // 2. 6-Month Cashflow History Bar Chart
       const histRes = await apiRequest('/charts/history-6m');
-      if (histRes && histRes.success) {
-        renderHistoryBarChart(histRes.history || []);
+      if (histRes && histRes.success && Array.isArray(histRes.history)) {
+        APP_STATE._serverHistory6m = histRes.history;
+        renderHistoryBarChart(computeHistory6mBuckets());
+      }
+
+      // 3. Weekly Daily Expense Trend Chart
+      const wkRes = await apiRequest('/charts/history-weekly');
+      if (wkRes && wkRes.success && Array.isArray(wkRes.history)) {
+        APP_STATE._serverWeeklyDaily = wkRes.history;
+        renderWeeklyDailyBarChart(computeWeeklyDailyBuckets());
       }
     }
 
@@ -7599,7 +7705,7 @@
     // ----------------------------------------------------
     function prepareResponsiveCanvas(canvas, targetHeight = 140, minWidth = 260) {
       if (!canvas) return null;
-      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const dpr = Math.min(2.5, window.devicePixelRatio || 1);
       let w = 0;
       if (canvas.clientWidth > 50) {
         w = canvas.clientWidth;
@@ -7614,18 +7720,31 @@
       const targetPxW = Math.round(w * dpr);
       const targetPxH = Math.round(h * dpr);
 
-      if (canvas.width !== targetPxW || canvas.height !== targetPxH) {
-        canvas.width = targetPxW;
-        canvas.height = targetPxH;
-      }
+      canvas.width = targetPxW;
+      canvas.height = targetPxH;
       canvas.style.width = '100%';
       canvas.style.height = `${h}px`;
 
       const ctx = canvas.getContext('2d');
-      if (ctx.resetTransform) ctx.resetTransform();
-      else ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       return { ctx, w, h };
+    }
+
+    function drawPill(ctx, x, y, w, h, r) {
+      if (h <= 0 || w <= 0) return;
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
+      ctx.fill();
     }
 
     // ----------------------------------------------------
@@ -7640,56 +7759,8 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      const now = new Date();
-      const currentDayIndex = now.getDay();
-      const diffToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
-      const monday = new Date(now);
-      monday.setDate(now.getDate() + diffToMonday);
-      monday.setHours(0, 0, 0, 0);
-
-      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const currentWeekDates = dayNames.map((name, idx) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + idx);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return {
-          day: name,
-          date: `${yyyy}-${mm}-${dd}`,
-          is_today: (idx === (currentDayIndex === 0 ? 6 : currentDayIndex - 1)),
-          expenses: 0
-        };
-      });
-
-      let weekDays = null;
-      const source = (Array.isArray(weeklyData) && weeklyData.length === 7) ? weeklyData :
-                     (Array.isArray(APP_STATE.weeklyDaily) && APP_STATE.weeklyDaily.length === 7 ? APP_STATE.weeklyDaily : null);
-
-      if (source && source.length === 7 && source[0].date === currentWeekDates[0].date) {
-        weekDays = source.map((item, idx) => ({
-          ...item,
-          day: dayNames[idx],
-          date: currentWeekDates[idx].date,
-          is_today: currentWeekDates[idx].is_today,
-          expenses: parseFloat(item.expenses) || 0
-        }));
-      } else {
-        weekDays = currentWeekDates;
-        if (Array.isArray(APP_STATE.transactions)) {
-          APP_STATE.transactions.forEach(t => {
-            if (t && t.transaction_type === 'EXPENSE' && t.date) {
-              const txDate = String(t.date).slice(0, 10);
-              const item = weekDays.find(wd => wd.date === txDate);
-              if (item) {
-                item.expenses += (parseFloat(t.amount) || 0);
-              }
-            }
-          });
-        }
-      }
-
-      APP_STATE.weeklyDaily = weekDays;
+      const weekDays = (Array.isArray(weeklyData) && weeklyData.length === 7) ? weeklyData : computeWeeklyDailyBuckets();
+      if (!weekDays || weekDays.length === 0) return;
 
       let totalWeeklySpend = 0;
       let maxVal = 500;
@@ -7705,56 +7776,65 @@
       }
 
       const paddingBottom = 26;
+      const paddingTop = 22;
       const chartHeight = h - paddingBottom;
+      const trackHeight = chartHeight - paddingTop;
       const barGroupWidth = w / weekDays.length;
-      const barWidth = Math.max(12, Math.min(28, barGroupWidth - 14));
+      const barWidth = Math.max(16, Math.min(30, barGroupWidth - 12));
 
       weekDays.forEach((d, idx) => {
         const groupX = idx * barGroupWidth;
         const barX = groupX + (barGroupWidth - barWidth) / 2;
         const expAmount = parseFloat(d.expenses) || 0;
 
+        // Elegant background capsule track for every day
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+        drawPill(ctx, barX, paddingTop, barWidth, trackHeight, barWidth / 2);
+
         if (expAmount > 0) {
-          const expenseHeight = Math.max(8, (expAmount / maxVal) * (chartHeight - 22));
+          const expenseHeight = Math.max(10, Math.min(trackHeight, (expAmount / maxVal) * trackHeight));
           const expenseY = chartHeight - expenseHeight;
 
-          // Vibrant dark blue gradient top to navy bottom
-          const darkBlueGrad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
-          darkBlueGrad.addColorStop(0, '#1D4ED8');
-          darkBlueGrad.addColorStop(1, '#1E3A8A');
-          ctx.fillStyle = darkBlueGrad;
-
-          const radius = Math.min(5, barWidth / 2);
-          ctx.beginPath();
-          ctx.moveTo(barX, chartHeight);
-          ctx.lineTo(barX, expenseY + radius);
-          ctx.quadraticCurveTo(barX, expenseY, barX + radius, expenseY);
-          ctx.lineTo(barX + barWidth - radius, expenseY);
-          ctx.quadraticCurveTo(barX + barWidth, expenseY, barX + barWidth, expenseY + radius);
-          ctx.lineTo(barX + barWidth, chartHeight);
-          ctx.closePath();
-          ctx.fill();
+          // Vibrant rounded pill bar
+          const barGrad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
+          if (d.is_today) {
+            barGrad.addColorStop(0, '#38BDF8');
+            barGrad.addColorStop(1, '#2563EB');
+          } else {
+            barGrad.addColorStop(0, (APP_STATE.appTheme === 'theme-light') ? '#3B82F6' : '#60A5FA');
+            barGrad.addColorStop(1, (APP_STATE.appTheme === 'theme-light') ? '#1D4ED8' : '#2563EB');
+          }
+          ctx.fillStyle = barGrad;
+          drawPill(ctx, barX, expenseY, barWidth, expenseHeight, barWidth / 2);
 
           // Amount text on top
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#1E3A8A' : '#93C5FD';
-          ctx.font = 'bold 8px sans-serif';
+          ctx.fillStyle = d.is_today ? '#38BDF8' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#F1F5F9');
+          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
-          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
+          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), Math.max(14, expenseY - 5));
         } else {
-          // Subtle clean flat track for zero days
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(30, 58, 138, 0.15)' : 'rgba(30, 58, 138, 0.3)';
-          const zeroH = 3;
-          const zeroY = chartHeight - zeroH;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(barX, zeroY, barWidth, zeroH, 1.5);
-          else ctx.rect(barX, zeroY, barWidth, zeroH);
-          ctx.fill();
+          // Subtle clean muted ₹0 label
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(100, 116, 139, 0.65)' : 'rgba(148, 163, 184, 0.55)';
+          ctx.font = '500 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('₹0', barX + (barWidth / 2), chartHeight - 6);
         }
 
         // Day label below
-        ctx.fillStyle = d.is_today ? '#3B82F6' : ((APP_STATE.appTheme === 'theme-light') ? '#334155' : '#94A3B8');
-        ctx.font = d.is_today ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
+        if (d.is_today) {
+          const pillW = barWidth + 8;
+          const pillH = 16;
+          const pillX = barX - 4;
+          const pillY = h - 18;
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+          drawPill(ctx, pillX, pillY, pillW, pillH, 8);
+          ctx.fillStyle = '#38BDF8';
+          ctx.font = 'bold 10px sans-serif';
+        } else {
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#64748B' : '#94A3B8';
+          ctx.font = '600 10px sans-serif';
+        }
         ctx.textAlign = 'center';
         ctx.fillText(d.day, barX + (barWidth / 2), h - 6);
       });
@@ -8057,8 +8137,8 @@
 
       // G. Canvases Commit (Analytics Donut, 6M Bar, Insights Daily Bar)
       renderDonutChart(slices, currentMonthExpenses, true);
-      renderHistoryBarChart(APP_STATE.history6m);
-      renderWeeklyDailyBarChart(APP_STATE.weeklyDaily);
+      renderHistoryBarChart(computeHistory6mBuckets());
+      renderWeeklyDailyBarChart(computeWeeklyDailyBuckets());
 
       // H. Dynamic Lists Commit
       renderRecentTx(APP_STATE.transactions.slice(0, 5));
@@ -8146,7 +8226,7 @@
       commitAllScreensAtomic();
     }
 
-    function renderHistoryBarChart(history) {
+    function renderHistoryBarChart(history = null) {
       const canvas = document.getElementById('historyBarCanvas');
       if (!canvas) return;
       const prep = prepareResponsiveCanvas(canvas, 150, 260);
@@ -8155,79 +8235,87 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      if (!history || !Array.isArray(history) || history.length === 0) {
-        history = ensureHistory6mInitialized();
-      }
-      if (!history || history.length === 0) return;
+      const histData = (Array.isArray(history) && history.length === 6) ? history : computeHistory6mBuckets();
+      if (!histData || histData.length === 0) return;
 
       const paddingBottom = 26;
+      const paddingTop = 22;
       const chartHeight = h - paddingBottom;
-      const barGroupWidth = w / history.length;
-      const barWidth = Math.max(12, Math.min(30, barGroupWidth - 16));
+      const trackHeight = chartHeight - paddingTop;
+      const barGroupWidth = w / histData.length;
+      const barWidth = Math.max(18, Math.min(34, barGroupWidth - 14));
 
       let maxVal = 1000;
-      history.forEach(m => {
+      histData.forEach(m => {
         const exp = parseFloat(m.expenses) || 0;
         if (exp > maxVal) maxVal = exp;
       });
 
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = now.getMonth() + 1;
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-      history.forEach((m, idx) => {
+      histData.forEach((m, idx) => {
         const groupX = idx * barGroupWidth;
         const barX = groupX + (barGroupWidth - barWidth) / 2;
         const expAmount = parseFloat(m.expenses) || 0;
+        const isCurMonth = (m.year === curYear && m.month === curMonth);
+
+        // Background capsule track for every month
+        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+        drawPill(ctx, barX, paddingTop, barWidth, trackHeight, barWidth / 2);
 
         if (expAmount > 0) {
-          const expenseHeight = Math.max(8, (expAmount / maxVal) * (chartHeight - 22));
+          const expenseHeight = Math.max(10, Math.min(trackHeight, (expAmount / maxVal) * trackHeight));
           const expenseY = chartHeight - expenseHeight;
 
           // Modern Gradient Bar
           const grad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
-          if (APP_STATE.appTheme === 'theme-light') {
-            grad.addColorStop(0, '#2563EB');
-            grad.addColorStop(1, '#3B82F6');
+          if (isCurMonth) {
+            grad.addColorStop(0, '#A855F7');
+            grad.addColorStop(1, '#6366F1');
+          } else if (APP_STATE.appTheme === 'theme-light') {
+            grad.addColorStop(0, '#3B82F6');
+            grad.addColorStop(1, '#2563EB');
           } else {
-            grad.addColorStop(0, '#6366F1');
+            grad.addColorStop(0, '#818CF8');
             grad.addColorStop(1, '#4F46E5');
           }
           ctx.fillStyle = grad;
-
-          // Rounded top
-          const radius = Math.min(6, barWidth / 2);
-          ctx.beginPath();
-          ctx.moveTo(barX, chartHeight);
-          ctx.lineTo(barX, expenseY + radius);
-          ctx.quadraticCurveTo(barX, expenseY, barX + radius, expenseY);
-          ctx.lineTo(barX + barWidth - radius, expenseY);
-          ctx.quadraticCurveTo(barX + barWidth, expenseY, barX + barWidth, expenseY + radius);
-          ctx.lineTo(barX + barWidth, chartHeight);
-          ctx.closePath();
-          ctx.fill();
+          drawPill(ctx, barX, expenseY, barWidth, expenseHeight, barWidth / 2);
 
           // Amount on top of bar
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#1E293B' : '#CBD5E1';
-          ctx.font = 'bold 8px sans-serif';
+          ctx.fillStyle = isCurMonth ? '#C084FC' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#F1F5F9');
+          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
-          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), expenseY - 4);
+          ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), Math.max(14, expenseY - 5));
         } else {
-          // Subtle clean flat track for zero expense months (no phantom bar)
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(59, 130, 246, 0.12)' : 'rgba(99, 102, 241, 0.18)';
-          const zeroH = 3;
-          const zeroY = chartHeight - zeroH;
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(barX, zeroY, barWidth, zeroH, 1.5);
-          else ctx.rect(barX, zeroY, barWidth, zeroH);
-          ctx.fill();
+          // Subtle clean muted ₹0 label
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(100, 116, 139, 0.65)' : 'rgba(148, 163, 184, 0.55)';
+          ctx.font = '500 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('₹0', barX + (barWidth / 2), chartHeight - 6);
         }
 
         // Fixed Date Label: 'Jan', 'Feb', etc.
         const monthIdx = (m.month && m.month >= 1 && m.month <= 12) ? (m.month - 1) : idx % 12;
         const fixedLabel = monthNames[monthIdx];
 
-        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8';
-        ctx.font = 'bold 9px sans-serif';
+        if (isCurMonth) {
+          const pillW = barWidth + 8;
+          const pillH = 16;
+          const pillX = barX - 4;
+          const pillY = h - 18;
+          ctx.fillStyle = 'rgba(168, 85, 247, 0.2)';
+          drawPill(ctx, pillX, pillY, pillW, pillH, 8);
+          ctx.fillStyle = '#C084FC';
+          ctx.font = 'bold 10px sans-serif';
+        } else {
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#64748B' : '#94A3B8';
+          ctx.font = '600 10px sans-serif';
+        }
         ctx.textAlign = 'center';
         ctx.fillText(fixedLabel, barX + (barWidth / 2), h - 6);
       });
@@ -8888,13 +8976,13 @@
     // ----------------------------------------------------
     // QUICK ENTRY KEYPAD BOTTOM SHEET UX (PHASE 4 & 5)
     // ----------------------------------------------------
-    APP_STATE.sheetDate = new Date().toISOString().slice(0, 10);
+    APP_STATE.sheetDate = getLocalDateString();
     APP_STATE.sheetSubcategoryId = null;
 
     function setSheetDate(mode) {
       const today = new Date();
       if (mode === 'TODAY') {
-        APP_STATE.sheetDate = today.toISOString().slice(0, 10);
+        APP_STATE.sheetDate = getLocalDateString(today);
         document.getElementById('datePillToday').style.background = 'var(--bg-card-subtle)';
         document.getElementById('datePillToday').style.color = 'var(--text-primary)';
         document.getElementById('datePillYesterday').style.background = 'transparent';
@@ -8902,7 +8990,7 @@
       } else if (mode === 'YESTERDAY') {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
-        APP_STATE.sheetDate = y.toISOString().slice(0, 10);
+        APP_STATE.sheetDate = getLocalDateString(y);
         document.getElementById('datePillYesterday').style.background = 'var(--bg-card-subtle)';
         document.getElementById('datePillYesterday').style.color = 'var(--text-primary)';
         document.getElementById('datePillToday').style.background = 'transparent';
@@ -9385,7 +9473,7 @@
         account_id: APP_STATE.sheetAccountId,
         transaction_type: APP_STATE.sheetType,
         amount: amount,
-        date: APP_STATE.sheetDate || new Date().toISOString().slice(0, 10),
+        date: APP_STATE.sheetDate || getLocalDateString(),
         note: document.getElementById('sheetNoteInput').value.trim(),
         tag: document.getElementById('sheetTagInput').value.trim(),
         client_uuid: clientUuid

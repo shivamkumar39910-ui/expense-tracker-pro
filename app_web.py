@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash, abort
+from flask import Flask, render_template, request, redirect, session, flash, abort, jsonify
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -8,6 +8,7 @@ import sqlite3
 import math
 import secrets
 import os
+import time
 import re
 from api_v1 import api_v1
 
@@ -18,6 +19,20 @@ from api_v1 import api_v1
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(api_v1, url_prefix='/api/v1')
+
+# ==================================================
+# 24/7 Always-Awake High-Performance Health Endpoint
+# ==================================================
+@app.route("/health", methods=["GET", "HEAD"])
+@app.route("/ping", methods=["GET", "HEAD"])
+def server_health():
+    """Ultra-fast zero-DB endpoint for 24/7 uptime monitoring & instant wake-up."""
+    return jsonify({
+        "status": "healthy",
+        "service": "Expense Tracker Pro 2.0",
+        "alive": True,
+        "timestamp": int(time.time())
+    }), 200
 
 @app.route('/api/forecast', methods=['GET'])
 def api_forecast_alias():

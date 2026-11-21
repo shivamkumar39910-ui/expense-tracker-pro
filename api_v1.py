@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 import re
 import csv
 import io
@@ -22,6 +23,17 @@ import push_delivery_service
 import otp_service
 
 api_v1 = Blueprint('api_v1', __name__)
+
+@api_v1.route("/health", methods=["GET", "HEAD"])
+@api_v1.route("/ping", methods=["GET", "HEAD"])
+def api_health():
+    """Ultra-fast zero-DB endpoint for 24/7 uptime monitoring & instant wake-up."""
+    return jsonify({
+        "status": "healthy",
+        "service": "Expense Tracker Pro 2.0 API",
+        "alive": True,
+        "timestamp": int(time.time())
+    }), 200
 
 
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "expense_tracker_pro_v2_jwt_secret_2026_super_secure")

@@ -1848,7 +1848,7 @@ def get_app_bootstrap():
         cursor.execute("""
             SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
             FROM transactions
-            WHERE user_id = ? AND date >= ?
+            WHERE user_id = ? AND SUBSTR(date, 1, 10) >= ?
             GROUP BY SUBSTR(date, 1, 7), transaction_type
         """, (user_id, start_date_str))
         hist_rows = cursor.fetchall()
@@ -2041,12 +2041,13 @@ def get_app_bootstrap():
         monday = today - timedelta(days=diff_to_monday)
         sunday = monday + timedelta(days=6)
         cursor.execute("""
-            SELECT date, SUM(amount) as daily_total
+            SELECT SUBSTR(date, 1, 10) as d, SUM(amount) as daily_total
             FROM transactions
-            WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date >= ? AND date <= ?
-            GROUP BY date
+            WHERE user_id = ? AND transaction_type = 'EXPENSE' 
+              AND SUBSTR(date, 1, 10) >= ? AND SUBSTR(date, 1, 10) <= ?
+            GROUP BY SUBSTR(date, 1, 10)
         """, (user_id, monday.isoformat(), sunday.isoformat()))
-        daily_rows = {row["date"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
+        daily_rows = {row["d"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
 
         days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         weekly_daily = []
@@ -2397,7 +2398,7 @@ def get_chart_history_6m():
     cursor.execute("""
         SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
         FROM transactions
-        WHERE user_id = ? AND date >= ?
+        WHERE user_id = ? AND SUBSTR(date, 1, 10) >= ?
         GROUP BY SUBSTR(date, 1, 7), transaction_type
     """, (user_id, start_date_str))
     rows = cursor.fetchall()
@@ -2452,13 +2453,13 @@ def get_chart_history_weekly():
     conn = database.get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT date, SUM(amount) as daily_total
+        SELECT SUBSTR(date, 1, 10) as d, SUM(amount) as daily_total
         FROM transactions
-        WHERE user_id = ? AND transaction_type = 'EXPENSE' AND date >= ? AND date <= ?
-        GROUP BY date
+        WHERE user_id = ? AND transaction_type = 'EXPENSE' 
+          AND SUBSTR(date, 1, 10) >= ? AND SUBSTR(date, 1, 10) <= ?
+        GROUP BY SUBSTR(date, 1, 10)
     """, (user_id, monday.isoformat(), sunday.isoformat()))
-    daily_rows = {row["date"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
-    conn.close()
+    daily_rows = {row["d"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
     conn.close()
 
     days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]

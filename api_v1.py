@@ -1206,13 +1206,26 @@ def delete_budget_entry(budget_id):
     user_id = request.user["id"]
     conn = database.get_db_connection()
     cursor = conn.cursor()
+    cursor.execute("SELECT category_id FROM budgets WHERE id = ? AND user_id = ?", (budget_id, user_id))
+    b_row = cursor.fetchone()
+    if not b_row:
+        conn.close()
+        return jsonify({"success": False, "error": "Budget entry not found"}), 404
+
+    cat_id = b_row["category_id"]
     cursor.execute("DELETE FROM budgets WHERE id = ? AND user_id = ?", (budget_id, user_id))
     affected = cursor.rowcount
+
+    # Clean up corresponding unread notifications & alerts
+    if cat_id:
+        cursor.execute("DELETE FROM notifications WHERE user_id = ? AND category_id = ?", (user_id, cat_id))
+    else:
+        cursor.execute("DELETE FROM notifications WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')", (user_id,))
+        cursor.execute("DELETE FROM financial_alerts WHERE user_id = ? AND alert_type IN ('BUDGET_OVERRUN', 'BUDGET_80')", (user_id,))
+
     conn.commit()
     conn.close()
-    if affected > 0:
-        return jsonify({"success": True, "message": "Category budget limit removed"}), 200
-    return jsonify({"success": False, "error": "Budget entry not found"}), 404
+    return jsonify({"success": True, "message": "Budget limit removed"}), 200
 
 @api_v1.route('/budgets/category/<int:category_id>', methods=['DELETE'])
 @token_required
@@ -1229,9 +1242,38 @@ def delete_budget_by_category(category_id):
         (user_id, category_id, month, year)
     )
     affected = cursor.rowcount
+    # Clean up notifications for this category
+    cursor.execute("DELETE FROM notifications WHERE user_id = ? AND category_id = ?", (user_id, category_id))
     conn.commit()
     conn.close()
     return jsonify({"success": True, "deleted": affected, "message": "Category budget limit removed"}), 200
+
+@api_v1.route('/budgets/overall', methods=['DELETE'])
+@token_required
+def delete_overall_budget():
+    """Deletes overall monthly budget and purges any over-budget alerts."""
+    user_id = request.user["id"]
+    today = date.today()
+    month = int(request.args.get("month", today.month))
+    year = int(request.args.get("year", today.year))
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM budgets WHERE user_id = ? AND (category_id IS NULL OR category_id = 0) AND month = ? AND year = ?",
+        (user_id, month, year)
+    )
+    affected = cursor.rowcount
+    cursor.execute("""
+        DELETE FROM notifications 
+        WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
+    """, (user_id,))
+    cursor.execute("""
+        DELETE FROM financial_alerts 
+        WHERE user_id = ? AND alert_type IN ('BUDGET_OVERRUN', 'BUDGET_80')
+    """, (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "deleted": affected, "message": "Overall monthly budget removed"}), 200
 
 def calculate_next_recurrence_date(current_date_str: str, frequency: str = "MONTHLY", due_day: int = 1) -> str:
     """Calculates next recurrence date advancing weekly, monthly, or yearly."""

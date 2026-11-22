@@ -1017,6 +1017,42 @@ def get_user_notifications(user_id, limit=30, unread_only=False):
     # Permanently purge nuisance 'Cash in Hand' low balance notifications
     try:
         cursor.execute("DELETE FROM notifications WHERE user_id = ? AND (title LIKE '%Cash in Hand%' OR (title LIKE '%Low Balance%' AND title LIKE '%Cash%'))", (user_id,))
+
+        # Purge stale budget notifications if overall budget or category budget was deleted
+        today_n = date.today()
+        # 1. If overall budget is 0 or deleted, purge overall budget overrun notifications
+        cursor.execute("""
+            SELECT 1 FROM budgets 
+            WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0) AND amount > 0
+            LIMIT 1
+        """, (user_id, today_n.month, today_n.year))
+        if not cursor.fetchone():
+            cursor.execute("""
+                DELETE FROM notifications 
+                WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
+            """, (user_id,))
+
+        # 2. If category limit was deleted, purge notifications for that category
+        cursor.execute("""
+            SELECT category_id FROM budgets 
+            WHERE user_id = ? AND month = ? AND year = ? AND category_id IS NOT NULL AND category_id > 0 AND amount > 0
+        """, (user_id, today_n.month, today_n.year))
+        active_c_ids = [r["category_id"] for r in cursor.fetchall()]
+        if active_c_ids:
+            c_placeholders = ",".join(["?"] * len(active_c_ids))
+            cursor.execute(f"""
+                DELETE FROM notifications 
+                WHERE user_id = ? AND category_id IS NOT NULL 
+                  AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
+                  AND category_id NOT IN ({c_placeholders})
+            """, [user_id, *active_c_ids])
+        else:
+            cursor.execute("""
+                DELETE FROM notifications 
+                WHERE user_id = ? AND category_id IS NOT NULL 
+                  AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
+            """, (user_id,))
+
         conn.commit()
     except Exception:
         pass
@@ -1077,8 +1113,9 @@ def generate_predictive_notifications(user_id):
     # 1. Check Month-End Forecast vs Budget
     try:
         fc = forecasting_engine.calculate_month_end_forecast(user_id)
-        if fc and fc.get("total_monthly_budget", 0) > 0:
-            budget = fc["total_monthly_budget"]
+        b_limit = float(fc.get("monthly_budget", 0) or fc.get("budget", 0) or 0)
+        if fc and b_limit > 0:
+            budget = b_limit
             projected = fc["projected_month_end_spend"]
             if projected > budget:
                 excess = round(projected - budget, 2)

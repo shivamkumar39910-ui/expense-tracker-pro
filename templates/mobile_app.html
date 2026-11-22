@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.4">
+  <meta name="app-shell-version" content="v4.5">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1975,15 +1975,11 @@
           <div class="user-greeting" onclick="switchTab('tab-profile')" style="cursor:pointer;" title="View Profile & Settings">
             <div class="user-avatar" id="homeUserAvatar" style="cursor:pointer;">R</div>
             <div>
-              <div class="user-title" data-i18n="welcome_back">Welcome back,</div>
+              <div class="user-title">Welcome back,</div>
               <div class="user-name" id="homeUserName">Rahul Verma</div>
             </div>
           </div>
           <div class="header-actions">
-            <!-- Language Toggle (English / Hindi) -->
-            <div class="btn-icon-header" id="btnLangToggle" onclick="toggleAppLanguage()" title="भाषा बदलें / Change Language" style="display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
-              <span id="langToggleText" style="font-size:13px; font-weight:800; letter-spacing:-0.5px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">अ/A</span>
-            </div>
             <!-- Theme Toggle (Midnight Navy / Light Mode) -->
             <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (Midnight / Light)">
               <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">light_mode</span>
@@ -2011,7 +2007,7 @@
         <!-- Total Expense Card (Optimized per user request) -->
         <div class="card-net-worth" style="background:linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border:1px solid rgba(99, 102, 241, 0.35); padding:18px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div class="net-worth-label" style="margin-bottom:0; color:#A5B4FC; letter-spacing:0.5px; font-weight:800;" data-i18n="total_expenses_month">Total Expenses (This Month)</div>
+            <div class="net-worth-label" style="margin-bottom:0; color:#A5B4FC; letter-spacing:0.5px; font-weight:800;">Total Expenses (This Month)</div>
             <span class="material-icons-round" id="privacyToggleIcon" onclick="togglePrivacyMode()" style="font-size:18px; color:rgba(255,255,255,0.85); cursor:pointer;" title="Toggle Privacy Mask">visibility</span>
           </div>
           <div class="net-worth-amount" id="homeTotalExpenseDisplay" style="color:#FFF; font-size:32px; font-weight:800; letter-spacing:-0.5px;">₹0.00</div>
@@ -2039,7 +2035,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:6px;">
               <span class="material-icons-round" style="color:var(--color-sapphire); font-size:18px;">pie_chart</span>
-              <div style="font-size:13px; font-weight:800; color:var(--text-primary);" data-i18n="monthly_budget_progress">Monthly Budget Progress</div>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Monthly Budget Progress</div>
             </div>
             <span id="homeBudgetPercentBadge" style="font-size:11px; font-weight:800; background:rgba(16,185,129,0.15); color:var(--color-emerald); padding:3px 9px; border-radius:12px;">0% Used</span>
           </div>
@@ -2064,7 +2060,7 @@
           <div class="forecast-badge-row" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <div class="forecast-title" style="display:flex; align-items:center; gap:6px;">
               <span class="material-icons-round" style="color:var(--color-sapphire); font-size:18px;">analytics</span>
-              <span class="forecast-title-text" style="font-weight:800; font-size:14px; letter-spacing:-0.2px;" data-i18n="est_month_end">Est. Month-END</span>
+              <span class="forecast-title-text" style="font-weight:800; font-size:14px; letter-spacing:-0.2px;">Est. Month-END</span>
             </div>
             <div id="forecastRiskBadge" style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.45); box-shadow:0 0 10px rgba(16,185,129,0.25);" title="Spending Status Indicator">
               <span class="blink-status-light" id="forecastRiskDot" style="background:#10B981; color:#10B981; width:9px; height:9px;"></span>
@@ -2093,15 +2089,15 @@
 
           <!-- Compact View Details Footer -->
           <div class="forecast-footer-link" style="display:flex; justify-content:flex-end; align-items:center; gap:3px; font-size:10px; font-weight:700; margin-top:2px;">
-            <span data-i18n="view_details">View Details</span>
+            <span>View Details</span>
             <span class="material-icons-round" style="font-size:13px;">arrow_forward</span>
           </div>
         </div>
 
         <!-- Recent Transactions -->
         <div class="section-header-row">
-          <div class="section-title" data-i18n="recent_transactions">Recent Transactions</div>
-          <div class="section-link" onclick="switchTab('tab-transactions')" data-i18n="view_all">View All</div>
+          <div class="section-title">Recent Transactions</div>
+          <div class="section-link" onclick="switchTab('tab-transactions')">View All</div>
         </div>
 
         <div id="homeRecentTxList">
@@ -2172,6 +2168,14 @@
 
         <div id="allTxList">
           <!-- Rendered dynamically -->
+        </div>
+
+        <!-- View All Transactions Button -->
+        <div style="padding:14px 0 24px 0; text-align:center;">
+          <button type="button" class="btn-submit-sheet" onclick="switchTab('tab-history')" style="background:var(--bg-card-subtle); color:var(--color-sapphire); border:1.5px solid rgba(59, 130, 246, 0.4); font-size:13px; font-weight:800; border-radius:14px; padding:12px 18px; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:all 0.2s ease;">
+            <span class="material-icons-round" style="font-size:19px; color:var(--color-sapphire);">history</span>
+            <span>View All Transactions</span>
+          </button>
         </div>
       </div>
 
@@ -2258,7 +2262,7 @@
           <div style="position:absolute; top:-30px; right:-30px; width:140px; height:140px; background:radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div class="fc-hero-title" style="font-size:13px; font-weight:800; letter-spacing:0.2px;" data-i18n="est_month_end_details">Est. Month-END & Details</div>
+            <div class="fc-hero-title" style="font-size:13px; font-weight:800; letter-spacing:0.2px;">Est. Month-END & Details</div>
           </div>
 
           <div style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
@@ -2564,6 +2568,39 @@
 
       </div>
 
+      <!-- ============================================== -->
+      <!-- TAB 6: ALL TIME HISTORY SCREEN                 -->
+      <!-- ============================================== -->
+      <div class="app-screen" id="tab-history">
+        <div class="app-header" style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <div class="btn-icon-header" onclick="switchTab('tab-analytics')" title="Back to Analytics" style="cursor:pointer;">
+            <span class="material-icons-round">arrow_back</span>
+          </div>
+          <div style="flex:1;">
+            <div class="user-name" style="font-size:18px; font-weight:800;">All Time History</div>
+            <div id="allHistoryTxCount" style="font-size:11px; color:var(--text-muted); font-weight:600;">0 transactions</div>
+          </div>
+          <div class="btn-icon-header" onclick="downloadCsvExport()" title="Export CSV" style="cursor:pointer;">
+            <span class="material-icons-round">file_download</span>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <input type="text" class="form-input-pill" placeholder="🔍 Search all history by note, category, amount..." id="allHistorySearchInput" oninput="applyAllHistorySearch()" style="margin-bottom:12px;">
+
+        <!-- Filter Segmented Tabs -->
+        <div class="segmented-control" style="margin-bottom:14px; display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;">
+          <div class="segment-btn active" id="histFilterAll" onclick="setHistFilter('ALL')">All</div>
+          <div class="segment-btn" id="histFilterExpense" onclick="setHistFilter('EXPENSE')">Expense</div>
+          <div class="segment-btn" id="histFilterIncome" onclick="setHistFilter('INCOME')">Income</div>
+          <div class="segment-btn" id="histFilterTransfer" onclick="setHistFilter('TRANSFER')">Transfer</div>
+        </div>
+
+        <div id="allHistoryTxList" style="padding-bottom:30px;">
+          <!-- All transactions dynamically rendered here -->
+        </div>
+      </div>
+
     </div>
 
     <!-- COMPACT FLOATING AI CHATBOT BUTTON (25% REDUCED, NO TEXT LABEL, ABOVE PROFILE) -->
@@ -2580,11 +2617,11 @@
     <div class="mobile-bottom-nav">
       <div class="nav-tab active" id="nav-tab-home" onclick="switchTab('tab-home')">
         <span class="material-icons-round">home</span>
-        <span data-i18n="nav_home">Home</span>
+        <span>Home</span>
       </div>
       <div class="nav-tab" id="nav-tab-analytics" onclick="switchTab('tab-analytics')" title="Analytics">
         <span class="material-icons-round">bar_chart</span>
-        <span data-i18n="nav_analytics">Analytics</span>
+        <span>Analytics</span>
       </div>
       
       <!-- Elevated Center (+) FAB -->
@@ -2595,13 +2632,13 @@
       <!-- Insights Tab -->
       <div class="nav-tab" id="nav-tab-ai" onclick="switchTab('tab-ai')" title="Insights">
         <span class="material-icons-round">trending_up</span>
-        <span data-i18n="nav_insights">Insights</span>
+        <span>Insights</span>
       </div>
 
       <!-- Hub: Profile, Wallets, Budgets, Subscriptions, Goals, Reports, Settings -->
       <div class="nav-tab" id="nav-tab-profile" onclick="switchTab('tab-profile')" title="Profile & Settings">
         <span class="material-icons-round">person</span>
-        <span data-i18n="nav_profile">Profile</span>
+        <span>Profile</span>
       </div>
     </div>
 
@@ -3025,8 +3062,8 @@
         </div>
       </div>
 
-      <button class="btn-submit-sheet" onclick="submitMonthlyBudgetModal()" data-i18n="save_monthly_budget">Save Monthly Budget</button>
-      <button class="btn-submit-sheet" id="btnDeleteMonthlyBudget" onclick="deleteMonthlyBudget()" style="margin-top:8px; background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.3); display:none;" data-i18n="delete_monthly_budget">Delete / Remove Budget</button>
+      <button class="btn-submit-sheet" onclick="submitMonthlyBudgetModal()">Save Monthly Budget</button>
+      <button class="btn-submit-sheet" id="btnDeleteMonthlyBudget" onclick="deleteMonthlyBudget()" style="margin-top:8px; background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.3); display:none;">Delete / Remove Budget</button>
     </div>
 
     <!-- ============================================== -->
@@ -4147,7 +4184,6 @@
       token: localStorage.getItem('jwt_access_token') || '',
       user: JSON.parse(localStorage.getItem('user_profile') || 'null'),
       accounts: [],
-      language: localStorage.getItem('app_language') || 'en',
       categories: { expense: [], income: [] },
       transactions: [],
       history6m: [],
@@ -4686,7 +4722,7 @@
     // Synchronous 0ms Hydration Controller: Paints Home, Analytics, Insights & Profile IMMEDIATELY at Frame 1
     function hydrateFromLocalCacheSync() {
       applyAppTheme(true);
-      applyAppLanguage(APP_STATE.language, true);
+      try { localStorage.removeItem('app_language'); } catch (e) {}
       updateSyncBadge();
 
       if (!APP_STATE.token || !APP_STATE.user) {
@@ -4900,143 +4936,6 @@
       }
     }
 
-    // ----------------------------------------------------
-    // BILINGUAL INTERNATIONALIZATION ENGINE (EN <-> HI)
-    // ----------------------------------------------------
-    const I18N_STRINGS = {
-      en: {
-        nav_home: 'Home',
-        nav_analytics: 'Analytics',
-        nav_insights: 'Insights',
-        nav_profile: 'Profile',
-        welcome_back: 'Welcome back,',
-        total_expenses_month: 'Total Expenses (This Month)',
-        monthly_budget_progress: 'Monthly Budget Progress',
-        est_month_end: 'Est. Month-END',
-        view_details: 'View Details',
-        recent_transactions: 'Recent Transactions',
-        view_all: 'View All',
-        monthly_cashflow: 'Monthly Cashflow',
-        cashflow_income: 'Income',
-        cashflow_expenses: 'Expenses',
-        cashflow_net_savings: 'Net Savings',
-        accounts_wallets: 'Accounts & Wallets',
-        manage_accounts: 'Manage',
-        spending_breakdown: 'Spending Breakdown',
-        expense_history: 'Expense History',
-        monthly_trend: 'Monthly Trend',
-        all_transactions: 'All Transactions',
-        filter_all: 'All',
-        filter_expense: 'Expense',
-        filter_income: 'Income',
-        est_month_end_details: 'Est. Month-END & Details',
-        weekly_daily_trend: 'Weekly Daily Expense Trend',
-        spending_trajectory: 'Spending Trajectory vs Budget',
-        quick_expense: 'Expense',
-        quick_income: 'Income',
-        quick_transfer: 'Transfer',
-        date_today: 'Today',
-        date_yesterday: 'Yesterday',
-        date_custom: 'Custom',
-        btn_save_tx: 'Save Transaction',
-        save_monthly_budget: 'Save Monthly Budget',
-        delete_monthly_budget: 'Delete / Remove Budget',
-        search_placeholder: 'Search by merchant, note, tag...',
-        note_placeholder: 'Add note (e.g. Lunch with team)',
-        tag_placeholder: 'Tags (e.g. #food #team)'
-      },
-      hi: {
-        nav_home: 'होम',
-        nav_analytics: 'एनालिटिक्स',
-        nav_insights: 'इनसाइट्स',
-        nav_profile: 'प्रोफाइल',
-        welcome_back: 'नमस्ते,',
-        total_expenses_month: 'कुल खर्च (इस महीने)',
-        monthly_budget_progress: 'मासिक बजट प्रगति',
-        est_month_end: 'अनुमानित माह-अंत',
-        view_details: 'विवरण देखें',
-        recent_transactions: 'हालिया लेनदेन',
-        view_all: 'सभी देखें',
-        monthly_cashflow: 'मासिक कैशफ्लो',
-        cashflow_income: 'आय',
-        cashflow_expenses: 'खर्च',
-        cashflow_net_savings: 'शुद्ध बचत',
-        accounts_wallets: 'खाते और वॉलेट',
-        manage_accounts: 'प्रबंधन',
-        spending_breakdown: 'खर्च का विश्लेषण',
-        expense_history: 'खर्च का इतिहास',
-        monthly_trend: 'मासिक रुझान',
-        all_transactions: 'सभी लेनदेन',
-        filter_all: 'सभी',
-        filter_expense: 'खर्च',
-        filter_income: 'आय',
-        est_month_end_details: 'अनुमानित माह-अंत विवरण',
-        weekly_daily_trend: 'साप्ताहिक दैनिक खर्च',
-        spending_trajectory: 'बजट बनाम खर्च की गति',
-        quick_expense: 'खर्च',
-        quick_income: 'आय',
-        quick_transfer: 'ट्रांसफर',
-        date_today: 'आज',
-        date_yesterday: 'कल',
-        date_custom: 'अन्य तारीख',
-        btn_save_tx: 'सुरक्षित करें',
-        save_monthly_budget: 'मासिक बजट सुरक्षित करें',
-        delete_monthly_budget: 'बजट हटाएं / डिलीट करें',
-        search_placeholder: 'व्यापारी, नोट या टैग से खोजें...',
-        note_placeholder: 'नोट लिखें (उदा. लंच)',
-        tag_placeholder: 'टैग (उदा. #खाना #दोस्त)'
-      }
-    };
-
-    function applyAppLanguage(lang = 'en', skipCommit = false) {
-      if (lang !== 'en' && lang !== 'hi') lang = 'en';
-      APP_STATE.language = lang;
-      try { localStorage.setItem('app_language', lang); } catch (e) {}
-
-      const toggleText = document.getElementById('langToggleText');
-      const toggleBtn = document.getElementById('btnLangToggle');
-      if (toggleText) {
-        toggleText.innerText = (lang === 'hi') ? 'अ/A' : 'A/अ';
-      }
-      if (toggleBtn) {
-        if (lang === 'hi') {
-          toggleBtn.style.background = 'rgba(56, 189, 248, 0.18)';
-          toggleBtn.style.borderColor = 'rgba(56, 189, 248, 0.6)';
-          toggleBtn.style.color = '#38BDF8';
-        } else {
-          toggleBtn.style.background = '';
-          toggleBtn.style.borderColor = '';
-          toggleBtn.style.color = '';
-        }
-      }
-
-      const dict = I18N_STRINGS[lang] || I18N_STRINGS.en;
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (dict[key]) {
-          el.innerText = dict[key];
-        }
-      });
-
-      const sInp = document.getElementById('txSearchInput');
-      if (sInp && dict.search_placeholder) sInp.placeholder = dict.search_placeholder;
-      const nInp = document.getElementById('sheetNoteInput');
-      if (nInp && dict.note_placeholder) nInp.placeholder = dict.note_placeholder;
-      const tInp = document.getElementById('sheetTagInput');
-      if (tInp && dict.tag_placeholder) tInp.placeholder = dict.tag_placeholder;
-
-      if (!skipCommit && typeof commitAllScreensAtomic === 'function') {
-        commitAllScreensAtomic();
-      }
-    }
-
-    function toggleAppLanguage() {
-      triggerHaptic('light');
-      const nextLang = (APP_STATE.language === 'hi') ? 'en' : 'hi';
-      applyAppLanguage(nextLang);
-      showToast(nextLang === 'hi' ? 'भाषा: हिन्दी सेट की गई' : 'Language: English set', 'info');
-    }
-
     // Universal Back Navigation Function (Hardware & UI Header)
     function goBack() {
       triggerHaptic('light');
@@ -5046,6 +4945,10 @@
         return;
       }
       const currentTab = document.querySelector('.app-screen.active');
+      if (currentTab && currentTab.id === 'tab-history') {
+        switchTab('tab-analytics');
+        return;
+      }
       if (currentTab && currentTab.id !== 'tab-home') {
         switchTab('tab-home');
       } else if (window.history && window.history.length > 1) {
@@ -5258,7 +5161,7 @@
         const vp = document.getElementById('screenViewport');
         if (vp) vp.scrollTop = 0;
 
-        const navTab = document.getElementById(`nav-${targetId}`) || document.getElementById(`nav-${tabId}`);
+        const navTab = document.getElementById(targetId === 'tab-history' ? 'nav-tab-analytics' : `nav-${targetId}`) || document.getElementById(`nav-${tabId}`);
         if (navTab) navTab.classList.add('active');
 
         if (pushHistory && window.history) {
@@ -5289,6 +5192,9 @@
             } catch (e) {}
           });
         }
+        if (targetId === 'tab-history') {
+          try { renderAllHistoryTransactions(); } catch (e) { console.error('renderAllHistoryTransactions error:', e); }
+        }
         if (targetId === 'tab-ai') {
           const fc = APP_STATE.forecast || ensureForecastInitialized();
           try { renderTrajectoryChart(fc); } catch (e) {}
@@ -5297,6 +5203,9 @@
             try { renderTrajectoryChart(APP_STATE.forecast || ensureForecastInitialized()); } catch (e) {}
             try { renderWeeklyDailyBarChart(computeWeeklyDailyBuckets()); } catch (e) {}
           });
+        }
+        if (typeof showFloatingAiBtn === 'function') {
+          showFloatingAiBtn();
         }
       } catch (err) {
         console.error('switchTab error:', err);
@@ -5307,21 +5216,32 @@
     // Hardware / Native Phone Back Button Listener
     window.addEventListener('popstate', (event) => {
       // 1. If any sheet or modal is open, close it first
-      const openSheets = document.querySelectorAll('.bottom-sheet.active');
-      if (openSheets.length > 0) {
+      const openSheets = document.querySelectorAll('.bottom-sheet.active, .sheet-backdrop.active');
+      if (openSheets.length > 0 || document.body.classList.contains('chat-open') || document.body.classList.contains('sheet-open')) {
         closeAllSheets();
         return;
       }
-      // 2. If user is in another tab, return to home
+      // 2. If user is in history tab, return to analytics
       const currentTab = document.querySelector('.app-screen.active');
+      if (currentTab && currentTab.id === 'tab-history') {
+        switchTab('tab-analytics', false);
+        return;
+      }
+      // 3. If user is in another tab, return to home
       if (currentTab && currentTab.id !== 'tab-home') {
         switchTab('tab-home', false);
       }
     });
 
     function closeAllSheets() {
-      document.querySelectorAll('.bottom-sheet.active').forEach(el => el.classList.remove('active'));
+      if (typeof stopVoiceRecognition === 'function') stopVoiceRecognition();
+      if (typeof stopSpeechSynthesis === 'function') stopSpeechSynthesis();
+      document.body.classList.remove('chat-open', 'sheet-open');
+      document.querySelectorAll('.bottom-sheet.active').forEach(el => el.classList.remove('active', 'details-expanded'));
       document.querySelectorAll('.sheet-backdrop.active').forEach(el => el.classList.remove('active'));
+      if (typeof showFloatingAiBtn === 'function') {
+        showFloatingAiBtn();
+      }
     }
 
     function renderAiPredictionHero() {
@@ -5692,7 +5612,7 @@
         });
         renderRecentTx(b.recent_transactions);
       } else if (Array.isArray(b.transactions)) {
-        renderRecentTx(b.transactions.slice(0, 5));
+        renderRecentTx(b.transactions.slice(0, 4));
       }
 
       // 6. Categories
@@ -8363,7 +8283,7 @@
       renderWeeklyDailyBarChart(computeWeeklyDailyBuckets());
 
       // H. Dynamic Lists Commit
-      renderRecentTx(APP_STATE.transactions.slice(0, 5));
+      renderRecentTx(APP_STATE.transactions.slice(0, 4));
       if (typeof renderCategoryBudgets === 'function') {
         renderCategoryBudgets(catBudgetsList);
       }
@@ -8384,6 +8304,11 @@
         applyTxSearch();
       } else {
         APP_STATE._txListDirty = true;
+      }
+
+      const historyScreen = document.getElementById('tab-history');
+      if (historyScreen && historyScreen.classList.contains('active')) {
+        try { renderAllHistoryTransactions(); } catch (e) {}
       }
 
       // I. Defer Heavy Local Storage Writes to Microtask (Zero frame lag)
@@ -8743,12 +8668,13 @@
       const container = document.getElementById('homeRecentTxList');
       if (!container) return;
       container.innerHTML = '';
-      if (!transactions || transactions.length === 0) {
+      const list = (transactions || APP_STATE.transactions || []).slice(0, 4);
+      if (list.length === 0) {
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px;">No transactions recorded yet. Tap + to add.</div>';
         return;
       }
       const frag = document.createDocumentFragment();
-      transactions.forEach(tx => frag.appendChild(createTxElement(tx, true)));
+      list.forEach(tx => frag.appendChild(createTxElement(tx, true)));
       container.appendChild(frag);
     }
 
@@ -8771,9 +8697,93 @@
         container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:30px;">No transactions found for this filter.</div>';
         return;
       }
+      // On Analytics screen, display maximum 10 transactions per user request
+      const displayList = filtered.slice(0, 10);
+      const frag = document.createDocumentFragment();
+      displayList.forEach(tx => frag.appendChild(createTxElement(tx, true)));
+      container.appendChild(frag);
+    }
+
+    // ALL TIME HISTORY LOGIC
+    function renderAllHistoryTransactions(transactions = null) {
+      const container = document.getElementById('allHistoryTxList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const txList = transactions || APP_STATE.transactions || [];
+      if (!APP_STATE.activeHistFilter) {
+        APP_STATE.activeHistFilter = 'ALL';
+      }
+
+      let filtered = txList;
+      if (APP_STATE.activeHistFilter !== 'ALL') {
+        filtered = filtered.filter(t => t.transaction_type === APP_STATE.activeHistFilter);
+      }
+
+      const countBadge = document.getElementById('allHistoryTxCount');
+      if (countBadge) {
+        countBadge.innerText = `${filtered.length} transaction${filtered.length === 1 ? '' : 's'}`;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:13px; padding:40px 20px;">No transactions found.</div>';
+        return;
+      }
+
       const frag = document.createDocumentFragment();
       filtered.forEach(tx => frag.appendChild(createTxElement(tx, true)));
       container.appendChild(frag);
+    }
+
+    function setHistFilter(type) {
+      APP_STATE.activeHistFilter = type;
+      ['All', 'Expense', 'Income', 'Transfer'].forEach(t => {
+        const el = document.getElementById(`histFilter${t}`);
+        if (el) el.classList.remove('active');
+      });
+      const targetId = type === 'ALL' ? 'histFilterAll' : (type === 'EXPENSE' ? 'histFilterExpense' : (type === 'INCOME' ? 'histFilterIncome' : 'histFilterTransfer'));
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) targetEl.classList.add('active');
+      applyAllHistorySearch();
+    }
+
+    function applyAllHistorySearch() {
+      const input = document.getElementById('allHistorySearchInput');
+      const q = (input?.value || '').toLowerCase().trim();
+      
+      if (!q) {
+        renderAllHistoryTransactions(APP_STATE.transactions);
+        return;
+      }
+
+      const rawNum = q.replace(/[^0-9.]/g, '');
+
+      const filtered = (APP_STATE.transactions || []).filter(t => {
+        const matchNote = t.note && t.note.toLowerCase().includes(q);
+        const matchCat = t.category_name && t.category_name.toLowerCase().includes(q);
+        const matchSubCat = t.subcategory_name && t.subcategory_name.toLowerCase().includes(q);
+        const matchAcc = t.account_name && t.account_name.toLowerCase().includes(q);
+        const matchTag = t.tag && t.tag.toLowerCase().includes(q);
+        const matchMerchant = (t.merchant || t.merchant_name) && String(t.merchant || t.merchant_name).toLowerCase().includes(q);
+
+        let matchAmount = false;
+        if (t.amount !== undefined && t.amount !== null) {
+          const numVal = parseFloat(t.amount);
+          const amtStr = String(t.amount);
+          const amtFixed = numVal.toFixed(2);
+          const amtFormatted = numVal.toLocaleString('en-IN');
+          const amtFormattedFixed = numVal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+          matchAmount = amtStr.includes(q) ||
+                        amtFixed.includes(q) ||
+                        amtFormatted.includes(q) ||
+                        amtFormattedFixed.includes(q) ||
+                        (rawNum.length > 0 && (amtStr.includes(rawNum) || amtFixed.includes(rawNum)));
+        }
+        return matchNote || matchCat || matchSubCat || matchAcc || matchTag || matchMerchant || matchAmount;
+      });
+
+      renderAllHistoryTransactions(filtered);
     }
 
     function createTxElement(tx, allowDelete = false) {
@@ -9055,13 +9065,17 @@
           updatedTx.id = res.transaction_id;
           const idx = (APP_STATE.transactions || []).findIndex(t => String(t.id) === String(oldTx.id));
           if (idx !== -1) APP_STATE.transactions[idx].id = res.transaction_id;
-          renderRecentTx((APP_STATE.transactions || []).slice(0, 5));
+          renderRecentTx((APP_STATE.transactions || []).slice(0, 4));
           const analyticsScreen = document.getElementById('tab-analytics');
           if (analyticsScreen && analyticsScreen.classList.contains('active')) {
             APP_STATE._txListDirty = false;
             applyTxSearch();
           } else {
             APP_STATE._txListDirty = true;
+          }
+          const historyScreen = document.getElementById('tab-history');
+          if (historyScreen && historyScreen.classList.contains('active')) {
+            try { renderAllHistoryTransactions(); } catch (e) {}
           }
           persistUnifiedLocalState();
         }
@@ -12539,8 +12553,14 @@
       }
       const isAnySheetOpen = document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
       if (!isAnySheetOpen) {
+        document.body.classList.remove('chat-open', 'sheet-open');
         const btn = document.getElementById('floatingAiBotBtn');
-        if (btn) btn.style.display = 'flex';
+        if (btn) {
+          btn.classList.remove('hidden-by-sheet');
+          btn.style.display = 'flex';
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+        }
       }
     }
 
@@ -12560,6 +12580,9 @@
       const sheet = document.getElementById('aiChatSheet');
       if (bd) bd.classList.add('active');
       if (sheet) sheet.classList.add('active');
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ modal: 'aiChat' }, '');
+      }
       const inp = document.getElementById('aiChatInput');
       if (inp) setTimeout(() => inp.focus(), 250);
     }
@@ -12586,7 +12609,17 @@
         }
         const hasOpenSheet = !!document.querySelector('.bottom-sheet.active, .sheet-backdrop.active, .auth-overlay:not(.hidden)');
         const btn = document.getElementById('floatingAiBotBtn');
-        if (btn) btn.style.display = hasOpenSheet ? 'none' : 'flex';
+        if (hasOpenSheet) {
+          if (btn) btn.style.display = 'none';
+        } else {
+          document.body.classList.remove('chat-open', 'sheet-open');
+          if (btn) {
+            btn.classList.remove('hidden-by-sheet');
+            btn.style.display = 'flex';
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+          }
+        }
       });
       window.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.bottom-sheet, .sheet-backdrop, .auth-overlay').forEach(node => {

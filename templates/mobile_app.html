@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.5">
+  <meta name="app-shell-version" content="v4.6">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2580,20 +2580,16 @@
             <div class="user-name" style="font-size:18px; font-weight:800;">All Time History</div>
             <div id="allHistoryTxCount" style="font-size:11px; color:var(--text-muted); font-weight:600;">0 transactions</div>
           </div>
-          <div class="btn-icon-header" onclick="downloadCsvExport()" title="Export CSV" style="cursor:pointer;">
-            <span class="material-icons-round">file_download</span>
-          </div>
         </div>
 
         <!-- Search Bar -->
         <input type="text" class="form-input-pill" placeholder="🔍 Search all history by note, category, amount..." id="allHistorySearchInput" oninput="applyAllHistorySearch()" style="margin-bottom:12px;">
 
         <!-- Filter Segmented Tabs -->
-        <div class="segmented-control" style="margin-bottom:14px; display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;">
+        <div class="segmented-control" style="margin-bottom:14px; display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
           <div class="segment-btn active" id="histFilterAll" onclick="setHistFilter('ALL')">All</div>
           <div class="segment-btn" id="histFilterExpense" onclick="setHistFilter('EXPENSE')">Expense</div>
           <div class="segment-btn" id="histFilterIncome" onclick="setHistFilter('INCOME')">Income</div>
-          <div class="segment-btn" id="histFilterTransfer" onclick="setHistFilter('TRANSFER')">Transfer</div>
         </div>
 
         <div id="allHistoryTxList" style="padding-bottom:30px;">
@@ -8737,11 +8733,11 @@
 
     function setHistFilter(type) {
       APP_STATE.activeHistFilter = type;
-      ['All', 'Expense', 'Income', 'Transfer'].forEach(t => {
+      ['All', 'Expense', 'Income'].forEach(t => {
         const el = document.getElementById(`histFilter${t}`);
         if (el) el.classList.remove('active');
       });
-      const targetId = type === 'ALL' ? 'histFilterAll' : (type === 'EXPENSE' ? 'histFilterExpense' : (type === 'INCOME' ? 'histFilterIncome' : 'histFilterTransfer'));
+      const targetId = type === 'ALL' ? 'histFilterAll' : (type === 'EXPENSE' ? 'histFilterExpense' : 'histFilterIncome');
       const targetEl = document.getElementById(targetId);
       if (targetEl) targetEl.classList.add('active');
       applyAllHistorySearch();

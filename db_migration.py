@@ -74,9 +74,11 @@ CREATE TABLE IF NOT EXISTS categories (
     type TEXT NOT NULL CHECK(type IN ('EXPENSE', 'INCOME')),
     icon TEXT DEFAULT 'tag',
     color_hex TEXT DEFAULT '#6B7280',
+    image_url TEXT,
     is_default INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 -- 4. Subcategories Table
 CREATE TABLE IF NOT EXISTS subcategories (

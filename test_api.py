@@ -466,8 +466,52 @@ def run_tests():
     assert "RETURNING ID" in q3.upper() and ret3 is True
     print("24f. Postgres SQL Translation Compatibility Verified!")
 
+    # 25. Auto Category Image Assignment & Accuracy Verification
+    import category_visuals
+    assert category_visuals.resolve_category_visual_fast("EMI", "EXPENSE")["theme_key"] == "emi_loan"
+    assert category_visuals.resolve_category_visual_fast("Loan Repayment", "EXPENSE")["theme_key"] == "emi_loan"
+    assert category_visuals.resolve_category_visual_fast("Petrol", "EXPENSE")["theme_key"] == "fuel_petrol"
+    assert category_visuals.resolve_category_visual_fast("Taxi", "EXPENSE")["theme_key"] == "car_transport"
+    assert category_visuals.resolve_category_visual_fast("Parents", "EXPENSE")["theme_key"] == "family_home"
+    assert category_visuals.resolve_category_visual_fast("Credit Card", "EXPENSE")["theme_key"] == "credit_card_bank"
+    assert category_visuals.resolve_category_visual_fast("Healthcare", "EXPENSE")["theme_key"] == "health_wellness"
+    assert category_visuals.resolve_category_visual_fast("Chai & Coffee", "EXPENSE")["theme_key"] == "coffee_cafe"
+    assert category_visuals.resolve_category_visual_fast("Kirana", "EXPENSE")["theme_key"] == "groceries"
+    assert category_visuals.resolve_category_visual_fast("Xyz Abstract 987", "EXPENSE")["image_url"] == ""
+    print("25a. Semantic Category Visual Accuracy (Zero False Positives) Verified!")
+
+    r_sug = client.get('/api/v1/categories/suggest-visual?name=Loan+Repayment&type=EXPENSE', headers=headers)
+    assert r_sug.status_code == 200
+    assert r_sug.json["visual"]["theme_key"] == "emi_loan"
+    assert r_sug.json["visual"]["image_url"].startswith("https://images.unsplash.com/")
+    print("25b. GET /api/v1/categories/suggest-visual Verified!")
+
+    r_emi_cat = client.post('/api/v1/categories', headers=headers, json={"name": "Loan Repayment", "type": "EXPENSE"})
+    assert r_emi_cat.status_code == 201
+    emi_cat = r_emi_cat.json["category"]
+    assert emi_cat["image_url"].startswith("https://images.unsplash.com/photo-1554224155")
+    assert emi_cat["icon"] == "receipt_long"
+
+    r_cats_img = client.get('/api/v1/categories', headers=headers)
+    fetched_emi = next(c for c in r_cats_img.json["categories"]["expense"] if c["id"] == emi_cat["id"])
+    assert fetched_emi["image_url"] == emi_cat["image_url"]
+
+    r_emi_tx = client.post('/api/v1/transactions', headers=headers, json={
+        "account_id": bank_acc["id"],
+        "category_id": emi_cat["id"],
+        "transaction_type": "EXPENSE",
+        "amount": 500.0,
+        "date": datetime.today().strftime("%Y-%m-%d"),
+        "note": "Monthly EMI"
+    })
+    assert r_emi_tx.status_code == 201
+    r_txs_img = client.get('/api/v1/transactions', headers=headers)
+    emi_tx_row = next(t for t in r_txs_img.json["transactions"] if t["id"] == r_emi_tx.json["transaction_id"])
+    assert emi_tx_row["category_image"] == emi_cat["image_url"]
+    print("25c. Persistent Auto-Image in DB, /categories & /transactions Verified!")
+
     print("==================================================")
-    print("ALL 24 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
+    print("ALL 25 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.8">
+  <meta name="app-shell-version" content="v4.9">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1815,7 +1815,13 @@
       color: #FFFFFF !important;
     }
     .tx-icon-box span,
-    body.theme-light .tx-icon-box span {
+    body.theme-light .tx-icon-box span,
+    #newCatPreviewIcon,
+    body.theme-light #newCatPreviewIcon,
+    .cat-select-icon,
+    .cat-select-icon span,
+    body.theme-light .cat-select-icon,
+    body.theme-light .cat-select-icon span {
       color: #FFFFFF !important;
     }
 
@@ -2954,9 +2960,21 @@
           <span class="material-icons-round" style="font-size:18px;">close</span>
         </div>
       </div>
-      <div style="margin-bottom:14px;">
+      <div style="margin-bottom:12px;">
         <label style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:6px;">CATEGORY NAME</label>
-        <input type="text" id="newCategoryNameInput" class="form-input-pill" placeholder="e.g. Travel, Gym, Groceries, Rent" style="font-size:13px; padding:10px 14px;" onkeydown="if(event.key==='Enter') submitAddCategory()">
+        <input type="text" id="newCategoryNameInput" class="form-input-pill" placeholder="e.g. Loan EMI, Petrol, Gym, Chai, Rent" style="font-size:13px; padding:10px 14px; margin-bottom:10px;" oninput="onNewCategoryNameInput(this.value)" onkeydown="if(event.key==='Enter') submitAddCategory()">
+
+        <!-- Auto-Matched Category Image Preview -->
+        <div id="newCatVisualPreviewCard" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:14px; background:var(--bg-card-subtle); border:1px solid var(--border-card);">
+          <div id="newCatPreviewThumb" style="width:42px; height:42px; border-radius:12px; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#6366F1; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.16);">
+            <img id="newCatPreviewImg" src="" alt="Preview" style="width:100%; height:100%; object-fit:cover; display:none;" referrerpolicy="no-referrer" onerror="this.style.display='none'; document.getElementById('newCatPreviewIcon').style.display='inline-flex';">
+            <span id="newCatPreviewIcon" class="material-icons-round" style="color:#FFFFFF !important; font-size:20px;">category</span>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div id="newCatPreviewTitle" style="font-size:12px; font-weight:800; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Auto Visual Image</div>
+            <div id="newCatPreviewSubtitle" style="font-size:10.5px; color:var(--text-muted); font-weight:600;">Type a category name — matching image picks automatically</div>
+          </div>
+        </div>
       </div>
       <div style="display:flex; gap:10px;">
         <button type="button" onclick="closeAddCategoryModal()" class="segment-btn" style="flex:1; padding:10px; font-size:13px; font-weight:700; border-radius:12px;">Cancel</button>
@@ -4911,15 +4929,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_8'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_9'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.8-cache') {
-            triggerSwUpgradeReload('v4_8');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.9-cache') {
+            triggerSwUpgradeReload('v4_9');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.8').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=4.9').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -8579,160 +8597,518 @@
       });
     }
 
-    const CATEGORY_AESTHETIC_VISUALS = {
-      // ---------------- EXPENSE CATEGORIES ----------------
-      'food': {
+    const CATEGORY_SEMANTIC_THEMES = {
+      food: {
+        label: 'Food & Dining',
         shortName: 'Food',
-        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80',
+        image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=160&h=160&q=80',
         icon: 'restaurant',
-        color: '#EF4444'
+        color: '#EF4444',
+        phrases: ['food dining', 'eating out', 'street food', 'mess bill', 'tiffin service', 'lunch box', 'home food'],
+        tokens: ['food', 'dining', 'meal', 'meals', 'lunch', 'dinner', 'breakfast', 'brunch', 'tiffin', 'mess', 'canteen', 'restaurant', 'restaurants', 'dhaba', 'hotel', 'thali', 'khana', 'bhojan', 'nashta', 'swiggy', 'zomato', 'eats'],
+        prefixes: ['restaur', 'cater']
       },
-      'education': {
-        shortName: 'Education',
-        image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=120&q=80',
-        icon: 'school',
-        color: '#06B6D4'
+      groceries: {
+        label: 'Groceries & Kirana',
+        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_grocery_store',
+        color: '#10B981',
+        phrases: ['daily needs', 'kirana store', 'milk dairy', 'fruits vegetables'],
+        tokens: ['grocery', 'groceries', 'kirana', 'ration', 'sabzi', 'sabji', 'vegetable', 'vegetables', 'veggies', 'fruit', 'fruits', 'milk', 'doodh', 'dairy', 'supermarket', 'mart', 'dmart', 'blinkit', 'zepto', 'instamart', 'bigbasket', 'spencer', 'reliance'],
+        prefixes: ['grocer', 'vegetabl']
       },
-      'shop': {
-        shortName: 'Shopping',
-        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=120&q=80',
-        icon: 'shopping_bag',
-        color: '#EC4899'
+      coffee_cafe: {
+        label: 'Coffee, Chai & Snacks',
+        image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_cafe',
+        color: '#D97706',
+        phrases: ['ice cream', 'tea coffee', 'chai sutta', 'cafe snacks', 'evening snacks'],
+        tokens: ['coffee', 'cafe', 'chai', 'tea', 'chaiwala', 'starbucks', 'bakery', 'cake', 'pastry', 'dessert', 'desserts', 'sweets', 'mithai', 'snack', 'snacks', 'nasta', 'beverage', 'juice', 'shake', 'chocolate', 'biscuit'],
+        prefixes: ['baker', 'dessert']
       },
-      'transport': {
-        shortName: 'Transport',
-        image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=120&q=80',
-        icon: 'directions_car',
-        color: '#F59E0B'
+      fastfood: {
+        label: 'Fast Food & Takeout',
+        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'fastfood',
+        color: '#F97316',
+        phrases: ['fast food', 'junk food', 'late night'],
+        tokens: ['pizza', 'burger', 'burgers', 'momos', 'momo', 'biryani', 'roll', 'rolls', 'fries', 'kfc', 'mcdonalds', 'dominos', 'pizzahut', 'sandwich', 'noodles', 'pasta', 'chaat', 'samosa', 'takeout'],
+        prefixes: []
       },
-      'entertain': {
-        shortName: 'Entertainment',
-        image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=120&q=80',
-        icon: 'movie',
-        color: '#8B5CF6'
+      emi_loan: {
+        label: 'EMI, Loans & Debt',
+        image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'receipt_long',
+        color: '#6366F1',
+        phrases: ['loan repayment', 'home loan', 'car loan', 'bike loan', 'personal loan', 'education loan', 'gold loan', 'debt repayment', 'emi payment', 'bank emi', 'monthly emi', 'utility bill', 'utility bills'],
+        tokens: ['emi', 'emis', 'loan', 'loans', 'repay', 'repayment', 'installment', 'installments', 'instalment', 'debt', 'debts', 'mortgage', 'kist', 'kisht', 'udhar', 'udhaar', 'karz', 'chaukta', 'bajaj', 'finserv', 'lending', 'borrowed', 'bill', 'bills', 'invoice'],
+        prefixes: ['repaym', 'installm', 'mortgag']
       },
-      'health': {
-        shortName: 'Health',
-        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80',
-        icon: 'local_hospital',
-        color: '#10B981'
+      credit_card_bank: {
+        label: 'Cards & Bank Payments',
+        image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'credit_card',
+        color: '#8B5CF6',
+        phrases: ['credit card', 'debit card', 'card bill', 'bank fee', 'bank charges', 'credit bill', 'atm withdrawal', 'upi payment'],
+        tokens: ['card', 'cards', 'credit', 'debit', 'visa', 'mastercard', 'rupay', 'amex', 'cred', 'swipe', 'banking', 'bank', 'atm', 'neft', 'rtgs', 'imps', 'fee', 'fees', 'charges', 'penalty'],
+        prefixes: []
       },
-      'hous': {
-        shortName: 'House',
-        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=120&q=80',
-        icon: 'home',
-        color: '#3B82F6'
-      },
-      'finan': {
+      financial_stocks: {
+        label: 'Financial & Investments',
         shortName: 'Financial',
-        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
+        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=160&h=160&q=80',
         icon: 'trending_up',
-        color: '#6366F1'
+        color: '#6366F1',
+        phrases: ['mutual fund', 'mutual funds', 'stock market', 'share market', 'equity sip', 'financial planning'],
+        tokens: ['financial', 'finance', 'finances', 'sip', 'mf', 'stocks', 'stock', 'shares', 'share', 'equity', 'trading', 'trade', 'nifty', 'sensex', 'zerodha', 'groww', 'upstox', 'angel', 'demat', 'portfolio', 'forex', 'bonds', 'debenture'],
+        prefixes: ['financ', 'trad']
       },
-      'person': {
-        shortName: 'Personal',
-        image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=120&q=80',
-        icon: 'face',
-        color: '#D946EF'
-      },
-
-      // ---------------- INCOME CATEGORIES ----------------
-      'salary': {
-        shortName: 'Salary',
-        image: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=120&q=80',
-        icon: 'work',
-        color: '#10B981'
-      },
-      'business': {
-        shortName: 'Business',
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=120&q=80',
-        icon: 'business_center',
-        color: '#3B82F6'
-      },
-      'freelance': {
-        shortName: 'Freelance',
-        image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=120&q=80',
-        icon: 'laptop_mac',
-        color: '#06B6D4'
-      },
-      'invest': {
-        shortName: 'Investments',
-        image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80',
-        icon: 'show_chart',
-        color: '#8B5CF6'
-      },
-      'gift': {
-        shortName: 'Gifts & Grants',
-        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
-        icon: 'redeem',
-        color: '#EC4899'
-      },
-      'grant': {
-        shortName: 'Grants',
-        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80',
-        icon: 'workspace_premium',
-        color: '#F59E0B'
-      },
-      'bonus': {
-        shortName: 'Bonus',
-        image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=120&q=80',
-        icon: 'emoji_events',
-        color: '#F59E0B'
-      },
-      'rent': {
-        shortName: 'Rental',
-        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=120&q=80',
-        icon: 'apartment',
-        color: '#10B981'
-      },
-      'dividend': {
-        shortName: 'Dividends',
-        image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=120&q=80',
-        icon: 'paid',
-        color: '#10B981'
-      },
-      'interest': {
-        shortName: 'Interest',
-        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=120&q=80',
+      savings_piggy: {
+        label: 'Savings & Reserves',
+        image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=160&h=160&q=80',
         icon: 'savings',
-        color: '#3B82F6'
+        color: '#10B981',
+        phrases: ['emergency fund', 'fixed deposit', 'recurring deposit', 'piggy bank', 'chit fund'],
+        tokens: ['saving', 'savings', 'bachat', 'fd', 'rd', 'ppf', 'nps', 'epf', 'pf', 'reserve', 'reserves', 'stash', 'corpus', 'vault', 'kitty'],
+        prefixes: ['saving']
       },
-      'crypto': {
+      insurance_tax: {
+        label: 'Insurance, Tax & Legal',
+        image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'verified_user',
+        color: '#0EA5E9',
+        phrases: ['health insurance', 'life insurance', 'term insurance', 'car insurance', 'bike insurance', 'income tax', 'property tax', 'tax filing'],
+        tokens: ['insurance', 'insure', 'lic', 'policy', 'premium', 'mediclaim', 'tax', 'taxes', 'gst', 'tds', 'itr', 'audit', 'ca', 'legal', 'lawyer', 'advocate', 'stamp', 'notary', 'passport', 'visa', 'challan', 'fine', 'documentation'],
+        prefixes: ['insur', 'taxat']
+      },
+      bike_twowheeler: {
+        label: 'Bike & Two-Wheeler',
+        image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'two_wheeler',
+        color: '#F59E0B',
+        phrases: ['two wheeler', 'bike service', 'bike repair', 'bike wash', 'royal enfield'],
+        tokens: ['bike', 'bikes', 'motorcycle', 'motorbike', 'scooter', 'scooty', 'activa', 'bullet', 'enfield', 'pulsar', 'apache', 'yamaha', 'ktm', 'helmet', 'cycling', 'bicycle', 'cycle'],
+        prefixes: ['motorcycl', 'bicycl']
+      },
+      fuel_petrol: {
+        label: 'Petrol, Diesel & Fuel',
+        image: 'https://images.unsplash.com/photo-1527018601619-a508a2be00cd?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_gas_station',
+        color: '#EA580C',
+        phrases: ['gas station', 'petrol pump', 'ev charging', 'fuel expense'],
+        tokens: ['petrol', 'diesel', 'fuel', 'fuels', 'cng', 'gasoline', 'octan', 'indianoil', 'hpcl', 'bpcl', 'shell', 'refuel', 'mileage'],
+        prefixes: ['petrol', 'refuel']
+      },
+      train_metro: {
+        label: 'Train, Metro & Transit',
+        image: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'train',
+        color: '#0284C7',
+        phrases: ['metro card', 'train ticket', 'bus pass', 'railway ticket', 'public transport'],
+        tokens: ['train', 'trains', 'metro', 'rail', 'railway', 'irctc', 'bus', 'buses', 'transit', 'subway', 'tram', 'vande', 'shatabdi', 'rajdhani', 'sleeper', 'local'],
+        prefixes: ['railw']
+      },
+      car_transport: {
+        label: 'Transport, Car & Cab',
+        shortName: 'Transport',
+        image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'directions_car',
+        color: '#F59E0B',
+        phrases: ['cab ride', 'auto rickshaw', 'toll tax', 'car wash'],
+        tokens: ['transport', 'transportation', 'car', 'cars', 'cab', 'cabs', 'taxi', 'taxis', 'uber', 'ola', 'rapido', 'auto', 'rickshaw', 'commute', 'vehicle', 'vehicles', 'gaadi', 'gadi', 'toll', 'fastag', 'parking', 'driver', 'ride', 'rides'],
+        prefixes: ['transport', 'commut']
+      },
+      travel_flight: {
+        label: 'Travel, Flights & Vacations',
+        image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'flight',
+        color: '#06B6D4',
+        phrases: ['road trip', 'air ticket', 'flight ticket', 'hotel booking', 'hill station', 'weekend getaway'],
+        tokens: ['travel', 'travels', 'travelling', 'trip', 'trips', 'tour', 'tours', 'vacation', 'vacations', 'holiday', 'holidays', 'flight', 'flights', 'airline', 'indigo', 'airindia', 'vistara', 'airport', 'luggage', 'resort', 'airbnb', 'oyo', 'makemytrip', 'yatra', 'safar', 'picnic', 'camping', 'trek', 'trekking'],
+        prefixes: ['travel', 'vacat', 'touris']
+      },
+      entertainment: {
+        label: 'Movies, OTT & Streaming',
+        shortName: 'Entertainment',
+        image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'movie',
+        color: '#8B5CF6',
+        phrases: ['ott subscription', 'movie night', 'prime video', 'youtube premium', 'bookmyshow'],
+        tokens: ['entertainment', 'movie', 'movies', 'cinema', 'film', 'films', 'pvr', 'inox', 'theatre', 'theater', 'netflix', 'prime', 'hotstar', 'disney', 'sonyliv', 'zee5', 'jiocinema', 'ott', 'subscription', 'subscriptions', 'streaming', 'youtube', 'fun', 'amusement'],
+        prefixes: ['entertain', 'subscri']
+      },
+      music_concert: {
+        label: 'Music, Audio & Concerts',
+        image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'music_note',
+        color: '#A855F7',
+        phrases: ['music class', 'live concert'],
+        tokens: ['music', 'musical', 'song', 'songs', 'spotify', 'gaana', 'wynk', 'concert', 'concerts', 'guitar', 'piano', 'violin', 'drums', 'flute', 'singing', 'podcast', 'audio', 'studio', 'dj', 'karaoke'],
+        prefixes: ['music', 'concert']
+      },
+      gaming: {
+        label: 'Gaming & Esports',
+        image: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'sports_esports',
+        color: '#7C3AED',
+        phrases: ['video game', 'video games', 'ps5 game', 'game pass'],
+        tokens: ['game', 'games', 'gaming', 'gamer', 'playstation', 'ps4', 'ps5', 'xbox', 'nintendo', 'steam', 'valorant', 'bgmi', 'pubg', 'esports', 'arcade', 'console', 'controller', 'uc'],
+        prefixes: ['gaming']
+      },
+      medical_pharmacy: {
+        label: 'Medical, Doctor & Pharmacy',
+        image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'medical_services',
+        color: '#EF4444',
+        phrases: ['doctor visit', 'blood test', 'full body checkup', 'dental care', 'eye checkup', 'first aid'],
+        tokens: ['medical', 'medicine', 'medicines', 'meds', 'dawai', 'dawa', 'dawaiya', 'pharmacy', 'chemist', 'apollo', 'pharmeasy', '1mg', 'netmeds', 'doctor', 'doctors', 'hospital', 'clinic', 'dental', 'dentist', 'dant', 'tooth', 'teeth', 'checkup', 'lab', 'pathology', 'xray', 'mri', 'surgery', 'ilaaj', 'ilaj', 'tablet', 'tablets', 'syrup', 'vaccine', 'inhaler', 'glasses', 'spectacles', 'lenskart'],
+        prefixes: ['medicin', 'pharmac', 'hospit', 'patholog', 'dent']
+      },
+      health_wellness: {
+        label: 'Health & Wellness',
+        shortName: 'Health',
+        image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_hospital',
+        color: '#10B981',
+        phrases: ['mental health', 'wellness care', 'self care'],
+        tokens: ['health', 'healthcare', 'wellness', 'yoga', 'meditation', 'mindfulness', 'ayurveda', 'therapy', 'therapist', 'nutrition', 'vitamin', 'vitamins', 'supplement', 'supplements', 'hygiene'],
+        prefixes: ['health', 'welln', 'therap']
+      },
+      gym_fitness: {
+        label: 'Gym, Fitness & Workout',
+        image: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'fitness_center',
+        color: '#EC4899',
+        phrases: ['protein powder', 'gym membership', 'personal trainer'],
+        tokens: ['gym', 'fitness', 'workout', 'workouts', 'exercise', 'exercises', 'crossfit', 'cardio', 'dumbbells', 'weights', 'cult', 'cultfit', 'protein', 'whey', 'creatine', 'diet', 'zumba', 'pilates', 'bodybuilding'],
+        prefixes: ['fitne', 'workou', 'exercis']
+      },
+      sports: {
+        label: 'Sports & Outdoor',
+        image: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'sports_cricket',
+        color: '#16A34A',
+        phrases: ['cricket turf', 'sports gear', 'swimming pool', 'badminton court'],
+        tokens: ['sports', 'sport', 'cricket', 'football', 'soccer', 'badminton', 'tennis', 'basketball', 'volleyball', 'swimming', 'swim', 'running', 'marathon', 'turf', 'stadium', 'bat', 'ball', 'racket', 'decathlon', 'golf'],
+        prefixes: ['athlet']
+      },
+      rent_property: {
+        label: 'Rent, PG & Hostel',
+        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'apartment',
+        color: '#3B82F6',
+        phrases: ['house rent', 'room rent', 'flat rent', 'pg rent', 'hostel fee', 'security deposit', 'rental income', 'broker fee'],
+        tokens: ['rent', 'rental', 'rented', 'lease', 'pg', 'hostel', 'kiraya', 'kiraye', 'makaan', 'flat', 'apartment', 'broker', 'brokerage', 'deposit', 'tenant', 'landlord', 'property', 'realty', 'realestate'],
+        prefixes: ['apartm', 'propert']
+      },
+      house_home: {
+        label: 'House & Society',
+        shortName: 'House',
+        image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'home',
+        color: '#3B82F6',
+        phrases: ['society maintenance', 'home upkeep', 'household items', 'ghar kharch'],
+        tokens: ['house', 'home', 'homes', 'housing', 'household', 'society', 'ghar', 'villa', 'domestic', 'utilities', 'utility'],
+        prefixes: ['househ', 'housin']
+      },
+      furniture_decor: {
+        label: 'Furniture & Decor',
+        image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'chair',
+        color: '#0D9488',
+        phrases: ['home decor', 'interior design', 'kitchenware'],
+        tokens: ['furniture', 'sofa', 'couch', 'chair', 'table', 'desk', 'bed', 'mattress', 'pillow', 'curtain', 'curtains', 'decor', 'decoration', 'ikea', 'pepperfry', 'interior', 'paint', 'painting', 'tiles', 'utensils', 'crockery'],
+        prefixes: ['furnit', 'decorat']
+      },
+      repair_tools: {
+        label: 'Repairs, Service & Tools',
+        image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'build',
+        color: '#475569',
+        phrases: ['ac service', 'bike servicing', 'car service', 'home repair', 'urban company'],
+        tokens: ['repair', 'repairs', 'servicing', 'service', 'maintenance', 'plumber', 'plumbing', 'electrician', 'carpenter', 'mechanic', 'garage', 'puncture', 'hardware', 'tools', 'toolkit', 'spare', 'parts', 'fixing', 'fix'],
+        prefixes: ['servic', 'mainten', 'repair']
+      },
+      electricity_power: {
+        label: 'Electricity & Power',
+        image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'bolt',
+        color: '#EAB308',
+        phrases: ['electricity bill', 'electric bill', 'power bill', 'light bill', 'bijli bill', 'solar panel'],
+        tokens: ['electricity', 'electric', 'electrical', 'power', 'bijli', 'bijlee', 'bescom', 'msedcl', 'tata', 'adani', 'bses', 'inverter', 'ups', 'battery', 'generator', 'solar', 'bulb', 'light', 'energy', 'ac'],
+        prefixes: ['electr']
+      },
+      water_utility: {
+        label: 'Water & LPG Gas',
+        image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'water_drop',
+        color: '#06B6D4',
+        phrases: ['water bill', 'gas bill', 'gas cylinder', 'lpg cylinder', 'drinking water', 'water purifier'],
+        tokens: ['water', 'pani', 'paani', 'bisleri', 'aquaguard', 'ro', 'tanker', 'cylinder', 'lpg', 'indane', 'bharatgas', 'hpgas', 'pipeline', 'png', 'jal', 'sewage'],
+        prefixes: ['purifi']
+      },
+      internet_wifi: {
+        label: 'WiFi & Broadband',
+        image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'wifi',
+        color: '#2563EB',
+        phrases: ['wifi bill', 'internet bill', 'broadband bill', 'jio fiber', 'airtel fiber', 'cloud storage', 'web hosting'],
+        tokens: ['wifi', 'wi-fi', 'internet', 'broadband', 'fiber', 'jiofiber', 'act', 'hathway', 'router', 'modem', 'data', 'net', 'network', 'vpn', 'domain', 'hosting', 'cloud', 'aws', 'server', 'saas'],
+        prefixes: ['broadb', 'intern']
+      },
+      phone_mobile: {
+        label: 'Mobile & Recharge',
+        image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'smartphone',
+        color: '#38BDF8',
+        phrases: ['mobile recharge', 'phone bill', 'phone recharge', 'dth recharge', 'postpaid bill'],
+        tokens: ['phone', 'mobile', 'smartphone', 'iphone', 'android', 'recharge', 'recharges', 'prepaid', 'postpaid', 'sim', 'jio', 'airtel', 'vi', 'vodafone', 'bsnl', 'dth', 'tataplay', 'dish', 'calling', 'telecom'],
+        prefixes: ['recharg', 'telec', 'smartph']
+      },
+      electronics_tech: {
+        label: 'Electronics & Gadgets',
+        image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'devices',
+        color: '#4F46E5',
+        phrases: ['home appliance', 'kitchen appliance', 'smart watch'],
+        tokens: ['electronics', 'electronic', 'gadget', 'gadgets', 'tech', 'technology', 'laptop', 'macbook', 'pc', 'desktop', 'computer', 'monitor', 'keyboard', 'mouse', 'tablet', 'ipad', 'tv', 'television', 'fridge', 'washing', 'microwave', 'headphone', 'headphones', 'earbuds', 'airpods', 'speaker', 'charger', 'cable', 'smartwatch', 'appliance', 'appliances'],
+        prefixes: ['electron', 'comput', 'applian']
+      },
+      camera_photo: {
+        label: 'Camera & Photography',
+        image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'photo_camera',
+        color: '#334155',
+        phrases: ['photo shoot', 'camera gear'],
+        tokens: ['camera', 'cameras', 'photography', 'photo', 'photos', 'photoshoot', 'dslr', 'lens', 'tripod', 'gopro', 'drone', 'videography', 'cinematography', 'printing', 'album'],
+        prefixes: ['photogr']
+      },
+      shopping: {
+        label: 'Shopping & Clothes',
+        shortName: 'Shopping',
+        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'shopping_bag',
+        color: '#EC4899',
+        phrases: ['online shopping', 'winter wear', 'festive shopping'],
+        tokens: ['shopping', 'shop', 'clothes', 'clothing', 'cloth', 'kapde', 'fashion', 'apparel', 'dress', 'dresses', 'saree', 'kurta', 'shirt', 'tshirt', 'jeans', 'shoes', 'footwear', 'sneakers', 'sandals', 'bag', 'handbag', 'wallet', 'myntra', 'ajio', 'amazon', 'flipkart', 'meesho', 'nykaa', 'zudio', 'zara', 'hm', 'mall', 'accessories', 'retail'],
+        prefixes: ['shopp', 'cloth', 'fash', 'footw']
+      },
+      jewelry_gold: {
+        label: 'Jewelry & Gold',
+        image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'diamond',
+        color: '#F59E0B',
+        phrases: ['gold coin', 'gold jewelry', 'digital gold'],
+        tokens: ['gold', 'silver', 'diamond', 'jewelry', 'jewellery', 'jewels', 'ring', 'necklace', 'bangle', 'earring', 'bracelet', 'sona', 'chandi', 'tanishq', 'malabar', 'kalyan', 'caratlane', 'luxury', 'ornament'],
+        prefixes: ['jewel', 'ornam']
+      },
+      salon_haircut: {
+        label: 'Salon & Haircut',
+        image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'content_cut',
+        color: '#64748B',
+        phrases: ['hair cut', 'beauty parlour', 'beauty parlor', 'beard trim'],
+        tokens: ['salon', 'saloon', 'haircut', 'hair', 'barber', 'nai', 'beard', 'shave', 'trim', 'parlour', 'parlor', 'facial', 'waxing', 'threading', 'pedicure', 'manicure', 'grooming'],
+        prefixes: ['hair', 'parl']
+      },
+      personal_grooming: {
+        label: 'Personal Care',
+        shortName: 'Personal',
+        image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'face',
+        color: '#D946EF',
+        phrases: ['personal care', 'skin care', 'self care'],
+        tokens: ['personal', 'skincare', 'makeup', 'cosmetic', 'cosmetics', 'perfume', 'deo', 'deodorant', 'shampoo', 'soap', 'lotion', 'cream', 'serum', 'sunscreen', 'beauty', 'toiletries', 'pocket', 'allowance', 'self'],
+        prefixes: ['cosmet', 'skinc']
+      },
+      laundry_cleaning: {
+        label: 'Laundry, Maid & Cleaning',
+        image: 'https://images.unsplash.com/photo-1545173168-9f1947eebb7f?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_laundry_service',
+        color: '#06B6D4',
+        phrases: ['dry clean', 'dry cleaning', 'house help', 'maid salary', 'cook salary', 'car cleaning'],
+        tokens: ['laundry', 'wash', 'washing', 'dryclean', 'iron', 'ironing', 'press', 'dhobi', 'maid', 'cook', 'househelp', 'bai', 'cleaner', 'cleaning', 'detergent', 'surf', 'harpic', 'sanitary', 'garbage', 'trash'],
+        prefixes: ['laundr', 'clean']
+      },
+      education: {
+        label: 'Education & Courses',
+        shortName: 'Education',
+        image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'school',
+        color: '#06B6D4',
+        phrases: ['school fees', 'college fees', 'tuition fee', 'exam form', 'online course', 'coaching class'],
+        tokens: ['education', 'tuition', 'tution', 'coaching', 'school', 'college', 'university', 'campus', 'semester', 'exam', 'exams', 'course', 'courses', 'certification', 'udemy', 'coursera', 'unacademy', 'physicswallah', 'byjus', 'scholarship', 'padhai', 'learning', 'workshop', 'seminar'],
+        prefixes: ['educat', 'academ', 'coach', 'tuit']
+      },
+      books_study: {
+        label: 'Books & Stationery',
+        image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'menu_book',
+        color: '#8B5CF6',
+        phrases: ['study material', 'reading list'],
+        tokens: ['book', 'books', 'novel', 'novels', 'kindle', 'magazine', 'magazines', 'newspaper', 'notebook', 'notebooks', 'diary', 'stationery', 'stationary', 'pen', 'pencil', 'library', 'xerox', 'photocopy', 'printout', 'study', 'reading'],
+        prefixes: ['station']
+      },
+      pets: {
+        label: 'Pets & Animal Care',
+        image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'pets',
+        color: '#F59E0B',
+        phrases: ['pet food', 'dog food', 'cat food', 'vet visit'],
+        tokens: ['pet', 'pets', 'dog', 'dogs', 'cat', 'cats', 'puppy', 'kitten', 'vet', 'veterinary', 'pedigree', 'whiskas', 'aquarium', 'kennel'],
+        prefixes: ['veterin']
+      },
+      kids_baby: {
+        label: 'Baby & Kids Care',
+        image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'child_care',
+        color: '#EC4899',
+        phrases: ['baby care', 'pocket money', 'kids toys'],
+        tokens: ['baby', 'babies', 'kid', 'kids', 'child', 'children', 'childcare', 'daycare', 'creche', 'diaper', 'diapers', 'formula', 'pampers', 'toy', 'toys', 'bacha', 'baccha', 'bacche', 'son', 'daughter', 'newborn', 'maternity'],
+        prefixes: ['child']
+      },
+      family_home: {
+        label: 'Family & Parents',
+        image: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'family_restroom',
+        color: '#3B82F6',
+        phrases: ['home money', 'ghar bheja', 'parents support'],
+        tokens: ['family', 'families', 'parent', 'parents', 'mom', 'mother', 'maa', 'mummy', 'dad', 'father', 'papa', 'bhai', 'brother', 'sister', 'behen', 'didi', 'wife', 'husband', 'spouse', 'grandparents', 'dada', 'dadi', 'nana', 'nani', 'relatives', 'guest', 'guests', 'mehmaan'],
+        prefixes: ['famil']
+      },
+      wedding_party: {
+        label: 'Wedding & Functions',
+        image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'celebration',
+        color: '#DB2777',
+        phrases: ['wedding shopping', 'shagun lifafa'],
+        tokens: ['wedding', 'marriage', 'shadi', 'shaadi', 'engagement', 'reception', 'mehendi', 'haldi', 'sangeet', 'baraat', 'shagun', 'bride', 'groom', 'function', 'ceremony'],
+        prefixes: ['marriag', 'wedd']
+      },
+      gifts_celebration: {
+        label: 'Gifts, Parties & Festivals',
+        shortName: 'Gifts & Grants',
+        image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'redeem',
+        color: '#EC4899',
+        phrases: ['birthday party', 'date night', 'anniversary gift', 'festival shopping'],
+        tokens: ['gift', 'gifts', 'present', 'presents', 'birthday', 'anniversary', 'party', 'parties', 'celebration', 'festival', 'festivals', 'diwali', 'holi', 'eid', 'christmas', 'rakhi', 'rakshabandhan', 'navratri', 'ganesh', 'date', 'treats', 'treat', 'flowers', 'bouquet'],
+        prefixes: ['celebr', 'festiv', 'anniv', 'birthd']
+      },
+      temple_charity: {
+        label: 'Temple, Puja & Charity',
+        image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'volunteer_activism',
+        color: '#F97316',
+        phrases: ['puja samagri', 'mandir chadhava', 'religious donation'],
+        tokens: ['temple', 'mandir', 'puja', 'pooja', 'aarti', 'prasad', 'chadhava', 'charity', 'donation', 'donations', 'donate', 'daan', 'ngo', 'zakat', 'sadaqah', 'church', 'mosque', 'masjid', 'gurudwara', 'langar', 'spiritual', 'diya', 'incense', 'agarbatti', 'help', 'welfare'],
+        prefixes: ['charit', 'donat', 'relig', 'spiritu']
+      },
+      garden_nature: {
+        label: 'Gardening & Plants',
+        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'yard',
+        color: '#22C55E',
+        phrases: ['indoor plants', 'kitchen garden'],
+        tokens: ['garden', 'gardening', 'plant', 'plants', 'nursery', 'seeds', 'fertilizer', 'soil', 'pots', 'pot', 'flower', 'flowers', 'trees', 'farming', 'agriculture', 'kheti', 'farm'],
+        prefixes: ['garden', 'agric', 'farm']
+      },
+      nightlife_drinks: {
+        label: 'Drinks, Pub & Nightlife',
+        image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'local_bar',
+        color: '#E11D48',
+        phrases: ['night out', 'friday night'],
+        tokens: ['drink', 'drinks', 'bar', 'pub', 'club', 'clubbing', 'nightlife', 'beer', 'wine', 'whisky', 'whiskey', 'vodka', 'rum', 'gin', 'alcohol', 'liquor', 'daaru', 'cocktail', 'cocktails', 'lounge', 'smoke', 'smoking', 'cigarette', 'vape'],
+        prefixes: ['alcoh', 'nightl', 'cockt']
+      },
+      salary: {
+        label: 'Salary & Wages',
+        shortName: 'Salary',
+        image: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'work',
+        color: '#10B981',
+        phrases: ['monthly salary', 'pocket salary'],
+        tokens: ['salary', 'salaries', 'paycheck', 'payroll', 'wage', 'wages', 'stipend', 'pension', 'job', 'pay', 'vetan', 'tankhah'],
+        prefixes: ['salar', 'stipend']
+      },
+      business: {
+        label: 'Business & Revenue',
+        shortName: 'Business',
+        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'business_center',
+        color: '#3B82F6',
+        phrases: ['shop sales', 'business income', 'client payment'],
+        tokens: ['business', 'agency', 'client', 'clients', 'revenue', 'sales', 'profit', 'dukaan', 'vyapar', 'commission', 'commissions', 'vendor', 'startup', 'commerce', 'office', 'workspace'],
+        prefixes: ['busin', 'reven']
+      },
+      freelance: {
+        label: 'Freelance & Consulting',
+        shortName: 'Freelance',
+        image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'laptop_mac',
+        color: '#06B6D4',
+        phrases: ['side hustle', 'side income', 'part time'],
+        tokens: ['freelance', 'freelancing', 'project', 'projects', 'consult', 'consulting', 'consultation', 'gig', 'fiverr', 'upwork', 'contract', 'royalty', 'creator', 'youtube', 'blogging'],
+        prefixes: ['freelanc', 'consult']
+      },
+      investments: {
+        label: 'Investments & Returns',
+        shortName: 'Investments',
+        image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'show_chart',
+        color: '#8B5CF6',
+        phrases: ['capital gains', 'investment return'],
+        tokens: ['investment', 'investments', 'invest', 'investing', 'returns', 'gain', 'gains', 'maturing', 'maturity'],
+        prefixes: ['investm']
+      },
+      bonus: {
+        label: 'Bonus & Cashback',
+        shortName: 'Bonus',
+        image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'emoji_events',
+        color: '#F59E0B',
+        phrases: ['festival bonus', 'cashback reward'],
+        tokens: ['bonus', 'bonuses', 'incentive', 'incentives', 'reward', 'rewards', 'cashback', 'refund', 'refunds', 'reimbursement', 'prize', 'award', 'lottery', 'grant', 'grants'],
+        prefixes: ['incent', 'cashba', 'reimbur']
+      },
+      dividend: {
+        label: 'Dividends & Interest',
+        shortName: 'Dividends',
+        image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=160&h=160&q=80',
+        icon: 'paid',
+        color: '#10B981',
+        phrases: ['bank interest', 'fd interest', 'dividend payout'],
+        tokens: ['dividend', 'dividends', 'interest', 'byaj', 'yield', 'payout'],
+        prefixes: ['dividen']
+      },
+      crypto: {
+        label: 'Crypto & Web3',
         shortName: 'Crypto',
-        image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=120&q=80',
+        image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=160&h=160&q=80',
         icon: 'currency_bitcoin',
-        color: '#F59E0B'
+        color: '#F59E0B',
+        phrases: ['digital currency'],
+        tokens: ['crypto', 'cryptocurrency', 'bitcoin', 'btc', 'eth', 'ethereum', 'solana', 'usdt', 'binance', 'coin', 'coins', 'web3', 'nft', 'token', 'mining', 'airdrop'],
+        prefixes: ['crypt']
       }
     };
 
-    // User specified exact ordering for expenses:
-    // food, education, shopping, transport, entertainment, health, house, financial, personal
-    const TARGET_CATEGORY_ORDER = [
-      'food',
-      'education',
-      'shop',
-      'transport',
-      'entertain',
-      'health',
-      'hous',
-      'finan',
-      'person'
-    ];
+    const SYSTEM_DEFAULT_SHORT_NAMES = {
+      'food & dining': 'Food',
+      'transportation': 'Transport',
+      'housing & rent': 'House',
+      'financial & investments': 'Financial',
+      'personal & misc': 'Personal',
+      'health & medical': 'Health',
+      'education': 'Education',
+      'shopping': 'Shopping',
+      'entertainment': 'Entertainment'
+    };
 
-    // Logical ordering for income categories:
-    const TARGET_INCOME_ORDER = [
-      'salary',
-      'business',
-      'freelance',
-      'invest',
-      'gift',
-      'grant',
-      'bonus',
-      'rent',
-      'dividend',
-      'interest',
-      'crypto'
-    ];
+    // User specified exact ordering for default expenses & income
+    const TARGET_CATEGORY_ORDER = ['food', 'education', 'shop', 'transport', 'entertain', 'health', 'hous', 'finan', 'person'];
+    const TARGET_INCOME_ORDER = ['salary', 'business', 'freelance', 'invest', 'gift', 'grant', 'bonus', 'rent', 'dividend', 'interest', 'crypto'];
 
     function getCategoryOrderRank(catName, sheetType = 'EXPENSE') {
       const lower = (catName || '').toLowerCase();
@@ -8740,29 +9116,108 @@
       for (let i = 0; i < orderList.length; i++) {
         if (lower.includes(orderList[i])) return i;
       }
-      return 100; // Custom user-added categories placed after standard
+      return 100;
+    }
+
+    function resolveCategoryVisualLocal(name, catType = 'EXPENSE') {
+      const clean = (name || '').trim();
+      const ctype = (catType || 'EXPENSE').toUpperCase();
+      if (!clean) {
+        return {
+          theme_key: null,
+          label: 'Auto Visual Image',
+          image_url: '',
+          icon: ctype === 'INCOME' ? 'account_balance_wallet' : 'category',
+          color_hex: ctype === 'INCOME' ? '#10B981' : '#6366F1',
+          confidence: 0
+        };
+      }
+
+      const tokens = clean.toLowerCase().match(/[a-z0-9]+/g) || [];
+      const tokenSet = new Set(tokens);
+      const padded = ' ' + tokens.join(' ') + ' ';
+      const incomeKeys = new Set(['salary', 'business', 'freelance', 'investments', 'bonus', 'dividend', 'crypto']);
+
+      let bestKey = null;
+      let bestScore = 0;
+      for (const [key, meta] of Object.entries(CATEGORY_SEMANTIC_THEMES)) {
+        let score = 0;
+        for (const phrase of (meta.phrases || [])) {
+          if (padded.includes(` ${phrase} `)) score += 24;
+        }
+        for (const kw of (meta.tokens || [])) {
+          if (tokenSet.has(kw)) score += 16;
+        }
+        for (const pref of (meta.prefixes || [])) {
+          if (pref.length >= 5 && tokens.some(t => t.startsWith(pref))) score += 12;
+        }
+        if (score > 0) {
+          if (ctype === 'INCOME' && incomeKeys.has(key)) score += 3;
+          else if (ctype === 'EXPENSE' && !incomeKeys.has(key)) score += 2;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          bestKey = key;
+        }
+      }
+
+      if (bestKey && bestScore >= 12) {
+        const chosen = CATEGORY_SEMANTIC_THEMES[bestKey];
+        return {
+          theme_key: bestKey,
+          label: chosen.label,
+          image_url: chosen.image,
+          icon: chosen.icon,
+          color_hex: chosen.color,
+          confidence: bestScore
+        };
+      }
+
+      if (ctype === 'INCOME') {
+        const sav = CATEGORY_SEMANTIC_THEMES.savings_piggy;
+        return {
+          theme_key: 'savings_piggy',
+          label: 'Income & Earnings',
+          image_url: sav.image,
+          icon: 'account_balance_wallet',
+          color_hex: '#10B981',
+          confidence: 8
+        };
+      }
+
+      const palette = ['#6366F1', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4'];
+      let hashSum = 0;
+      for (let i = 0; i < clean.length; i++) hashSum += clean.toLowerCase().charCodeAt(i);
+      return {
+        theme_key: null,
+        label: 'Custom Badge (Clean Icon)',
+        image_url: '',
+        icon: 'sell',
+        color_hex: palette[hashSum % palette.length],
+        confidence: 0
+      };
     }
 
     function getCategoryVisualMeta(c) {
-      const lower = (c.name || '').toLowerCase();
-      for (const [key, meta] of Object.entries(CATEGORY_AESTHETIC_VISUALS)) {
-        if (lower.includes(key)) {
-          return {
-            displayName: meta.shortName,
-            image: meta.image,
-            icon: c.icon || meta.icon,
-            color: c.color_hex || meta.color
-          };
-        }
-      }
-      const isIncome = (c.type === 'INCOME') || (APP_STATE.sheetType === 'INCOME');
+      const name = c?.name || '';
+      const lower = name.toLowerCase().trim();
+      const catType = c?.type || APP_STATE.sheetType || 'EXPENSE';
+      const displayName = SYSTEM_DEFAULT_SHORT_NAMES[lower] || name;
+
+      const resolved = resolveCategoryVisualLocal(name, catType);
+      const serverImg = (c?.image_url || c?.category_image || '').trim();
+      const finalImg = serverImg || resolved.image_url || '';
+      const rawIcon = (c?.icon || '').trim();
+      const finalIcon = (rawIcon && rawIcon !== 'category' && rawIcon !== 'tag' && rawIcon !== 'sell')
+        ? rawIcon
+        : (resolved.icon || rawIcon || 'category');
+      const finalColor = c?.color_hex || resolved.color_hex || '#6366F1';
+
       return {
-        displayName: c.name,
-        image: c.image_url || (isIncome 
-          ? 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=120&q=80' 
-          : ''),
-        icon: c.icon || (isIncome ? 'account_balance_wallet' : 'category'),
-        color: c.color_hex || (isIncome ? '#10B981' : '#6366F1')
+        displayName: displayName,
+        image: finalImg,
+        icon: finalIcon,
+        color: finalColor
       };
     }
 
@@ -8914,7 +9369,7 @@
         type: tx.transaction_type,
         icon: tx.category_icon,
         color_hex: tx.category_color,
-        image_url: tx.image_url
+        image_url: tx.category_image || tx.image_url
       });
 
       const icon = visual.icon || tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
@@ -8989,7 +9444,7 @@
         type: tx.transaction_type,
         icon: tx.category_icon,
         color_hex: tx.category_color,
-        image_url: tx.image_url
+        image_url: tx.category_image || tx.image_url
       });
 
       const icon = visual.icon || tx.category_icon || (isTransfer ? 'swap_horiz' : isIncome ? 'payments' : 'shopping_bag');
@@ -9833,11 +10288,90 @@
       }
     }
 
-    // Modal Control: Add Custom Category (Task 1)
+    // Modal Control: Add Custom Category + Live Auto-Visual Preview
+    let _newCatSuggestTimer = null;
+    let _pendingCatVisual = null;
+
+    function renderNewCatVisualPreview(visual, typedName = '', isSearchingAi = false) {
+      const thumbEl = document.getElementById('newCatPreviewThumb');
+      const imgEl = document.getElementById('newCatPreviewImg');
+      const iconEl = document.getElementById('newCatPreviewIcon');
+      const titleEl = document.getElementById('newCatPreviewTitle');
+      const subEl = document.getElementById('newCatPreviewSubtitle');
+      if (!thumbEl || !imgEl || !iconEl || !titleEl || !subEl) return;
+
+      const bgColor = visual?.color_hex || '#6366F1';
+      thumbEl.style.background = bgColor;
+      iconEl.innerText = visual?.icon || 'category';
+
+      if (visual?.image_url) {
+        imgEl.src = visual.image_url;
+        imgEl.style.display = 'block';
+        iconEl.style.display = 'none';
+        titleEl.innerText = visual.label || 'Auto-Matched Image';
+        subEl.innerText = visual.source === 'gemini_ai'
+          ? '✨ AI matched accurate photo for this category'
+          : '✨ Accurate image automatically matched';
+      } else {
+        imgEl.style.display = 'none';
+        iconEl.style.display = 'inline-flex';
+        if (!typedName.trim()) {
+          titleEl.innerText = 'Auto Visual Image';
+          subEl.innerText = 'Type a category name — matching image picks automatically';
+        } else if (isSearchingAi) {
+          titleEl.innerText = 'Checking Smart Visual...';
+          subEl.innerText = 'Finding relevant category image automatically';
+        } else {
+          titleEl.innerText = 'Custom Smart Badge';
+          subEl.innerText = 'Clean custom icon applied (no unrelated image used)';
+        }
+      }
+    }
+
+    function onNewCategoryNameInput(rawVal) {
+      const clean = (rawVal || '').trim();
+      const catType = APP_STATE.sheetType || 'EXPENSE';
+      const localVis = resolveCategoryVisualLocal(clean, catType);
+      _pendingCatVisual = { nameLower: clean.toLowerCase(), visual: localVis };
+
+      if (_newCatSuggestTimer) {
+        clearTimeout(_newCatSuggestTimer);
+        _newCatSuggestTimer = null;
+      }
+
+      if (localVis.image_url || clean.length < 3) {
+        renderNewCatVisualPreview(localVis, clean, false);
+        return;
+      }
+
+      renderNewCatVisualPreview(localVis, clean, true);
+      _newCatSuggestTimer = setTimeout(async () => {
+        try {
+          const res = await apiRequest(`/categories/suggest-visual?name=${encodeURIComponent(clean)}&type=${encodeURIComponent(catType)}`, 'GET');
+          const curInput = (document.getElementById('newCategoryNameInput')?.value || '').trim();
+          if (curInput.toLowerCase() !== clean.toLowerCase()) return;
+          if (res && res.success && res.visual) {
+            _pendingCatVisual = { nameLower: clean.toLowerCase(), visual: res.visual };
+            renderNewCatVisualPreview(res.visual, clean, false);
+          } else {
+            renderNewCatVisualPreview(localVis, clean, false);
+          }
+        } catch (e) {
+          renderNewCatVisualPreview(localVis, clean, false);
+        }
+      }, 320);
+    }
+
     function openAddCategoryModal() {
       triggerHaptic('light');
+      _pendingCatVisual = null;
+      if (_newCatSuggestTimer) {
+        clearTimeout(_newCatSuggestTimer);
+        _newCatSuggestTimer = null;
+      }
       const input = document.getElementById('newCategoryNameInput');
       if (input) input.value = '';
+      renderNewCatVisualPreview(resolveCategoryVisualLocal('', APP_STATE.sheetType || 'EXPENSE'), '', false);
       const b = document.getElementById('addCategoryBackdrop');
       const s = document.getElementById('addCategorySheet');
       if (b) b.classList.add('active');
@@ -9846,6 +10380,10 @@
     }
 
     function closeAddCategoryModal() {
+      if (_newCatSuggestTimer) {
+        clearTimeout(_newCatSuggestTimer);
+        _newCatSuggestTimer = null;
+      }
       const b = document.getElementById('addCategoryBackdrop');
       const s = document.getElementById('addCategorySheet');
       if (b) b.classList.remove('active');
@@ -9859,56 +10397,24 @@
         alert('Please enter a category name');
         return;
       }
+      const catType = APP_STATE.sheetType || 'EXPENSE';
+      const localVis = resolveCategoryVisualLocal(name, catType);
+      const chosenVis = (_pendingCatVisual && _pendingCatVisual.nameLower === name.toLowerCase() && _pendingCatVisual.visual)
+        ? _pendingCatVisual.visual
+        : localVis;
+
       closeAddCategoryModal();
       triggerHaptic('medium');
 
-      const lower = name.toLowerCase();
-      let icon = 'category';
-      let color = '#10B981';
-      let img = '';
-      if (lower.includes('travel') || lower.includes('tour') || lower.includes('trip') || lower.includes('flight')) {
-        icon = 'flight'; color = '#06B6D4';
-        img = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('gym') || lower.includes('fit') || lower.includes('workout')) {
-        icon = 'fitness_center'; color = '#EC4899';
-        img = 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('pet') || lower.includes('dog') || lower.includes('cat')) {
-        icon = 'pets'; color = '#F59E0B';
-        img = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('game') || lower.includes('gaming')) {
-        icon = 'sports_esports'; color = '#8B5CF6';
-        img = 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('rent') || lower.includes('tax') || lower.includes('bill')) {
-        icon = 'receipt_long'; color = '#3B82F6';
-        img = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('salary') || lower.includes('job') || lower.includes('wage')) {
-        icon = 'work'; color = '#10B981';
-        img = 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('business') || lower.includes('agency') || lower.includes('client')) {
-        icon = 'business_center'; color = '#3B82F6';
-        img = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('freelance') || lower.includes('project') || lower.includes('consult')) {
-        icon = 'laptop_mac'; color = '#06B6D4';
-        img = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('invest') || lower.includes('stock') || lower.includes('trade')) {
-        icon = 'show_chart'; color = '#8B5CF6';
-        img = 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('gift') || lower.includes('reward') || lower.includes('grant')) {
-        icon = 'redeem'; color = '#EC4899';
-        img = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=120&q=80';
-      } else if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('coin')) {
-        icon = 'currency_bitcoin'; color = '#F59E0B';
-        img = 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=120&q=80';
-      } else if (APP_STATE.sheetType === 'INCOME') {
-        icon = 'account_balance_wallet'; color = '#10B981';
-        img = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=120&q=80';
-      }
+      const icon = chosenVis.icon || (catType === 'INCOME' ? 'account_balance_wallet' : 'category');
+      const color = chosenVis.color_hex || '#6366F1';
+      const img = chosenVis.image_url || '';
 
       const tempId = Date.now();
       const newCat = {
         id: tempId,
         name: name,
-        type: APP_STATE.sheetType || 'EXPENSE',
+        type: catType,
         icon: icon,
         color_hex: color,
         image_url: img,
@@ -9918,7 +10424,7 @@
       };
 
       if (!APP_STATE.categories) APP_STATE.categories = { expense: [], income: [] };
-      const pool = (APP_STATE.sheetType === 'INCOME') ? APP_STATE.categories.income : APP_STATE.categories.expense;
+      const pool = (catType === 'INCOME') ? APP_STATE.categories.income : APP_STATE.categories.expense;
       pool.push(newCat);
       APP_STATE.sheetCategoryId = tempId;
       APP_STATE.sheetSubcategoryId = null;
@@ -9930,13 +10436,17 @@
         try {
           const res = await apiRequest('/categories', 'POST', {
             name: name,
-            type: APP_STATE.sheetType || 'EXPENSE',
+            type: catType,
             icon: icon,
-            color_hex: color
+            color_hex: color,
+            image_url: img
           });
           if (res && res.success && res.category) {
             delete newCat._unsaved;
             newCat.id = res.category.id;
+            if (res.category.image_url) newCat.image_url = res.category.image_url;
+            if (res.category.icon) newCat.icon = res.category.icon;
+            if (res.category.color_hex) newCat.color_hex = res.category.color_hex;
             if (APP_STATE.sheetCategoryId === tempId) {
               APP_STATE.sheetCategoryId = res.category.id;
             }
@@ -10104,6 +10614,7 @@
       let catName = 'Others';
       let catIcon = 'category';
       let catColor = '#6B7280';
+      let catImg = '';
       let subcatName = null;
       let foundCat = null;
       let foundSub = null;
@@ -10114,6 +10625,7 @@
           catName = foundCat.name;
           catIcon = foundCat.icon || catIcon;
           catColor = foundCat.color_hex || catColor;
+          catImg = foundCat.image_url || '';
           if (payload.subcategory_id && foundCat.subcategories) {
             foundSub = foundCat.subcategories.find(s => s.id === payload.subcategory_id) || null;
             if (foundSub) subcatName = foundSub.name;
@@ -10137,6 +10649,8 @@
         subcategory_name: subcatName,
         category_icon: catIcon,
         category_color: catColor,
+        category_image: catImg,
+        image_url: catImg,
         is_optimistic: true
       };
 

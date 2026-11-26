@@ -98,11 +98,16 @@ def create_database():
             type TEXT NOT NULL CHECK(type IN ('EXPENSE', 'INCOME')),
             icon TEXT DEFAULT 'tag',
             color_hex TEXT DEFAULT '#6B7280',
+            image_url TEXT,
             is_default INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
+    cursor.execute("PRAGMA table_info(categories)")
+    cat_cols = [row[1] for row in cursor.fetchall()]
+    if 'image_url' not in cat_cols:
+        cursor.execute("ALTER TABLE categories ADD COLUMN image_url TEXT")
 
     # 4. Subcategories Table
     cursor.execute("""
@@ -531,14 +536,15 @@ def seed_default_categories():
     conn.commit()
     conn.close()
 
-def create_user_category(user_id, name, cat_type="EXPENSE", icon="category", color_hex="#10B981"):
-    """Inserts a custom category for the user."""
+def create_user_category(user_id, name, cat_type="EXPENSE", icon="category", color_hex="#10B981", image_url=None):
+    """Inserts a custom category for the user with optional resolved image_url."""
     conn = get_db_connection()
     cursor = conn.cursor()
+    clean_img = (image_url or "").strip() or None
     cursor.execute("""
-        INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
-        VALUES (?, ?, ?, ?, ?, 0)
-    """, (user_id, name.strip(), cat_type.upper(), icon, color_hex))
+        INSERT INTO categories (user_id, name, type, icon, color_hex, image_url, is_default)
+        VALUES (?, ?, ?, ?, ?, ?, 0)
+    """, (user_id, name.strip(), cat_type.upper(), icon, color_hex, clean_img))
     cat_id = cursor.lastrowid
     conn.commit()
     conn.close()

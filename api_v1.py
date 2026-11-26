@@ -21,6 +21,7 @@ import cashflow_calendar_service
 import alerts_engine
 import push_delivery_service
 import otp_service
+import category_visuals
 
 api_v1 = Blueprint('api_v1', __name__)
 
@@ -817,6 +818,30 @@ def reconcile_account(acc_id):
 # 3. Categories & Subcategories Endpoints
 # ==================================================
 
+def _enrich_category_visual(cat: dict) -> dict:
+    """Fills missing image_url/icon/color_hex for categories without modifying existing persisted images."""
+    if not cat.get("image_url"):
+        vis = category_visuals.resolve_category_visual_fast(cat.get("name", ""), cat.get("type", "EXPENSE"))
+        if vis.get("image_url"):
+            cat["image_url"] = vis["image_url"]
+        if cat.get("icon") in (None, "", "category", "tag") and vis.get("icon"):
+            cat["icon"] = vis["icon"]
+            cat["color_hex"] = vis["color_hex"]
+    return cat
+
+
+def _enrich_tx_visual(tx: dict) -> dict:
+    """Ensures transaction rows include category_image cleanly."""
+    if tx.get("category_name") and not tx.get("category_image"):
+        vis = category_visuals.resolve_category_visual_fast(
+            tx["category_name"],
+            tx.get("transaction_type", "EXPENSE")
+        )
+        if vis.get("image_url"):
+            tx["category_image"] = vis["image_url"]
+    return tx
+
+
 @api_v1.route('/categories', methods=['GET'])
 @token_required
 def get_categories():
@@ -841,7 +866,7 @@ def get_categories():
 
     # Fetch Categories (System defaults + user custom, excluding user-deleted)
     cursor.execute("""
-        SELECT id, name, type, icon, color_hex, is_default
+        SELECT id, name, type, icon, color_hex, image_url, is_default
         FROM categories
         WHERE (user_id IS NULL OR user_id = ?)
           AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
@@ -870,6 +895,7 @@ def get_categories():
 
     for cat in cats:
         cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
+        _enrich_category_visual(cat)
 
     conn.close()
 
@@ -883,6 +909,16 @@ def get_categories():
             "income": incomes
         }
     }), 200
+
+@api_v1.route('/categories/suggest-visual', methods=['GET'])
+@token_required
+def suggest_category_visual():
+    name = (request.args.get("name") or "").strip()
+    cat_type = (request.args.get("type") or "EXPENSE").upper()
+    if cat_type not in ("EXPENSE", "INCOME"):
+        cat_type = "EXPENSE"
+    visual = category_visuals.resolve_category_visual(name, cat_type, allow_ai=True)
+    return jsonify({"success": True, "visual": visual}), 200
 
 @api_v1.route('/categories/<int:cat_id>', methods=['DELETE'])
 @token_required
@@ -918,10 +954,24 @@ def create_category():
         return jsonify({"success": False, "error": "Category name is required"}), 400
 
     cat_type = (data.get("type") or "EXPENSE").upper()
-    icon = data.get("icon") or "category"
-    color_hex = data.get("color_hex") or "#10B981"
+    if cat_type not in ("EXPENSE", "INCOME"):
+        cat_type = "EXPENSE"
 
-    cat_id = database.create_user_category(user_id, name, cat_type, icon, color_hex)
+    resolved = category_visuals.resolve_category_visual(name, cat_type, allow_ai=True)
+    raw_icon = (data.get("icon") or "").strip()
+    raw_color = (data.get("color_hex") or "").strip()
+    raw_img = (data.get("image_url") or "").strip()
+
+    # Only honor explicit frontend image if it is a verified Unsplash CDN URL; otherwise use server semantic resolution
+    if raw_img.startswith("https://images.unsplash.com/"):
+        image_url = raw_img
+    else:
+        image_url = resolved.get("image_url") or ""
+
+    icon = resolved["icon"] if (not raw_icon or raw_icon in ("category", "tag", "sell")) and resolved.get("icon") else (raw_icon or "category")
+    color_hex = resolved["color_hex"] if (not raw_color or raw_color in ("#10B981", "#6B7280", "#6366F1")) and resolved.get("color_hex") else (raw_color or "#10B981")
+
+    cat_id = database.create_user_category(user_id, name, cat_type, icon, color_hex, image_url=image_url)
     new_cat = {
         "id": cat_id,
         "user_id": user_id,
@@ -929,6 +979,8 @@ def create_category():
         "type": cat_type,
         "icon": icon,
         "color_hex": color_hex,
+        "image_url": image_url or None,
+        "visual_label": resolved.get("label"),
         "is_default": 0,
         "subcategories": []
     }
@@ -976,6 +1028,7 @@ def get_transactions():
                a.name as account_name, a.color_hex as account_color,
                ta.name as target_account_name,
                c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+               c.image_url as category_image,
                s.name as subcategory_name
         FROM transactions t
         LEFT JOIN accounts a ON t.account_id = a.id
@@ -1019,6 +1072,7 @@ def get_transactions():
         tx["account_name"] = normalize_account_name(tx.get("account_name"))
         if tx.get("target_account_name"):
             tx["target_account_name"] = normalize_account_name(tx.get("target_account_name"))
+        _enrich_tx_visual(tx)
 
     return jsonify({"success": True, "count": len(transactions), "transactions": transactions}), 200
 
@@ -1074,7 +1128,8 @@ def get_transaction_detail(tx_id):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT t.*, a.name as account_name, ta.name as target_account_name,
-               c.name as category_name, s.name as subcategory_name
+               c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+               c.image_url as category_image, s.name as subcategory_name
         FROM transactions t
         LEFT JOIN accounts a ON t.account_id = a.id
         LEFT JOIN accounts ta ON t.target_account_id = ta.id
@@ -1086,7 +1141,8 @@ def get_transaction_detail(tx_id):
     conn.close()
     if not tx:
         return jsonify({"success": False, "error": "Transaction not found"}), 404
-    return jsonify({"success": True, "transaction": dict(tx)}), 200
+    tx_dict = _enrich_tx_visual(dict(tx))
+    return jsonify({"success": True, "transaction": tx_dict}), 200
 
 @api_v1.route('/transactions/<int:tx_id>', methods=['PUT'])
 @token_required
@@ -2009,7 +2065,7 @@ def get_app_bootstrap():
             )
         """)
         cursor.execute("""
-            SELECT id, name, type, icon, color_hex, is_default
+            SELECT id, name, type, icon, color_hex, image_url, is_default
             FROM categories
             WHERE (user_id IS NULL OR user_id = ?)
               AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
@@ -2037,6 +2093,7 @@ def get_app_bootstrap():
 
         for cat in cats:
             cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
+            _enrich_category_visual(cat)
 
         categories = {
             "expense": [c for c in cats if c["type"] == 'EXPENSE'],
@@ -2049,6 +2106,7 @@ def get_app_bootstrap():
                    t.account_id, t.category_id, t.subcategory_id,
                    a.name as account_name,
                    c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+                   c.image_url as category_image,
                    s.name as subcategory_name
             FROM transactions t
             LEFT JOIN accounts a ON t.account_id = a.id
@@ -2062,6 +2120,7 @@ def get_app_bootstrap():
             tx["account_name"] = normalize_account_name(tx.get("account_name"))
             if tx.get("target_account_name"):
                 tx["target_account_name"] = normalize_account_name(tx.get("target_account_name"))
+            _enrich_tx_visual(tx)
 
         # 6. Category Breakdown (single GROUP BY query; also feeds category_budgets!)
         cursor.execute("""

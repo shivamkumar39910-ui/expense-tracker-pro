@@ -115,6 +115,24 @@ def create_database():
         )
     """)
 
+    # User Hidden Categories & Subcategories (Per-User Delete/Hide)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_hidden_categories (
+            user_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, category_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+            user_id INTEGER NOT NULL,
+            subcategory_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, subcategory_id)
+        )
+    """)
+
     # 5. Transactions Table (v2.0 Ledger: EXPENSE, INCOME, TRANSFER)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
@@ -538,6 +556,78 @@ def create_subcategory(category_id, name):
     conn.commit()
     conn.close()
     return sub_id
+
+def delete_user_category(user_id, category_id):
+    """Deletes or hides a category for the specific user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, user_id FROM categories WHERE id = ? AND (user_id = ? OR user_id IS NULL)", (category_id, user_id))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return False
+        
+        # Ensure hidden tables exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_categories (
+                user_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, category_id)
+            )
+        """)
+        cursor.execute("INSERT OR IGNORE INTO user_hidden_categories (user_id, category_id) VALUES (?, ?)", (user_id, category_id))
+        
+        # If user-owned custom category, also hard-delete
+        if row["user_id"] == user_id:
+            cursor.execute("DELETE FROM subcategories WHERE category_id = ?", (category_id,))
+            cursor.execute("DELETE FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        conn.close()
+        raise e
+
+def delete_user_subcategory(user_id, subcategory_id):
+    """Deletes or hides a subcategory for the specific user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT s.id, c.user_id 
+            FROM subcategories s
+            JOIN categories c ON s.category_id = c.id
+            WHERE s.id = ? AND (c.user_id = ? OR c.user_id IS NULL)
+        """, (subcategory_id, user_id))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return False
+        
+        # Ensure hidden tables exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+                user_id INTEGER NOT NULL,
+                subcategory_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, subcategory_id)
+            )
+        """)
+        cursor.execute("INSERT OR IGNORE INTO user_hidden_subcategories (user_id, subcategory_id) VALUES (?, ?)", (user_id, subcategory_id))
+        
+        # If user-owned category, also hard-delete subcategory
+        if row["user_id"] == user_id:
+            cursor.execute("DELETE FROM subcategories WHERE id = ?", (subcategory_id,))
+            
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        conn.close()
+        raise e
 
 # ==================================================
 # Default Accounts & Legacy Migration

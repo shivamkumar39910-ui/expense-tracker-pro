@@ -372,8 +372,34 @@ def run_tests():
     print("23b. Malformed PIN Rejection:", r_invalid_pin.status_code, r_invalid_pin.json.get("error"))
     assert r_invalid_pin.status_code == 400
 
+    # 24. Category & Subcategory Creation and Deletion Verification
+    r_cat_add = client.post('/api/v1/categories', headers=headers, json={
+        "name": "Test Gym Fitness",
+        "type": "EXPENSE",
+        "icon": "fitness_center",
+        "color_hex": "#EC4899"
+    })
+    assert r_cat_add.status_code == 201
+    new_cat_id = r_cat_add.json["category"]["id"]
+
+    r_sub_add = client.post(f'/api/v1/categories/{new_cat_id}/subcategories', headers=headers, json={
+        "name": "Crossfit Workout"
+    })
+    assert r_sub_add.status_code == 201
+    new_sub_id = r_sub_add.json["subcategory"]["id"]
+
+    # Delete subcategory
+    r_sub_del = client.delete(f'/api/v1/subcategories/{new_sub_id}', headers=headers)
+    print("24a. DELETE /api/v1/subcategories/<id>:", r_sub_del.status_code, r_sub_del.json.get("message"))
+    assert r_sub_del.status_code == 200
+
+    # Delete category
+    r_cat_del = client.delete(f'/api/v1/categories/{new_cat_id}', headers=headers)
+    print("24b. DELETE /api/v1/categories/<id>:", r_cat_del.status_code, r_cat_del.json.get("message"))
+    assert r_cat_del.status_code == 200
+
     print("==================================================")
-    print("ALL 23 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
+    print("ALL 24 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")
 
 if __name__ == "__main__":

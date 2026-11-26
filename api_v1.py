@@ -824,13 +824,29 @@ def get_categories():
     conn = database.get_db_connection()
     cursor = conn.cursor()
 
-    # Fetch Categories (System defaults + user custom)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_hidden_categories (
+            user_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
+            PRIMARY KEY (user_id, category_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+            user_id INTEGER NOT NULL,
+            subcategory_id INTEGER NOT NULL,
+            PRIMARY KEY (user_id, subcategory_id)
+        )
+    """)
+
+    # Fetch Categories (System defaults + user custom, excluding user-deleted)
     cursor.execute("""
         SELECT id, name, type, icon, color_hex, is_default
         FROM categories
-        WHERE user_id IS NULL OR user_id = ?
+        WHERE (user_id IS NULL OR user_id = ?)
+          AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
         ORDER BY is_default DESC, name ASC
-    """, (user_id,))
+    """, (user_id, user_id))
     cats = [dict(c) for c in cursor.fetchall()]
 
     # High-performance batch fetch for subcategories (1 single query instead of 16 queries)
@@ -838,7 +854,14 @@ def get_categories():
     subcats_by_cat = {c["id"]: [] for c in cats}
     if cat_ids:
         placeholders = ",".join("?" for _ in cat_ids)
-        cursor.execute(f"SELECT id, category_id, name FROM subcategories WHERE category_id IN ({placeholders}) ORDER BY name ASC", tuple(cat_ids))
+        params = list(cat_ids) + [user_id]
+        cursor.execute(f"""
+            SELECT id, category_id, name 
+            FROM subcategories 
+            WHERE category_id IN ({placeholders})
+              AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
+            ORDER BY name ASC
+        """, tuple(params))
         for s in cursor.fetchall():
             s_dict = dict(s)
             c_id = s_dict["category_id"]
@@ -860,6 +883,30 @@ def get_categories():
             "income": incomes
         }
     }), 200
+
+@api_v1.route('/categories/<int:cat_id>', methods=['DELETE'])
+@token_required
+def delete_category(cat_id):
+    user_id = request.user["id"]
+    try:
+        success = database.delete_user_category(user_id, cat_id)
+        if success:
+            return jsonify({"success": True, "message": "Category deleted successfully"}), 200
+        return jsonify({"success": False, "error": "Category not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@api_v1.route('/subcategories/<int:sub_id>', methods=['DELETE'])
+@token_required
+def delete_subcategory(sub_id):
+    user_id = request.user["id"]
+    try:
+        success = database.delete_user_subcategory(user_id, sub_id)
+        if success:
+            return jsonify({"success": True, "message": "Subcategory deleted successfully"}), 200
+        return jsonify({"success": False, "error": "Subcategory not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @api_v1.route('/categories', methods=['POST'])
 @token_required
@@ -1943,20 +1990,42 @@ def get_app_bootstrap():
         # 3b. Forecast reusing the SAME pooled connection (live, zero multi-worker stale cache)
         forecast = forecasting_engine.calculate_month_end_forecast(user_id, conn=conn, use_cache=False)
 
-        # 4. Categories & Subcategories
+        # 4. Categories & Subcategories (excluding user-deleted/hidden)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_categories (
+                user_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, category_id)
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+                user_id INTEGER NOT NULL,
+                subcategory_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, subcategory_id)
+            )
+        """)
         cursor.execute("""
             SELECT id, name, type, icon, color_hex, is_default
             FROM categories
-            WHERE user_id IS NULL OR user_id = ?
+            WHERE (user_id IS NULL OR user_id = ?)
+              AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
             ORDER BY is_default DESC, name ASC
-        """, (user_id,))
+        """, (user_id, user_id))
         cats = [dict(c) for c in cursor.fetchall()]
 
         cat_ids = [c["id"] for c in cats]
         subcats_by_cat = {c["id"]: [] for c in cats}
         if cat_ids:
             placeholders = ",".join("?" for _ in cat_ids)
-            cursor.execute(f"SELECT id, category_id, name FROM subcategories WHERE category_id IN ({placeholders}) ORDER BY name ASC", tuple(cat_ids))
+            params = list(cat_ids) + [user_id]
+            cursor.execute(f"""
+                SELECT id, category_id, name 
+                FROM subcategories 
+                WHERE category_id IN ({placeholders})
+                  AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
+                ORDER BY name ASC
+            """, tuple(params))
             for s in cursor.fetchall():
                 s_dict = dict(s)
                 c_id = s_dict["category_id"]

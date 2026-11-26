@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.6">
+  <meta name="app-shell-version" content="v4.7">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -997,6 +997,8 @@
     }
 
     .cat-select-card {
+      position: relative;
+      overflow: visible;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1011,10 +1013,110 @@
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .cat-select-card.selected {
       border-color: var(--color-emerald);
       background: rgba(16, 185, 129, 0.18);
+    }
+    /* Category Delete Badge */
+    .cat-delete-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #EF4444;
+      border: 2px solid #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      padding: 0;
+      transition: transform 0.15s ease;
+    }
+    .cat-delete-btn:active {
+      transform: scale(0.9);
+    }
+    .cat-delete-btn span {
+      color: #FFFFFF !important;
+      font-size: 13px !important;
+      line-height: 1;
+    }
+    body.theme-light .cat-delete-btn {
+      border-color: #FFFFFF !important;
+      background: #DC2626 !important;
+    }
+    body.theme-light .cat-delete-btn span {
+      color: #FFFFFF !important;
+    }
+
+    /* Subcategory Delete Badge */
+    .subcat-delete-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 5px;
+      cursor: pointer;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.18);
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      transition: transform 0.15s ease;
+    }
+    .subcat-delete-btn:active {
+      transform: scale(0.9);
+    }
+    .subcat-delete-btn span {
+      color: #EF4444 !important;
+      font-size: 11px !important;
+      line-height: 1;
+    }
+    body.theme-light .subcat-delete-btn {
+      background: rgba(220, 38, 38, 0.18) !important;
+    }
+    body.theme-light .subcat-delete-btn span {
+      color: #DC2626 !important;
+    }
+
+    /* Payment Method Pill (Cash, UPI, Cards) */
+    .sheet-acc-pill {
+      cursor: pointer;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .sheet-acc-pill.selected {
+      background: rgba(59, 130, 246, 0.22);
+      border: 1.5px solid var(--color-sapphire);
+      color: #FFFFFF;
+    }
+    body.theme-light .sheet-acc-pill {
+      background: #FFFFFF !important;
+      border: 1.5px solid #CBD5E1 !important;
+      color: #334155 !important;
+    }
+    body.theme-light .sheet-acc-pill.selected {
+      background: #EFF6FF !important;
+      border: 2px solid #2563EB !important;
+      color: #1D4ED8 !important;
+      font-weight: 800 !important;
     }
     .cat-select-icon {
       width: 32px;
@@ -1698,6 +1800,8 @@
     .auth-tab-btn.active *,
     .card-net-worth,
     .card-net-worth *,
+    .cat-delete-btn,
+    .cat-delete-btn *,
     body.theme-light .btn-submit-sheet,
     body.theme-light .btn-submit-sheet *,
     body.theme-light .fab-center,
@@ -1705,7 +1809,9 @@
     body.theme-light .auth-tab-btn.active,
     body.theme-light .auth-tab-btn.active *,
     body.theme-light .card-net-worth,
-    body.theme-light .card-net-worth * {
+    body.theme-light .card-net-worth *,
+    body.theme-light .cat-delete-btn,
+    body.theme-light .cat-delete-btn * {
       color: #FFFFFF !important;
     }
     .tx-icon-box span,
@@ -2757,7 +2863,13 @@
 
       <!-- Category Grid -->
       <div id="categoryGridWrapper" style="margin-bottom:6px;">
-        <div style="font-size:10px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px; margin-bottom:3px;">SELECT CATEGORY</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+          <div style="font-size:10px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px;">SELECT CATEGORY</div>
+          <button type="button" id="btnToggleCatManage" onclick="toggleCategoryManageMode()" style="background:transparent; border:none; color:var(--color-sapphire); font-size:10.5px; font-weight:800; cursor:pointer; padding:2px 6px; border-radius:6px; display:inline-flex; align-items:center; gap:3px;">
+            <span class="material-icons-round" style="font-size:13px;" id="catManageIcon">tune</span>
+            <span id="catManageLabel">Manage</span>
+          </button>
+        </div>
         <div class="category-scroll-grid" id="sheetCategoryGrid" style="gap:6px; padding:2px 0 4px 0; margin-bottom:0;">
           <!-- Filled dynamically -->
         </div>
@@ -4796,15 +4908,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_4'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_7'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.4-cache') {
-            triggerSwUpgradeReload('v4_4');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.7-cache') {
+            triggerSwUpgradeReload('v4_7');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.4').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=4.7').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -8808,7 +8920,10 @@
 
       const accDisplay = formatAccountName(tx.account_name);
       const targetAccDisplay = formatAccountName(tx.target_account_name);
-      const title = isTransfer ? `Transfer: ${accDisplay} ➔ ${targetAccDisplay}` : (tx.category_name || tx.note || 'Transaction');
+      let title = isTransfer ? `Transfer: ${accDisplay} ➔ ${targetAccDisplay}` : (tx.category_name || tx.note || 'Transaction');
+      if (!isTransfer && tx.category_name && tx.subcategory_name && String(tx.subcategory_name).trim()) {
+        title = `${tx.category_name} • ${String(tx.subcategory_name).trim()}`;
+      }
       const subtitle = `${tx.date} • ${accDisplay}${tx.note && !isTransfer ? ` • ${tx.note}` : ''}`;
 
       const numAmount = parseFloat(tx.amount) || 0;
@@ -9331,51 +9446,125 @@
 
       const standardAccounts = [
         { name: 'Cash', icon: 'payments', color: '#10B981' },
-        { name: 'UPI', icon: 'qr_code_scanner', color: '#38BDF8' },
-        { name: 'Cards', icon: 'credit_card', color: '#A78BFA' }
+        { name: 'UPI', icon: 'qr_code_scanner', color: '#0284C7' },
+        { name: 'Cards', icon: 'credit_card', color: '#7C3AED' }
       ];
 
       const displayAccounts = standardAccounts.map(std => {
-        const found = (APP_STATE.accounts || []).find(a => a.name.toLowerCase() === std.name.toLowerCase());
+        const found = (APP_STATE.accounts || []).find(a => 
+          a.name.toLowerCase() === std.name.toLowerCase() ||
+          formatAccountName(a.name).toLowerCase() === std.name.toLowerCase()
+        );
         return {
           id: found ? found.id : (std.name === 'Cash' ? 1 : std.name === 'UPI' ? 2 : 88),
           name: std.name,
+          real_id: found ? found.id : null,
           icon: found?.icon || std.icon,
           color_hex: found?.color_hex || std.color
         };
       });
 
-      if (!APP_STATE.sheetAccountId && displayAccounts.length > 0) {
+      if (!APP_STATE.sheetAccountName && displayAccounts.length > 0) {
         APP_STATE.sheetAccountId = displayAccounts[0].id;
+        APP_STATE.sheetAccountName = displayAccounts[0].name;
       }
 
       displayAccounts.forEach(acc => {
-        const isSel = acc.id === APP_STATE.sheetAccountId;
-        const p = document.createElement('div');
-        p.className = `acc-pill ${isSel ? 'selected' : ''}`;
-        p.style.cursor = 'pointer';
-        p.style.padding = '6px 8px';
-        p.style.display = 'flex';
-        p.style.alignItems = 'center';
-        p.style.justifyContent = 'center';
-        p.style.gap = '5px';
-        p.style.borderRadius = '10px';
-        p.style.fontSize = '12px';
-        p.style.fontWeight = '700';
-        p.style.background = isSel ? 'rgba(59, 130, 246, 0.22)' : 'var(--bg-card-subtle)';
-        p.style.border = isSel ? '1.5px solid var(--color-sapphire)' : '1px solid var(--border-card)';
-        p.style.color = isSel ? '#FFF' : 'var(--text-secondary)';
-        p.style.transition = 'all 0.12s ease';
+        const isSel = (APP_STATE.sheetAccountName && APP_STATE.sheetAccountName.toLowerCase() === acc.name.toLowerCase()) ||
+                      (String(acc.id) === String(APP_STATE.sheetAccountId));
+        if (isSel && !APP_STATE.sheetAccountName) {
+          APP_STATE.sheetAccountName = acc.name;
+        }
 
-        const iconColor = acc.name === 'Cash' ? '#10B981' : acc.name === 'UPI' ? '#38BDF8' : '#A78BFA';
-        p.innerHTML = `<span class="material-icons-round" style="font-size:15px; color:${iconColor};">${acc.icon || 'payments'}</span> <span>${acc.name}</span>`;
+        const p = document.createElement('div');
+        p.className = `sheet-acc-pill ${isSel ? 'selected' : ''}`;
+        const iconColor = acc.name === 'Cash' ? '#10B981' : acc.name === 'UPI' ? '#0284C7' : '#7C3AED';
+        p.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:${iconColor};">${acc.icon || 'payments'}</span> <span>${acc.name}</span>`;
         p.onclick = () => {
           triggerHaptic('light');
           APP_STATE.sheetAccountId = acc.id;
+          APP_STATE.sheetAccountName = acc.name;
           populateSheetAccounts();
         };
         container.appendChild(p);
       });
+    }
+
+    // Category & Subcategory Management Mode (Task 1)
+    function toggleCategoryManageMode() {
+      APP_STATE.categoryManageMode = !APP_STATE.categoryManageMode;
+      const lbl = document.getElementById('catManageLabel');
+      const icon = document.getElementById('catManageIcon');
+      const btn = document.getElementById('btnToggleCatManage');
+      if (lbl) lbl.innerText = APP_STATE.categoryManageMode ? 'Done' : 'Manage';
+      if (icon) icon.innerText = APP_STATE.categoryManageMode ? 'check' : 'tune';
+      if (btn) btn.style.color = APP_STATE.categoryManageMode ? 'var(--color-emerald)' : 'var(--color-sapphire)';
+      populateSheetCategories();
+    }
+
+    async function deleteCategoryPrompt(catId, catName) {
+      if (!confirm(`Are you sure you want to delete category "${catName}"?`)) return;
+      try {
+        triggerHaptic('medium');
+        const res = await apiRequest(`/categories/${catId}`, 'DELETE');
+        if (res && res.success) {
+          if (APP_STATE.categories) {
+            if (APP_STATE.categories.expense) {
+              APP_STATE.categories.expense = APP_STATE.categories.expense.filter(c => c.id !== catId);
+            }
+            if (APP_STATE.categories.income) {
+              APP_STATE.categories.income = APP_STATE.categories.income.filter(c => c.id !== catId);
+            }
+          }
+          if (APP_STATE.sheetCategoryId === catId) {
+            const pool = APP_STATE.sheetType === 'INCOME' ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
+            APP_STATE.sheetCategoryId = pool.length > 0 ? pool[0].id : null;
+            APP_STATE.sheetSubcategoryId = null;
+          }
+          populateSheetCategories();
+          persistUnifiedLocalState();
+          if (typeof showToast === 'function') {
+            showToast(`Category "${catName}" removed!`, 'success');
+          }
+        } else {
+          alert(res?.error || 'Failed to delete category');
+        }
+      } catch (err) {
+        console.error('Delete category error:', err);
+        alert('Failed to delete category: ' + (err.message || err));
+      }
+    }
+
+    async function deleteSubcategoryPrompt(subId, subName) {
+      if (!confirm(`Are you sure you want to delete subcategory "${subName}"?`)) return;
+      try {
+        triggerHaptic('medium');
+        const res = await apiRequest(`/subcategories/${subId}`, 'DELETE');
+        if (res && res.success) {
+          if (APP_STATE.categories) {
+            ['expense', 'income'].forEach(type => {
+              (APP_STATE.categories[type] || []).forEach(c => {
+                if (c.subcategories) {
+                  c.subcategories = c.subcategories.filter(s => s.id !== subId);
+                }
+              });
+            });
+          }
+          if (APP_STATE.sheetSubcategoryId === subId) {
+            APP_STATE.sheetSubcategoryId = null;
+          }
+          populateSheetCategories();
+          persistUnifiedLocalState();
+          if (typeof showToast === 'function') {
+            showToast(`Subcategory "${subName}" removed!`, 'success');
+          }
+        } else {
+          alert(res?.error || 'Failed to delete subcategory');
+        }
+      } catch (err) {
+        console.error('Delete subcategory error:', err);
+        alert('Failed to delete subcategory: ' + (err.message || err));
+      }
     }
 
     function populateSheetCategories() {
@@ -9420,6 +9609,17 @@
           populateSheetCategories();
         };
 
+        // Long press to delete category on mobile
+        let pressTimer = null;
+        card.addEventListener('touchstart', () => {
+          pressTimer = setTimeout(() => {
+            triggerHaptic('medium');
+            deleteCategoryPrompt(c.id, c.name);
+          }, 550);
+        }, { passive: true });
+        card.addEventListener('touchend', () => clearTimeout(pressTimer));
+        card.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
         const imageMarkup = visual.image ? `
           <img src="${visual.image}" 
                alt="${visual.displayName}" 
@@ -9441,6 +9641,21 @@
           </div>
           <div class="cat-select-name">${visual.displayName}</div>
         `;
+
+        // If in manage mode, append delete button
+        if (APP_STATE.categoryManageMode) {
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'cat-delete-btn';
+          delBtn.title = `Delete ${c.name}`;
+          delBtn.innerHTML = '<span class="material-icons-round">close</span>';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteCategoryPrompt(c.id, c.name);
+          };
+          card.appendChild(delBtn);
+        }
+
         grid.appendChild(card);
       });
 
@@ -9470,8 +9685,41 @@
           subPill.style.cursor = 'pointer';
           subPill.style.fontSize = '11px';
           subPill.style.padding = '6px 10px';
+          subPill.style.display = 'inline-flex';
+          subPill.style.alignItems = 'center';
           if (isSubSelected) subPill.style.borderColor = 'var(--color-emerald)';
-          subPill.innerHTML = `<span>${sub.name}</span>`;
+          
+          let subMarkup = `<span>${sub.name}</span>`;
+          if (APP_STATE.categoryManageMode) {
+            subMarkup += `
+              <span class="subcat-delete-btn" title="Delete subcategory">
+                <span class="material-icons-round">close</span>
+              </span>
+            `;
+          }
+          subPill.innerHTML = subMarkup;
+
+          if (APP_STATE.categoryManageMode) {
+            const delIcon = subPill.querySelector('.subcat-delete-btn');
+            if (delIcon) {
+              delIcon.onclick = (e) => {
+                e.stopPropagation();
+                deleteSubcategoryPrompt(sub.id, sub.name);
+              };
+            }
+          }
+
+          // Long press to delete subcategory
+          let subPressTimer = null;
+          subPill.addEventListener('touchstart', () => {
+            subPressTimer = setTimeout(() => {
+              triggerHaptic('medium');
+              deleteSubcategoryPrompt(sub.id, sub.name);
+            }, 550);
+          }, { passive: true });
+          subPill.addEventListener('touchend', () => clearTimeout(subPressTimer));
+          subPill.addEventListener('touchmove', () => clearTimeout(subPressTimer));
+
           subPill.onclick = () => {
             triggerHaptic('light');
             APP_STATE.sheetSubcategoryId = isSubSelected ? null : sub.id;
@@ -9725,11 +9973,32 @@
       triggerHaptic('medium');
       closeQuickEntrySheet();
 
-      // Find Account and Category names
-      const acc = (APP_STATE.accounts || []).find(a => a.id === payload.account_id);
+      // Find Account reliably with 0ms fallback to sheetAccountName (Fixes Cash Lag completely)
+      let chosenAccountName = APP_STATE.sheetAccountName;
+      let acc = (APP_STATE.accounts || []).find(a => String(a.id) === String(payload.account_id));
+      if (!acc && chosenAccountName) {
+        acc = (APP_STATE.accounts || []).find(a => 
+          a.name.toLowerCase() === chosenAccountName.toLowerCase() || 
+          formatAccountName(a.name).toLowerCase() === chosenAccountName.toLowerCase()
+        );
+      }
+      if (acc) {
+        payload.account_id = acc.id;
+        if (!chosenAccountName) chosenAccountName = acc.name;
+      } else if (chosenAccountName) {
+        const fallbackAcc = (APP_STATE.accounts || []).find(a => formatAccountName(a.name).toLowerCase() === chosenAccountName.toLowerCase());
+        if (fallbackAcc) {
+          acc = fallbackAcc;
+          payload.account_id = fallbackAcc.id;
+        }
+      }
+      const resolvedAccName = formatAccountName(chosenAccountName || (acc ? acc.name : 'Cash'));
+
+      // Find Category and Subcategory names
       let catName = 'Others';
       let catIcon = 'category';
       let catColor = '#6B7280';
+      let subcatName = null;
       if (APP_STATE.categories) {
         const pool = (payload.transaction_type === 'INCOME') ? (APP_STATE.categories.income || []) : (APP_STATE.categories.expense || []);
         const foundCat = pool.find(c => c.id === payload.category_id);
@@ -9737,6 +10006,10 @@
           catName = foundCat.name;
           catIcon = foundCat.icon || catIcon;
           catColor = foundCat.color_hex || catColor;
+          if (payload.subcategory_id && foundCat.subcategories) {
+            const foundSub = foundCat.subcategories.find(s => s.id === payload.subcategory_id);
+            if (foundSub) subcatName = foundSub.name;
+          }
         }
       }
 
@@ -9749,9 +10022,11 @@
         date: payload.date,
         note: payload.note,
         account_id: payload.account_id,
-        account_name: formatAccountName(acc ? acc.name : 'Cash'),
+        account_name: resolvedAccName,
         category_id: payload.category_id,
         category_name: catName,
+        subcategory_id: payload.subcategory_id,
+        subcategory_name: subcatName,
         category_icon: catIcon,
         category_color: catColor,
         is_optimistic: true

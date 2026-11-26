@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import datetime
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 from app_web import app
@@ -372,7 +373,7 @@ def run_tests():
     print("23b. Malformed PIN Rejection:", r_invalid_pin.status_code, r_invalid_pin.json.get("error"))
     assert r_invalid_pin.status_code == 400
 
-    # 24. Category & Subcategory Creation and Deletion Verification
+    # 24. Category & Subcategory Creation and Deletion Verification (Custom + Default + History + Postgres Translation)
     r_cat_add = client.post('/api/v1/categories', headers=headers, json={
         "name": "Test Gym Fitness",
         "type": "EXPENSE",
@@ -388,15 +389,82 @@ def run_tests():
     assert r_sub_add.status_code == 201
     new_sub_id = r_sub_add.json["subcategory"]["id"]
 
-    # Delete subcategory
+    # Set a category budget on the custom category alongside overall budget
+    r_cat_bgt = client.post('/api/v1/budgets', headers=headers, json={
+        "category_id": new_cat_id,
+        "month": datetime.today().month,
+        "year": datetime.today().year,
+        "amount": 5000.0
+    })
+    assert r_cat_bgt.status_code == 200
+
+    # Record a transaction referencing the custom category & subcategory
+    r_cat_tx = client.post('/api/v1/transactions', headers=headers, json={
+        "account_id": bank_acc["id"],
+        "category_id": new_cat_id,
+        "subcategory_id": new_sub_id,
+        "transaction_type": "EXPENSE",
+        "amount": 150.0,
+        "date": datetime.today().strftime("%Y-%m-%d"),
+        "note": "Gym pass"
+    })
+    assert r_cat_tx.status_code == 201
+    cat_tx_id = r_cat_tx.json["transaction_id"]
+
+    # Delete custom subcategory & custom category
     r_sub_del = client.delete(f'/api/v1/subcategories/{new_sub_id}', headers=headers)
-    print("24a. DELETE /api/v1/subcategories/<id>:", r_sub_del.status_code, r_sub_del.json.get("message"))
+    print("24a. DELETE /api/v1/subcategories/<id> (Custom):", r_sub_del.status_code, r_sub_del.json.get("message"))
     assert r_sub_del.status_code == 200
 
-    # Delete category
     r_cat_del = client.delete(f'/api/v1/categories/{new_cat_id}', headers=headers)
-    print("24b. DELETE /api/v1/categories/<id>:", r_cat_del.status_code, r_cat_del.json.get("message"))
+    print("24b. DELETE /api/v1/categories/<id> (Custom):", r_cat_del.status_code, r_cat_del.json.get("message"))
     assert r_cat_del.status_code == 200
+
+    # Also test deleting a system default category & subcategory
+    r_cats_before = client.get('/api/v1/categories', headers=headers)
+    assert r_cats_before.status_code == 200
+    exp_cats = r_cats_before.json["categories"]["expense"]
+    default_cat = next(c for c in exp_cats if c["is_default"] == 1 and c.get("subcategories"))
+    default_sub = default_cat["subcategories"][0]
+
+    r_def_sub_del = client.delete(f'/api/v1/subcategories/{default_sub["id"]}', headers=headers)
+    print("24c. DELETE /api/v1/subcategories/<id> (Default):", r_def_sub_del.status_code)
+    assert r_def_sub_del.status_code == 200
+
+    r_def_cat_del = client.delete(f'/api/v1/categories/{default_cat["id"]}', headers=headers)
+    print("24d. DELETE /api/v1/categories/<id> (Default):", r_def_cat_del.status_code)
+    assert r_def_cat_del.status_code == 200
+
+    # Verify deleted categories/subcategories no longer appear in GET /categories or /app/bootstrap
+    r_cats_after = client.get('/api/v1/categories', headers=headers)
+    exp_after = r_cats_after.json["categories"]["expense"]
+    exp_after_ids = [c["id"] for c in exp_after]
+    assert new_cat_id not in exp_after_ids
+    assert default_cat["id"] not in exp_after_ids
+
+    r_boot = client.get('/api/v1/app/bootstrap', headers=headers)
+    assert r_boot.status_code == 200
+    boot_exp_ids = [c["id"] for c in r_boot.json["bootstrap"]["categories"]["expense"]]
+    assert new_cat_id not in boot_exp_ids
+    assert default_cat["id"] not in boot_exp_ids
+
+    # Verify past transaction retains category_name & subcategory_name in history
+    r_tx_hist = client.get('/api/v1/transactions', headers=headers)
+    hist_tx = next(t for t in r_tx_hist.json["transactions"] if t["id"] == cat_tx_id)
+    assert hist_tx["category_name"] == "Test Gym Fitness"
+    assert hist_tx["subcategory_name"] == "Crossfit Workout"
+    print("24e. Hidden Categories + Historical Label Preservation Verified!")
+
+    # Verify PostgresCursorWrapper SQL translation (no INSERT OR IGNORE, no RETURNING id on no-id tables)
+    import db_engine
+    pw = db_engine.PostgresCursorWrapper(None)
+    q1, ret1 = pw._translate_query("INSERT INTO user_hidden_categories (user_id, category_id) VALUES (?, ?) ON CONFLICT (user_id, category_id) DO NOTHING")
+    assert "OR IGNORE" not in q1.upper() and "RETURNING ID" not in q1.upper() and ret1 is False
+    q2, ret2 = pw._translate_query("INSERT OR IGNORE INTO user_hidden_subcategories (user_id, subcategory_id) VALUES (?, ?)")
+    assert "OR IGNORE" not in q2.upper() and "ON CONFLICT DO NOTHING" in q2.upper() and "RETURNING ID" not in q2.upper() and ret2 is False
+    q3, ret3 = pw._translate_query("INSERT INTO categories (user_id, name, type, icon, color_hex, is_default) VALUES (?, ?, ?, ?, ?, 0)")
+    assert "RETURNING ID" in q3.upper() and ret3 is True
+    print("24f. Postgres SQL Translation Compatibility Verified!")
 
     print("==================================================")
     print("ALL 24 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")

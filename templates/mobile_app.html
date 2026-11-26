@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.7">
+  <meta name="app-shell-version" content="v4.8">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2870,11 +2870,11 @@
             <span id="catManageLabel">Manage</span>
           </button>
         </div>
-        <div class="category-scroll-grid" id="sheetCategoryGrid" style="gap:6px; padding:2px 0 4px 0; margin-bottom:0;">
+        <div class="category-scroll-grid" id="sheetCategoryGrid" style="gap:8px; padding:8px 6px 6px 2px; margin-bottom:0;">
           <!-- Filled dynamically -->
         </div>
         <div id="subcategoryWrapper" style="display:none; margin-top:4px; margin-bottom:4px;">
-          <div class="accounts-pill-row" id="sheetSubcategoryPills"></div>
+          <div class="accounts-pill-row" id="sheetSubcategoryPills" style="gap:6px; padding:2px 2px;"></div>
         </div>
       </div>
 
@@ -2942,7 +2942,7 @@
         <!-- ============================================== -->
     <!-- ADD CUSTOM CATEGORY MODAL (TASK 1)             -->
     <!-- ============================================== -->
-    <div class="sheet-backdrop" id="addCategoryBackdrop" onclick="closeAddCategoryModal()"></div>
+    <div class="sheet-backdrop" id="addCategoryBackdrop" style="z-index:910;" onclick="closeAddCategoryModal()"></div>
     <div class="bottom-sheet" id="addCategorySheet" style="border-radius:24px 24px 0 0; padding:18px 20px; z-index:920;">
       <div class="sheet-handle"></div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -2967,7 +2967,7 @@
     <!-- ============================================== -->
     <!-- ADD CUSTOM SUBCATEGORY MODAL (TASK 2)          -->
     <!-- ============================================== -->
-    <div class="sheet-backdrop" id="addSubcategoryBackdrop" onclick="closeAddSubcategoryModal()"></div>
+    <div class="sheet-backdrop" id="addSubcategoryBackdrop" style="z-index:910;" onclick="closeAddSubcategoryModal()"></div>
     <div class="bottom-sheet" id="addSubcategorySheet" style="border-radius:24px 24px 0 0; padding:18px 20px; z-index:920;">
       <div class="sheet-handle"></div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -3473,8 +3473,8 @@
     <!-- ============================================== -->
     <!-- SHARED NATIVE IN-APP CONFIRMATION SHEET        -->
     <!-- ============================================== -->
-    <div class="sheet-backdrop" id="quickConfirmBackdrop" style="z-index:220;" onclick="closeConfirmSheet()"></div>
-    <div class="bottom-sheet" id="quickConfirmSheet" style="z-index:230;">
+    <div class="sheet-backdrop" id="quickConfirmBackdrop" style="z-index:930;" onclick="closeConfirmSheet()"></div>
+    <div class="bottom-sheet" id="quickConfirmSheet" style="z-index:940;">
       <div class="sheet-handle"></div>
       <div style="text-align:center; margin-bottom:16px;">
         <div id="quickConfirmIconBox" style="width:52px; height:52px; border-radius:16px; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.3); color:#EF4444; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto;">
@@ -4771,6 +4771,9 @@
 
         localStorage.setItem('cached_bootstrap', JSON.stringify(bObj));
         localStorage.setItem('cached_accounts', JSON.stringify(bObj.accounts));
+        if (bObj.categories) {
+          localStorage.setItem('cached_categories', JSON.stringify(bObj.categories));
+        }
         localStorage.removeItem('cached_dashboard');
       } catch (e) {}
     }
@@ -4908,15 +4911,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_7'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_8'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.7-cache') {
-            triggerSwUpgradeReload('v4_7');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.8-cache') {
+            triggerSwUpgradeReload('v4_8');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.7').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=4.8').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -9353,6 +9356,7 @@
     function openQuickEntrySheet(type = 'EXPENSE') {
       document.body.classList.add('sheet-open');
       hideFloatingAiBtn();
+      setCategoryManageMode(false, true);
       setSheetTxType(type);
       APP_STATE.sheetAmount = '0';
       setSheetDate('TODAY');
@@ -9491,80 +9495,150 @@
     }
 
     // Category & Subcategory Management Mode (Task 1)
-    function toggleCategoryManageMode() {
-      APP_STATE.categoryManageMode = !APP_STATE.categoryManageMode;
+    function setCategoryManageMode(enabled, skipRender = false) {
+      APP_STATE.categoryManageMode = Boolean(enabled);
       const lbl = document.getElementById('catManageLabel');
       const icon = document.getElementById('catManageIcon');
       const btn = document.getElementById('btnToggleCatManage');
       if (lbl) lbl.innerText = APP_STATE.categoryManageMode ? 'Done' : 'Manage';
       if (icon) icon.innerText = APP_STATE.categoryManageMode ? 'check' : 'tune';
       if (btn) btn.style.color = APP_STATE.categoryManageMode ? 'var(--color-emerald)' : 'var(--color-sapphire)';
+      if (!skipRender) populateSheetCategories();
+    }
+
+    function toggleCategoryManageMode() {
+      triggerHaptic('light');
+      setCategoryManageMode(!APP_STATE.categoryManageMode);
+    }
+
+    function _removeCategoryLocally(catId) {
+      if (APP_STATE.categories) {
+        if (APP_STATE.categories.expense) {
+          APP_STATE.categories.expense = APP_STATE.categories.expense.filter(c => c.id !== catId);
+        }
+        if (APP_STATE.categories.income) {
+          APP_STATE.categories.income = APP_STATE.categories.income.filter(c => c.id !== catId);
+        }
+      }
+      if (APP_STATE.sheetCategoryId === catId) {
+        const rawPool = APP_STATE.sheetType === 'INCOME' ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
+        const filteredPool = rawPool.filter(c => !c.name.toLowerCase().includes('other'));
+        APP_STATE.sheetCategoryId = filteredPool.length > 0 ? filteredPool[0].id : null;
+        APP_STATE.sheetSubcategoryId = null;
+      }
       populateSheetCategories();
+      persistUnifiedLocalState();
     }
 
-    async function deleteCategoryPrompt(catId, catName) {
-      if (!confirm(`Are you sure you want to delete category "${catName}"?`)) return;
-      try {
-        triggerHaptic('medium');
-        const res = await apiRequest(`/categories/${catId}`, 'DELETE');
-        if (res && res.success) {
-          if (APP_STATE.categories) {
-            if (APP_STATE.categories.expense) {
-              APP_STATE.categories.expense = APP_STATE.categories.expense.filter(c => c.id !== catId);
+    function _removeSubcategoryLocally(subId) {
+      if (APP_STATE.categories) {
+        ['expense', 'income'].forEach(type => {
+          (APP_STATE.categories[type] || []).forEach(c => {
+            if (c.subcategories) {
+              c.subcategories = c.subcategories.filter(s => s.id !== subId);
             }
-            if (APP_STATE.categories.income) {
-              APP_STATE.categories.income = APP_STATE.categories.income.filter(c => c.id !== catId);
-            }
-          }
-          if (APP_STATE.sheetCategoryId === catId) {
-            const pool = APP_STATE.sheetType === 'INCOME' ? (APP_STATE.categories?.income || []) : (APP_STATE.categories?.expense || []);
-            APP_STATE.sheetCategoryId = pool.length > 0 ? pool[0].id : null;
-            APP_STATE.sheetSubcategoryId = null;
-          }
-          populateSheetCategories();
-          persistUnifiedLocalState();
-          if (typeof showToast === 'function') {
-            showToast(`Category "${catName}" removed!`, 'success');
-          }
-        } else {
-          alert(res?.error || 'Failed to delete category');
-        }
-      } catch (err) {
-        console.error('Delete category error:', err);
-        alert('Failed to delete category: ' + (err.message || err));
+          });
+        });
       }
+      if (APP_STATE.sheetSubcategoryId === subId) {
+        APP_STATE.sheetSubcategoryId = null;
+      }
+      populateSheetCategories();
+      persistUnifiedLocalState();
     }
 
-    async function deleteSubcategoryPrompt(subId, subName) {
-      if (!confirm(`Are you sure you want to delete subcategory "${subName}"?`)) return;
-      try {
-        triggerHaptic('medium');
-        const res = await apiRequest(`/subcategories/${subId}`, 'DELETE');
-        if (res && res.success) {
-          if (APP_STATE.categories) {
-            ['expense', 'income'].forEach(type => {
-              (APP_STATE.categories[type] || []).forEach(c => {
-                if (c.subcategories) {
-                  c.subcategories = c.subcategories.filter(s => s.id !== subId);
-                }
-              });
-            });
-          }
-          if (APP_STATE.sheetSubcategoryId === subId) {
-            APP_STATE.sheetSubcategoryId = null;
-          }
-          populateSheetCategories();
-          persistUnifiedLocalState();
-          if (typeof showToast === 'function') {
-            showToast(`Subcategory "${subName}" removed!`, 'success');
-          }
-        } else {
-          alert(res?.error || 'Failed to delete subcategory');
-        }
-      } catch (err) {
-        console.error('Delete subcategory error:', err);
-        alert('Failed to delete subcategory: ' + (err.message || err));
+    function _findCategoryObjById(catId) {
+      if (!APP_STATE.categories) return null;
+      const all = [...(APP_STATE.categories.expense || []), ...(APP_STATE.categories.income || [])];
+      return all.find(c => c.id === catId) || null;
+    }
+
+    function _findSubcategoryObjById(subId) {
+      if (!APP_STATE.categories) return null;
+      const all = [...(APP_STATE.categories.expense || []), ...(APP_STATE.categories.income || [])];
+      for (const c of all) {
+        const s = (c.subcategories || []).find(sub => sub.id === subId);
+        if (s) return s;
       }
+      return null;
+    }
+
+    function deleteCategoryPrompt(catId, catName) {
+      showConfirmSheet(
+        'Delete Category?',
+        `Remove "${catName}" from your category list? Past transactions will remain safe in history.`,
+        'Delete Category',
+        async () => {
+          try {
+            triggerHaptic('medium');
+            const catObj = _findCategoryObjById(catId);
+            if (catObj && catObj._createPromise) {
+              await catObj._createPromise.catch(() => null);
+              catId = catObj.id;
+            }
+            // If unsaved client temp ID (never saved on server), remove locally
+            if (Number(catId) > 2000000000 || (catObj && catObj._unsaved)) {
+              _removeCategoryLocally(catId);
+              if (typeof showToast === 'function') showToast(`Category "${catName}" removed!`, 'success');
+              return;
+            }
+            const res = await apiRequest(`/categories/${catId}`, 'DELETE');
+            if (res && res.success) {
+              _removeCategoryLocally(catId);
+              if (typeof showToast === 'function') {
+                showToast(`Category "${catName}" removed!`, 'success');
+              }
+            } else {
+              if (typeof showToast === 'function') showToast(res?.error || 'Failed to delete category', 'error');
+              else alert(res?.error || 'Failed to delete category');
+            }
+          } catch (err) {
+            console.error('Delete category error:', err);
+            if (typeof showToast === 'function') showToast('Failed to delete category: ' + (err.message || err), 'error');
+            else alert('Failed to delete category: ' + (err.message || err));
+          }
+        },
+        true
+      );
+    }
+
+    function deleteSubcategoryPrompt(subId, subName) {
+      showConfirmSheet(
+        'Delete Subcategory?',
+        `Remove "${subName}" from this category? Past transactions will keep their labels intact.`,
+        'Delete Subcategory',
+        async () => {
+          try {
+            triggerHaptic('medium');
+            const subObj = _findSubcategoryObjById(subId);
+            if (subObj && subObj._createPromise) {
+              await subObj._createPromise.catch(() => null);
+              subId = subObj.id;
+            }
+            // If unsaved client temp ID (never saved on server), remove locally
+            if (Number(subId) > 2000000000 || (subObj && subObj._unsaved)) {
+              _removeSubcategoryLocally(subId);
+              if (typeof showToast === 'function') showToast(`Subcategory "${subName}" removed!`, 'success');
+              return;
+            }
+            const res = await apiRequest(`/subcategories/${subId}`, 'DELETE');
+            if (res && res.success) {
+              _removeSubcategoryLocally(subId);
+              if (typeof showToast === 'function') {
+                showToast(`Subcategory "${subName}" removed!`, 'success');
+              }
+            } else {
+              if (typeof showToast === 'function') showToast(res?.error || 'Failed to delete subcategory', 'error');
+              else alert(res?.error || 'Failed to delete subcategory');
+            }
+          } catch (err) {
+            console.error('Delete subcategory error:', err);
+            if (typeof showToast === 'function') showToast('Failed to delete subcategory: ' + (err.message || err), 'error');
+            else alert('Failed to delete subcategory: ' + (err.message || err));
+          }
+        },
+        true
+      );
     }
 
     function populateSheetCategories() {
@@ -9583,15 +9657,17 @@
       // 2. Sort categories in exact user-specified order (Task 3)
       list.sort((a, b) => getCategoryOrderRank(a.name, APP_STATE.sheetType) - getCategoryOrderRank(b.name, APP_STATE.sheetType));
 
-      if (list.length === 0) return;
-      
-      // Ensure currently selected category exists in filtered list
-      const hasSelected = list.find(c => c.id === APP_STATE.sheetCategoryId);
-      if (!hasSelected) {
-        APP_STATE.sheetCategoryId = list[0].id;
-      }
-
       let selectedCategory = null;
+      if (list.length > 0) {
+        // Ensure currently selected category exists in filtered list
+        const hasSelected = list.find(c => c.id === APP_STATE.sheetCategoryId);
+        if (!hasSelected) {
+          APP_STATE.sheetCategoryId = list[0].id;
+        }
+      } else {
+        APP_STATE.sheetCategoryId = null;
+        APP_STATE.sheetSubcategoryId = null;
+      }
 
       // 3. Render categories with aesthetic visual images & material fallback (Task 4)
       list.forEach(c => {
@@ -9609,16 +9685,19 @@
           populateSheetCategories();
         };
 
-        // Long press to delete category on mobile
+        // Long press (650ms) to delete category on mobile, cancelled on scroll/move
         let pressTimer = null;
+        const clearCardPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
         card.addEventListener('touchstart', () => {
+          clearCardPress();
           pressTimer = setTimeout(() => {
             triggerHaptic('medium');
             deleteCategoryPrompt(c.id, c.name);
-          }, 550);
+          }, 650);
         }, { passive: true });
-        card.addEventListener('touchend', () => clearTimeout(pressTimer));
-        card.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        card.addEventListener('touchend', clearCardPress);
+        card.addEventListener('touchmove', clearCardPress);
+        grid.addEventListener('scroll', clearCardPress, { once: true, passive: true });
 
         const imageMarkup = visual.image ? `
           <img src="${visual.image}" 
@@ -9668,7 +9747,7 @@
         <div class="cat-select-visual add-visual-box">
           <span class="material-icons-round" style="color:var(--color-emerald); font-size:22px;">add</span>
         </div>
-        <div class="cat-select-name" style="color:var(--color-emerald); font-weight:800;">+ Add</div>
+        <div class="cat-select-name" style="color:var(--color-emerald); font-weight:800;">Add</div>
       `;
       grid.appendChild(addCatCard);
 
@@ -9709,16 +9788,19 @@
             }
           }
 
-          // Long press to delete subcategory
+          // Long press (650ms) to delete subcategory, cancelled on scroll/move
           let subPressTimer = null;
+          const clearSubPress = () => { if (subPressTimer) { clearTimeout(subPressTimer); subPressTimer = null; } };
           subPill.addEventListener('touchstart', () => {
+            clearSubPress();
             subPressTimer = setTimeout(() => {
               triggerHaptic('medium');
               deleteSubcategoryPrompt(sub.id, sub.name);
-            }, 550);
+            }, 650);
           }, { passive: true });
-          subPill.addEventListener('touchend', () => clearTimeout(subPressTimer));
-          subPill.addEventListener('touchmove', () => clearTimeout(subPressTimer));
+          subPill.addEventListener('touchend', clearSubPress);
+          subPill.addEventListener('touchmove', clearSubPress);
+          subPills.addEventListener('scroll', clearSubPress, { once: true, passive: true });
 
           subPill.onclick = () => {
             triggerHaptic('light');
@@ -9738,11 +9820,11 @@
         addSubPill.style.background = 'rgba(16,185,129,0.08)';
         addSubPill.style.display = 'inline-flex';
         addSubPill.style.alignItems = 'center';
-        addSubPill.style.gap = '4px';
+        addSubPill.style.gap = '3px';
         addSubPill.title = `Add new subcategory to ${selectedCategory.name}`;
         addSubPill.innerHTML = `
           <span class="material-icons-round" style="font-size:14px; color:var(--color-emerald);">add</span>
-          <span style="color:var(--color-emerald); font-weight:700;">+ Add</span>
+          <span style="color:var(--color-emerald); font-weight:700;">Add</span>
         `;
         addSubPill.onclick = () => openAddSubcategoryModal();
         subPills.appendChild(addSubPill);
@@ -9831,7 +9913,8 @@
         color_hex: color,
         image_url: img,
         is_default: 0,
-        subcategories: []
+        subcategories: [],
+        _unsaved: true
       };
 
       if (!APP_STATE.categories) APP_STATE.categories = { expense: [], income: [] };
@@ -9840,32 +9923,39 @@
       APP_STATE.sheetCategoryId = tempId;
       APP_STATE.sheetSubcategoryId = null;
 
-      try {
-        localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
-      } catch (e) {}
-
+      persistUnifiedLocalState();
       populateSheetCategories();
 
-      try {
-        const res = await apiRequest('/categories', 'POST', {
-          name: name,
-          type: APP_STATE.sheetType || 'EXPENSE',
-          icon: icon,
-          color_hex: color
-        });
-        if (res && res.success && res.category) {
-          newCat.id = res.category.id;
-          if (APP_STATE.sheetCategoryId === tempId) {
-            APP_STATE.sheetCategoryId = res.category.id;
+      newCat._createPromise = (async () => {
+        try {
+          const res = await apiRequest('/categories', 'POST', {
+            name: name,
+            type: APP_STATE.sheetType || 'EXPENSE',
+            icon: icon,
+            color_hex: color
+          });
+          if (res && res.success && res.category) {
+            delete newCat._unsaved;
+            newCat.id = res.category.id;
+            if (APP_STATE.sheetCategoryId === tempId) {
+              APP_STATE.sheetCategoryId = res.category.id;
+            }
+            persistUnifiedLocalState();
+            populateSheetCategories();
+            if (typeof showToast === 'function') showToast(`Category "${name}" added!`, 'success');
+            return res.category.id;
+          } else {
+            if (typeof showToast === 'function') showToast(res?.error || 'Could not save category', 'error');
           }
-          try {
-            localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
-          } catch (e) {}
-          populateSheetCategories();
+        } catch (err) {
+          console.warn('Persisting category error, kept optimistically:', err);
+          if (typeof showToast === 'function') showToast('Category saved locally (offline)', 'warning');
+        } finally {
+          delete newCat._createPromise;
         }
-      } catch (err) {
-        console.warn('Persisting category error, kept optimistically:', err);
-      }
+        return null;
+      })();
+      await newCat._createPromise;
     }
 
     // Modal Control: Add Custom Subcategory (Task 2)
@@ -9913,32 +10003,48 @@
       const newSub = {
         id: tempId,
         category_id: currentCat.id,
-        name: name
+        name: name,
+        _unsaved: true
       };
       currentCat.subcategories.push(newSub);
       APP_STATE.sheetSubcategoryId = tempId;
 
-      try {
-        localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
-      } catch (e) {}
-
+      persistUnifiedLocalState();
       populateSheetCategories();
 
-      try {
-        const res = await apiRequest(`/categories/${currentCat.id}/subcategories`, 'POST', { name: name });
-        if (res && res.success && res.subcategory) {
-          newSub.id = res.subcategory.id;
-          if (APP_STATE.sheetSubcategoryId === tempId) {
-            APP_STATE.sheetSubcategoryId = res.subcategory.id;
+      newSub._createPromise = (async () => {
+        try {
+          if (currentCat._createPromise) {
+            await currentCat._createPromise.catch(() => null);
           }
-          try {
-            localStorage.setItem('cached_categories', JSON.stringify(APP_STATE.categories));
-          } catch (e) {}
-          populateSheetCategories();
+          if (Number(currentCat.id) > 2000000000 || currentCat._unsaved) {
+            if (typeof showToast === 'function') showToast('Subcategory saved locally (offline)', 'warning');
+            return null;
+          }
+          const res = await apiRequest(`/categories/${currentCat.id}/subcategories`, 'POST', { name: name });
+          if (res && res.success && res.subcategory) {
+            delete newSub._unsaved;
+            newSub.id = res.subcategory.id;
+            newSub.category_id = currentCat.id;
+            if (APP_STATE.sheetSubcategoryId === tempId) {
+              APP_STATE.sheetSubcategoryId = res.subcategory.id;
+            }
+            persistUnifiedLocalState();
+            populateSheetCategories();
+            if (typeof showToast === 'function') showToast(`Subcategory "${name}" added!`, 'success');
+            return res.subcategory.id;
+          } else {
+            if (typeof showToast === 'function') showToast(res?.error || 'Could not save subcategory', 'error');
+          }
+        } catch (err) {
+          console.warn('Persisting subcategory error, kept optimistically:', err);
+          if (typeof showToast === 'function') showToast('Subcategory saved locally (offline)', 'warning');
+        } finally {
+          delete newSub._createPromise;
         }
-      } catch (err) {
-        console.warn('Persisting subcategory error, kept optimistically:', err);
-      }
+        return null;
+      })();
+      await newSub._createPromise;
     }
 
     async function submitQuickTransaction() {
@@ -9999,15 +10105,17 @@
       let catIcon = 'category';
       let catColor = '#6B7280';
       let subcatName = null;
+      let foundCat = null;
+      let foundSub = null;
       if (APP_STATE.categories) {
         const pool = (payload.transaction_type === 'INCOME') ? (APP_STATE.categories.income || []) : (APP_STATE.categories.expense || []);
-        const foundCat = pool.find(c => c.id === payload.category_id);
+        foundCat = pool.find(c => c.id === payload.category_id) || null;
         if (foundCat) {
           catName = foundCat.name;
           catIcon = foundCat.icon || catIcon;
           catColor = foundCat.color_hex || catColor;
           if (payload.subcategory_id && foundCat.subcategories) {
-            const foundSub = foundCat.subcategories.find(s => s.id === payload.subcategory_id);
+            foundSub = foundCat.subcategories.find(s => s.id === payload.subcategory_id) || null;
             if (foundSub) subcatName = foundSub.name;
           }
         }
@@ -10051,7 +10159,19 @@
       }
 
       // Background keepalive persistence with tempId -> realId resolution
-      const savePromise = apiRequest('/transactions', 'POST', payload).then(res => {
+      const savePromise = (async () => {
+        if (foundCat && foundCat._createPromise) {
+          await foundCat._createPromise.catch(() => null);
+          payload.category_id = foundCat.id;
+          tempTx.category_id = foundCat.id;
+        }
+        if (foundSub && foundSub._createPromise) {
+          await foundSub._createPromise.catch(() => null);
+          payload.subcategory_id = foundSub.id;
+          tempTx.subcategory_id = foundSub.id;
+        }
+        return apiRequest('/transactions', 'POST', payload);
+      })().then(res => {
         delete APP_STATE.pendingSavePromises[tempId];
         if (res && res.success) {
           LOCAL_PENDING_OPS.removeCreate(clientUuid);

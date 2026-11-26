@@ -544,21 +544,37 @@ def create_user_category(user_id, name, cat_type="EXPENSE", icon="category", col
     conn.close()
     return cat_id
 
-def create_subcategory(category_id, name):
+def create_subcategory(category_id, name, user_id=None):
     """Inserts a new subcategory under an existing category."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO subcategories (category_id, name)
-        VALUES (?, ?)
-    """, (category_id, name.strip()))
-    sub_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return sub_id
+    try:
+        if user_id is not None:
+            cursor.execute(
+                "SELECT id FROM categories WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+                (category_id, user_id)
+            )
+            if not cursor.fetchone():
+                conn.close()
+                return None
+        cursor.execute("""
+            INSERT INTO subcategories (category_id, name)
+            VALUES (?, ?)
+        """, (category_id, name.strip()))
+        sub_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return sub_id
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        conn.close()
+        raise e
 
 def delete_user_category(user_id, category_id):
-    """Deletes or hides a category for the specific user."""
+    """Deletes or hides a category for the specific user (PostgreSQL & SQLite compatible)."""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -568,7 +584,7 @@ def delete_user_category(user_id, category_id):
             conn.close()
             return False
         
-        # Ensure hidden tables exist
+        # Ensure hidden table exists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_hidden_categories (
                 user_id INTEGER NOT NULL,
@@ -577,22 +593,38 @@ def delete_user_category(user_id, category_id):
                 PRIMARY KEY (user_id, category_id)
             )
         """)
-        cursor.execute("INSERT OR IGNORE INTO user_hidden_categories (user_id, category_id) VALUES (?, ?)", (user_id, category_id))
+        # Portable upsert syntax (valid in both PostgreSQL & SQLite)
+        cursor.execute(
+            "INSERT INTO user_hidden_categories (user_id, category_id) VALUES (?, ?) ON CONFLICT (user_id, category_id) DO NOTHING",
+            (user_id, category_id)
+        )
+
+        # Clean up any active category budget limits so deleted categories never trigger alerts
+        cursor.execute("DELETE FROM budgets WHERE user_id = ? AND category_id = ?", (user_id, category_id))
         
-        # If user-owned custom category, also hard-delete
+        # Only hard-delete user-owned custom category when no transactions or bills reference it
         if row["user_id"] == user_id:
-            cursor.execute("DELETE FROM subcategories WHERE category_id = ?", (category_id,))
-            cursor.execute("DELETE FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id))
+            cursor.execute("SELECT 1 FROM transactions WHERE category_id = ? LIMIT 1", (category_id,))
+            has_tx = cursor.fetchone()
+            cursor.execute("SELECT 1 FROM recurring_bills WHERE category_id = ? LIMIT 1", (category_id,))
+            has_bill = cursor.fetchone()
+            if not has_tx and not has_bill:
+                cursor.execute("DELETE FROM subcategories WHERE category_id = ?", (category_id,))
+                cursor.execute("DELETE FROM categories WHERE id = ? AND user_id = ?", (category_id, user_id))
         
         conn.commit()
         conn.close()
         return True
     except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         conn.close()
         raise e
 
 def delete_user_subcategory(user_id, subcategory_id):
-    """Deletes or hides a subcategory for the specific user."""
+    """Deletes or hides a subcategory for the specific user (PostgreSQL & SQLite compatible)."""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -607,7 +639,7 @@ def delete_user_subcategory(user_id, subcategory_id):
             conn.close()
             return False
         
-        # Ensure hidden tables exist
+        # Ensure hidden table exists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
                 user_id INTEGER NOT NULL,
@@ -616,16 +648,27 @@ def delete_user_subcategory(user_id, subcategory_id):
                 PRIMARY KEY (user_id, subcategory_id)
             )
         """)
-        cursor.execute("INSERT OR IGNORE INTO user_hidden_subcategories (user_id, subcategory_id) VALUES (?, ?)", (user_id, subcategory_id))
+        # Portable upsert syntax (valid in both PostgreSQL & SQLite)
+        cursor.execute(
+            "INSERT INTO user_hidden_subcategories (user_id, subcategory_id) VALUES (?, ?) ON CONFLICT (user_id, subcategory_id) DO NOTHING",
+            (user_id, subcategory_id)
+        )
         
-        # If user-owned category, also hard-delete subcategory
+        # Only hard-delete user-owned subcategory when no transactions reference it
         if row["user_id"] == user_id:
-            cursor.execute("DELETE FROM subcategories WHERE id = ?", (subcategory_id,))
+            cursor.execute("SELECT 1 FROM transactions WHERE subcategory_id = ? LIMIT 1", (subcategory_id,))
+            has_tx = cursor.fetchone()
+            if not has_tx:
+                cursor.execute("DELETE FROM subcategories WHERE id = ?", (subcategory_id,))
             
         conn.commit()
         conn.close()
         return True
     except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         conn.close()
         raise e
 

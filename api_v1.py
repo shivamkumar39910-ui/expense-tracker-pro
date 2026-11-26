@@ -937,12 +937,15 @@ def create_category():
 @api_v1.route('/categories/<int:cat_id>/subcategories', methods=['POST'])
 @token_required
 def create_subcategory(cat_id):
+    user_id = request.user["id"]
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
     if not name:
         return jsonify({"success": False, "error": "Subcategory name is required"}), 400
 
-    sub_id = database.create_subcategory(cat_id, name)
+    sub_id = database.create_subcategory(cat_id, name, user_id=user_id)
+    if sub_id is None:
+        return jsonify({"success": False, "error": "Category not found"}), 404
     new_sub = {
         "id": sub_id,
         "category_id": cat_id,

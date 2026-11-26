@@ -237,6 +237,21 @@ CREATE TABLE IF NOT EXISTS notification_delivery_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 4b. Per-User Hidden Categories & Subcategories
+CREATE TABLE IF NOT EXISTS user_hidden_categories (
+    user_id INTEGER NOT NULL,
+    category_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, category_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+    user_id INTEGER NOT NULL,
+    subcategory_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, subcategory_id)
+);
+
 -- Indexes for performance and data isolation
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);

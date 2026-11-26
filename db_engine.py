@@ -110,16 +110,32 @@ class PostgresCursorWrapper:
         # Replace '?' with '%s' for psycopg2 parameters
         q = q.replace("?", "%s")
 
-        # Emulate lastrowid for INSERT statements
+        # Support SQLite 'INSERT OR IGNORE INTO ...' in PostgreSQL
+        is_or_ignore = bool(re.match(r"^\s*INSERT\s+OR\s+IGNORE\s+INTO\b", q, flags=re.IGNORECASE))
+        if is_or_ignore:
+            q = re.sub(r"^\s*INSERT\s+OR\s+IGNORE\s+INTO\b", "INSERT INTO", q, count=1, flags=re.IGNORECASE)
+            if "ON CONFLICT" not in q.upper():
+                q = q.rstrip("; \t\n") + " ON CONFLICT DO NOTHING"
+
+        # Emulate lastrowid for INSERT statements on tables with an 'id' column
         is_insert = q.upper().startswith("INSERT INTO") or "INSERT INTO" in q.upper()
         has_returning = "RETURNING" in q.upper()
+        has_on_conflict = "ON CONFLICT" in q.upper()
         synthetic_returning = False
 
-        if is_insert and not has_returning:
-            # Append RETURNING id so we can capture cursor.lastrowid
-            q_clean = q.rstrip("; \t\n")
-            q = f"{q_clean} RETURNING id"
-            synthetic_returning = True
+        if is_insert and not has_returning and not has_on_conflict:
+            m_tbl = re.search(r"INSERT\s+INTO\s+[\"']?([a-zA-Z_][a-zA-Z0-9_]*)[\"']?", q, flags=re.IGNORECASE)
+            tbl_name = m_tbl.group(1).lower() if m_tbl else ""
+            no_id_tables = {
+                "user_hidden_categories",
+                "user_hidden_subcategories",
+                "notification_preferences",
+            }
+            if tbl_name not in no_id_tables:
+                # Append RETURNING id so we can capture cursor.lastrowid
+                q_clean = q.rstrip("; \t\n")
+                q = f"{q_clean} RETURNING id"
+                synthetic_returning = True
 
         return q, synthetic_returning
 

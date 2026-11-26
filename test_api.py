@@ -510,8 +510,77 @@ def run_tests():
     assert emi_tx_row["category_image"] == emi_cat["image_url"]
     print("25c. Persistent Auto-Image in DB, /categories & /transactions Verified!")
 
+    # 26. Conversational AI Chatbot 5.0 Verification (Hindi Devanagari + Hinglish + English + Memory + Actions)
+    import re as _re
+    today_iso = datetime.today().strftime("%Y-%m-%d")
+
+    # 26a. Natural greeting should be concise English (NOT bloated budget dump, NOT Hindi)
+    r_ai_hi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+        "message": "hello",
+        "history": [],
+        "client_date": today_iso
+    })
+    assert r_ai_hi.status_code == 200
+    ai_hello = r_ai_hi.json["data"]["reply"]
+    assert not _re.search(r"[\u0900-\u097F]", ai_hello), f"Unexpected Hindi in English hello: {ai_hello}"
+    assert "MTD Total Spend" not in ai_hello
+    print("26a. Natural Greeting Verified:", ai_hello[:60])
+
+    # 26b. Devanagari Hindi question must respond in Devanagari Hindi with real spend
+    r_ai_hindi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+        "message": "आज कितना खर्च हुआ?",
+        "history": [],
+        "client_date": today_iso
+    })
+    assert r_ai_hindi.status_code == 200
+    ai_hi_rep = r_ai_hindi.json["data"]["reply"]
+    assert _re.search(r"[\u0900-\u097F]", ai_hi_rep), f"Expected Devanagari Hindi reply, got: {ai_hi_rep}"
+    print("26b. Devanagari Hindi Response Verified:", ai_hi_rep[:60])
+
+    # 26c. Custom category / payment method query + Multi-turn follow-up carryover
+    r_ai_emi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+        "message": "Loan Repayment pe kitna gaya?",
+        "history": [],
+        "client_date": today_iso
+    })
+    assert r_ai_emi.status_code == 200
+    assert "500" in r_ai_emi.json["data"]["reply"]
+
+    r_ai_follow = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+        "message": "detail me batao",
+        "history": [
+            {"role": "user", "content": "Loan Repayment pe kitna gaya?"},
+            {"role": "assistant", "content": r_ai_emi.json["data"]["reply"]}
+        ],
+        "client_date": today_iso
+    })
+    assert r_ai_follow.status_code == 200
+    assert "Loan Repayment" in r_ai_follow.json["data"]["reply"]
+    print("26c. Custom Category & Multi-Turn Follow-up Verified!")
+
+    # 26d. Add Expense intent with Amount + Payment Channel
+    r_ai_add = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+        "message": "150 coffee upi me add kar do",
+        "history": [],
+        "client_date": today_iso
+    })
+    assert r_ai_add.status_code == 200
+    act = r_ai_add.json["data"].get("action_button")
+    assert act is not None and act["type"] == "OPEN_QUICK_ENTRY"
+    assert float(act["amount"]) == 150.0 and act["account_name"] == "UPI"
+    print("26d. AI Expense Add Action Payload Verified!")
+
+    # 26e. LLM JSON extraction helper verification
+    import ai_mentor_service
+    parsed_llm = ai_mentor_service._clean_llm_json('```json\n{"reply": "Spent ₹500 today.", "followup_chips": ["Today?"]}\n```')
+    assert parsed_llm["reply"] == "Spent ₹500 today."
+    assert ai_mentor_service._detect_language_mode("आज खर्च बताओ") == "hi"
+    assert ai_mentor_service._detect_language_mode("aaj kitna kharch hua") == "hinglish"
+    assert ai_mentor_service._detect_language_mode("how much did I spend today") == "en"
+    print("26e. LLM JSON Parser & 3-Way Language Detection Verified!")
+
     print("==================================================")
-    print("ALL 25 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
+    print("ALL 26 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")
 
 if __name__ == "__main__":

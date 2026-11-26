@@ -1699,7 +1699,14 @@ def ai_mentor_chat():
     user_id = request.user["id"]
     data = request.get_json() or {}
     prompt_msg = data.get("message") or data.get("prompt")
-    advice = ai_mentor_service.generate_ai_mentor_advice(user_id, user_prompt=prompt_msg)
+    history = data.get("history") if isinstance(data.get("history"), list) else []
+    client_date = data.get("client_date")
+    advice = ai_mentor_service.generate_ai_mentor_advice(
+        user_id,
+        user_prompt=prompt_msg,
+        history=history,
+        client_date=client_date,
+    )
     return jsonify({"success": True, "data": advice}), 200
 
 @api_v1.route('/affordability/check', methods=['POST'])

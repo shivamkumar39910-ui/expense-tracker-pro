@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v4.9">
+  <meta name="app-shell-version" content="v5.0">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1726,15 +1726,43 @@
     .pulse-mic-dot {
       animation: dotBlink 1s infinite ease-in-out;
     }
+    .ai-chat-bubble-user {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: #FFFFFF !important;
+      align-self: flex-end;
+      border-radius: 16px 16px 4px 16px;
+      padding: 10px 14px;
+      max-width: 82%;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      word-break: break-word;
+    }
+    .ai-typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+    .ai-typing-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-sapphire);
+      animation: dotBlink 1s infinite ease-in-out;
+    }
+    .ai-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .ai-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
     .ai-chat-bubble-bot {
       background: var(--bg-card-subtle);
       color: var(--text-primary);
       border: 1px solid var(--border-card);
       border-radius: 16px 16px 16px 4px;
       padding: 12px 14px;
-      max-width: 88%;
+      max-width: 92%;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.55;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       word-break: break-word;
     }
@@ -1757,6 +1785,10 @@
     body.theme-light #btnAiMic {
       background: rgba(0, 0, 0, 0.06) !important;
       color: #475569 !important;
+    }
+    body.theme-light #btnAiVoiceLang {
+      background: #E2E8F0 !important;
+      color: #334155 !important;
     }
 
     /* Safely map inline white text to dark text inside light cards ONLY */
@@ -1821,7 +1853,15 @@
     .cat-select-icon,
     .cat-select-icon span,
     body.theme-light .cat-select-icon,
-    body.theme-light .cat-select-icon span {
+    body.theme-light .cat-select-icon span,
+    .ai-chat-bubble-user,
+    body.theme-light .ai-chat-bubble-user,
+    #btnSendAiChat,
+    #btnSendAiChat span,
+    body.theme-light #btnSendAiChat,
+    body.theme-light #btnSendAiChat span,
+    #aiChatHeaderOrb span,
+    body.theme-light #aiChatHeaderOrb span {
       color: #FFFFFF !important;
     }
 
@@ -2759,18 +2799,19 @@
       <!-- Sheet Drag Handle & Header -->
       <div style="padding:14px 18px 12px 18px; border-bottom:1px solid var(--border-card); background:rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(6,182,212,0.4);">
+          <div id="aiChatHeaderOrb" style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(6,182,212,0.4);">
             <span class="material-icons-round" style="color:#FFF; font-size:20px;">auto_awesome</span>
           </div>
           <div>
             <div style="font-size:16px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
-              Finly
+              Finly AI
+              <span id="aiEngineStatusPill" style="font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:8px; background:rgba(16,185,129,0.14); color:var(--color-emerald); border:1px solid rgba(16,185,129,0.28);">SMART</span>
             </div>
-            <div style="font-size:11px; color:var(--text-muted);">Your Personal Finance Assistant</div>
+            <div style="font-size:11px; color:var(--text-muted);">Hindi • Hinglish • English Assistant</div>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
-          <div class="btn-icon-header" onclick="clearAiChatHistory()" style="width:32px; height:32px;" title="Clear Chat">
+          <div class="btn-icon-header" onclick="clearAiChatHistory()" style="width:32px; height:32px;" title="New Chat / Clear">
             <span class="material-icons-round" style="font-size:18px;">delete_outline</span>
           </div>
           <div class="btn-icon-header" onclick="closeAiChatModal()" style="width:32px; height:32px;" title="Close">
@@ -2781,20 +2822,20 @@
 
       <!-- Quick Suggestion Action Chips -->
       <div style="padding:10px 14px 6px 14px; overflow-x:auto; display:flex; gap:8px; flex-shrink:0; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
-        <button class="acc-pill" onclick="sendQuickPrompt('Mera kitna paisa bacha hai?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
-          💰 Bacha hua paisa?
+        <button class="acc-pill" onclick="sendQuickPrompt('Aaj kitna kharch hua?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          📅 Aaj ka kharch?
         </button>
-        <button class="acc-pill" onclick="sendQuickPrompt('Food pe kitna kharch hua?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
-          🍔 Khane ka kharch?
+        <button class="acc-pill" onclick="sendQuickPrompt('Today\'s spend breakdown?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          📊 Today's spend
         </button>
-        <button class="acc-pill" onclick="sendQuickPrompt('Kya mai 5000 ka phone le sakta hu?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
-          🎯 Kya mai le sakta hu?
+        <button class="acc-pill" onclick="sendQuickPrompt('UPI vs Cash me kitna kharch hua?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          💳 UPI vs Cash?
+        </button>
+        <button class="acc-pill" onclick="sendQuickPrompt('Mera budget status kya hai?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
+          💰 Budget status?
         </button>
         <button class="acc-pill" onclick="sendQuickPrompt('Paisa kaise bachayein?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
-          💡 Bachat kaise badhaye?
-        </button>
-        <button class="acc-pill" onclick="sendQuickPrompt('Aaj kitna kharcha hua?')" style="font-size:11px; padding:6px 12px; white-space:nowrap; border-radius:14px; cursor:pointer;">
-          📅 Aaj ka kharcha?
+          💡 Savings tips
         </button>
       </div>
 
@@ -2804,9 +2845,9 @@
           <div style="width:52px; height:52px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
             <span class="material-icons-round" style="font-size:28px;">smart_toy</span>
           </div>
-          <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:6px;">Namaste! Main Finly</div>
-          <div style="font-size:14.5px; font-weight:500; color:var(--text-secondary); max-width:270px; margin:0 auto;">
-            Let's manage your expense
+          <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:6px;">Namaste! Main Finly AI</div>
+          <div style="font-size:13.5px; font-weight:500; color:var(--text-secondary); max-width:270px; margin:0 auto; line-height:1.45;">
+            Hindi, Hinglish ya English me kuch bhi puchho — expenses, categories, UPI spend ya budget!
           </div>
         </div>
       </div>
@@ -2822,8 +2863,9 @@
           <button onclick="stopVoiceRecognition()" style="background:transparent; border:none; color:var(--text-muted); font-size:11px; cursor:pointer; font-weight:700;">Cancel</button>
         </div>
 
-        <div style="display:flex; gap:8px; align-items:center; background:var(--bg-card-subtle); border:1.5px solid var(--border-card); border-radius:24px; padding:4px 6px 4px 14px;">
-          <input type="text" id="aiChatInput" placeholder="Ask me anything..." style="flex:1; background:transparent; border:none; outline:none; font-size:13.5px; color:var(--text-primary); padding:8px 4px 8px 0;" onkeydown="if(event.key==='Enter') sendAiChatMessage()">
+        <div style="display:flex; gap:6px; align-items:center; background:var(--bg-card-subtle); border:1.5px solid var(--border-card); border-radius:24px; padding:4px 6px 4px 14px;">
+          <input type="text" id="aiChatInput" placeholder="Ask anything (Hindi / English)..." style="flex:1; background:transparent; border:none; outline:none; font-size:13.5px; color:var(--text-primary); padding:8px 4px 8px 0; min-width:0;" onkeydown="if(event.key==='Enter') sendAiChatMessage()">
+          <button onclick="cycleAiVoiceLang()" id="btnAiVoiceLang" type="button" style="background:rgba(148, 163, 184, 0.16); color:var(--text-secondary); border:none; padding:4px 8px; height:28px; border-radius:14px; font-size:10px; font-weight:800; cursor:pointer; flex-shrink:0;" title="Switch Voice Language (Hindi / English)">HI/EN</button>
           <button onclick="toggleVoiceRecognition()" id="btnAiMic" type="button" style="background:rgba(255, 255, 255, 0.08); color:var(--text-secondary); border:none; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s ease;" title="Voice Input (Mic)">
             <span class="material-icons-round" id="aiMicIcon" style="font-size:20px;">mic</span>
           </button>
@@ -4929,15 +4971,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v4_9'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_0'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v4.9-cache') {
-            triggerSwUpgradeReload('v4_9');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.0-cache') {
+            triggerSwUpgradeReload('v5_0');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=4.9').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=5.0').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -13469,16 +13511,157 @@
       }
     }
 
-        // ----------------------------------------------------
-    // SUPERCHARGED AI FINANCIAL SAATHI ENGINE (PHASE 11)
+    // ----------------------------------------------------
+    // FINLY 5.0 — CHATGPT-STYLE CONVERSATIONAL AI ENGINE
     // ----------------------------------------------------
     let speechRecognizer = null;
     let isListeningVoice = false;
     let currentSpeechUtterance = null;
     let currentActiveSpeakerBtn = null;
+    let aiVoiceLang = 'hi-IN'; // 'hi-IN' (Hindi + Hinglish) or 'en-IN' (English)
+    let aiConversationHistory = [];
+    let aiChatHydrated = false;
+
+    function getAiChatStorageKey() {
+      const uid = APP_STATE?.user?.email || APP_STATE?.user?.id || 'default';
+      return `finly_chat_history_${uid}`;
+    }
+
+    function loadAiChatHistoryFromStorage() {
+      try {
+        const raw = localStorage.getItem(getAiChatStorageKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr.slice(-24) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveAiChatHistoryToStorage() {
+      try {
+        localStorage.setItem(getAiChatStorageKey(), JSON.stringify(aiConversationHistory.slice(-24)));
+      } catch (e) {}
+    }
+
+    function getAiEmptyStateHtml() {
+      return `
+        <div id="aiChatEmptyState" style="text-align:center; padding:30px 16px; color:var(--text-muted); margin:auto;">
+          <div style="width:52px; height:52px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
+            <span class="material-icons-round" style="font-size:28px;">smart_toy</span>
+          </div>
+          <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:6px;">Namaste! Main Finly AI</div>
+          <div style="font-size:13.5px; font-weight:500; color:var(--text-secondary); max-width:270px; margin:0 auto; line-height:1.45;">
+            Hindi, Hinglish ya English me kuch bhi puchho — expenses, categories, UPI spend ya budget!
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAiUserBubble(text) {
+      const userBubble = document.createElement('div');
+      userBubble.className = 'ai-chat-bubble-user';
+      userBubble.innerText = text;
+      return userBubble;
+    }
+
+    function renderAiBotMessage(data, showChips = true) {
+      const botContainer = document.createElement('div');
+      botContainer.style.cssText = 'display:flex; flex-direction:column; gap:6px; align-self:flex-start; max-width:92%; width:100%;';
+
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'ai-chat-bubble-bot';
+
+      if (data.decision_badge) {
+        let bBg = 'rgba(16, 185, 129, 0.15)';
+        let bBorder = 'rgba(16, 185, 129, 0.4)';
+        let bColor = '#10B981';
+        if (data.decision_badge.type === 'CAUTION') {
+          bBg = 'rgba(245, 158, 11, 0.15)';
+          bBorder = 'rgba(245, 158, 11, 0.4)';
+          bColor = '#F59E0B';
+        } else if (data.decision_badge.type === 'DANGER') {
+          bBg = 'rgba(239, 68, 68, 0.15)';
+          bBorder = 'rgba(239, 68, 68, 0.4)';
+          bColor = '#EF4444';
+        }
+        const badgeDiv = document.createElement('div');
+        badgeDiv.style.cssText = `display:inline-flex; align-items:center; padding:4px 10px; border-radius:10px; background:${bBg}; border:1px solid ${bBorder}; color:${bColor}; font-size:11px; font-weight:800; margin-bottom:8px;`;
+        badgeDiv.innerText = data.decision_badge.label;
+        aiBubble.appendChild(badgeDiv);
+      }
+
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = formatAiMarkdown(data.reply || '');
+      aiBubble.appendChild(contentDiv);
+
+      if (data.action_button) {
+        const actionWrap = document.createElement('div');
+        actionWrap.style.marginTop = '10px';
+        const actBtn = document.createElement('button');
+        actBtn.type = 'button';
+        actBtn.className = 'ai-action-btn';
+        actBtn.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; font-weight:800; border-radius:12px; cursor:pointer; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:var(--color-sapphire);';
+        const actIcon = data.action_button.type === 'NAVIGATE' ? 'open_in_new' : 'add_circle';
+        actBtn.innerHTML = `<span class="material-icons-round" style="font-size:15px;">${actIcon}</span><span></span>`;
+        actBtn.querySelector('span:last-child').innerText = data.action_button.label || 'Open';
+        actBtn.onclick = () => triggerAiAction(data.action_button);
+        actionWrap.appendChild(actBtn);
+        aiBubble.appendChild(actionWrap);
+      }
+
+      const controlsDiv = document.createElement('div');
+      controlsDiv.style.cssText = 'display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:6px;';
+      const speakerBtn = document.createElement('button');
+      speakerBtn.type = 'button';
+      speakerBtn.style.cssText = 'background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:3px; font-size:11px; font-weight:700;';
+      speakerBtn.title = 'Listen Audio';
+      speakerBtn.innerHTML = '<span class="material-icons-round" style="font-size:16px;">volume_up</span><span>Suniye</span>';
+      speakerBtn.onclick = () => readMessageAloud(data.spoken_text || data.reply || '', speakerBtn);
+      controlsDiv.appendChild(speakerBtn);
+      aiBubble.appendChild(controlsDiv);
+
+      botContainer.appendChild(aiBubble);
+
+      if (showChips && Array.isArray(data.followup_chips) && data.followup_chips.length > 0) {
+        const chipsRow = document.createElement('div');
+        chipsRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;';
+        data.followup_chips.forEach(chipText => {
+          const chipBtn = document.createElement('button');
+          chipBtn.type = 'button';
+          chipBtn.className = 'acc-pill ai-followup-chip';
+          chipBtn.style.cssText = 'font-size:11px; padding:5px 10px; border-radius:12px; cursor:pointer; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); color:#A78BFA; font-weight:700;';
+          chipBtn.innerText = chipText;
+          chipBtn.onclick = () => sendQuickPrompt(chipText);
+          chipsRow.appendChild(chipBtn);
+        });
+        botContainer.appendChild(chipsRow);
+      }
+
+      return botContainer;
+    }
+
+    function hydrateAiChatStreamIfNeeded() {
+      const stream = document.getElementById('aiChatStream');
+      if (!stream || aiChatHydrated) return;
+      aiChatHydrated = true;
+      aiConversationHistory = loadAiChatHistoryFromStorage();
+      if (aiConversationHistory.length === 0) return;
+
+      stream.innerHTML = '';
+      aiConversationHistory.forEach((turn, idx) => {
+        if (turn.role === 'user') {
+          stream.appendChild(renderAiUserBubble(turn.content));
+        } else if (turn.role === 'assistant') {
+          const isLast = idx === aiConversationHistory.length - 1;
+          stream.appendChild(renderAiBotMessage(turn.meta || { reply: turn.content }, isLast));
+        }
+      });
+      stream.scrollTop = stream.scrollHeight;
+    }
 
     function openAiChatModal() {
       triggerHaptic('light');
+      hydrateAiChatStreamIfNeeded();
       document.body.classList.add('chat-open', 'sheet-open');
       hideFloatingAiBtn();
       const bd = document.getElementById('aiChatBackdrop');
@@ -13539,19 +13722,12 @@
       triggerHaptic('light');
       stopSpeechSynthesis();
       stopVoiceRecognition();
+      aiConversationHistory = [];
+      aiChatHydrated = true;
+      try { localStorage.removeItem(getAiChatStorageKey()); } catch (e) {}
       const stream = document.getElementById('aiChatStream');
       if (!stream) return;
-      stream.innerHTML = `
-        <div id="aiChatEmptyState" style="text-align:center; padding:30px 16px; color:var(--text-muted); margin:auto;">
-          <div style="width:52px; height:52px; border-radius:50%; background:rgba(139,92,246,0.15); color:#A78BFA; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto;">
-            <span class="material-icons-round" style="font-size:28px;">smart_toy</span>
-          </div>
-          <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:6px;">Namaste! Main Finly</div>
-          <div style="font-size:14.5px; font-weight:500; color:var(--text-secondary); max-width:270px; margin:0 auto;">
-            Let's manage your expense
-          </div>
-        </div>
-      `;
+      stream.innerHTML = getAiEmptyStateHtml();
     }
 
     function sendQuickPrompt(promptText) {
@@ -13559,6 +13735,16 @@
       const inp = document.getElementById('aiChatInput');
       if (inp) inp.value = promptText;
       sendAiChatMessage(promptText);
+    }
+
+    function cycleAiVoiceLang() {
+      triggerHaptic('light');
+      aiVoiceLang = (aiVoiceLang === 'hi-IN') ? 'en-IN' : 'hi-IN';
+      const btn = document.getElementById('btnAiVoiceLang');
+      if (btn) btn.innerText = (aiVoiceLang === 'hi-IN') ? 'HI/EN' : 'EN';
+      if (typeof showToast === 'function') {
+        showToast(aiVoiceLang === 'hi-IN' ? 'Voice Mic: Hindi & Hinglish mode' : 'Voice Mic: English mode', 'info');
+      }
     }
 
     // Voice Input: Web Speech Recognition (Hindi + English)
@@ -13577,14 +13763,16 @@
 
       try {
         speechRecognizer = new SpeechRec();
-        speechRecognizer.lang = 'hi-IN';
+        speechRecognizer.lang = aiVoiceLang || 'hi-IN';
         speechRecognizer.interimResults = false;
         speechRecognizer.maxAlternatives = 1;
 
         speechRecognizer.onstart = () => {
           isListeningVoice = true;
           const bar = document.getElementById('aiVoiceListeningBar');
+          const statusTxt = document.getElementById('aiVoiceStatusText');
           const micBtn = document.getElementById('btnAiMic');
+          if (statusTxt) statusTxt.innerText = aiVoiceLang === 'en-IN' ? 'Listening (English)... Speak now' : 'Sun raha hu... Boliye (Hindi/English)';
           if (bar) bar.style.display = 'flex';
           if (micBtn) {
             micBtn.style.background = '#EF4444';
@@ -13630,19 +13818,19 @@
       const micBtn = document.getElementById('btnAiMic');
       if (bar) bar.style.display = 'none';
       if (micBtn) {
-        micBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+        micBtn.style.background = '';
         micBtn.style.color = 'var(--text-secondary)';
         micBtn.classList.remove('pulse-mic-btn');
       }
     }
 
-    // Voice Output: Text-to-Speech (Audio Readout 🔊)
+    // Voice Output: Language-Smart Text-to-Speech (Audio Readout 🔊)
     function stopSpeechSynthesis() {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
       if (currentActiveSpeakerBtn) {
-        currentActiveSpeakerBtn.innerHTML = '<span class="material-icons-round" style="font-size:16px;">volume_up</span>';
+        currentActiveSpeakerBtn.innerHTML = '<span class="material-icons-round" style="font-size:16px;">volume_up</span><span>Suniye</span>';
         currentActiveSpeakerBtn = null;
       }
     }
@@ -13661,27 +13849,35 @@
 
       stopSpeechSynthesis();
 
-      const textToSpeak = spokenText || '';
-      if (!textToSpeak.trim()) return;
+      const textToSpeak = (spokenText || '').replace(/[*_#`•]/g, '').trim();
+      if (!textToSpeak) return;
 
       const utter = new SpeechSynthesisUtterance(textToSpeak);
-      utter.rate = 0.95;
+      utter.rate = 0.96;
       utter.pitch = 1.0;
 
+      const isHindiOrHinglish = /[\u0900-\u097F]/.test(textToSpeak) || /\b(kharch|rupaye|bacha|mahine|aaj|kal|paisa|huye|hai|hain|namaste|batao)\b/i.test(textToSpeak);
       const voices = window.speechSynthesis.getVoices();
-      const hiVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN'));
-      if (hiVoice) utter.voice = hiVoice;
+      if (isHindiOrHinglish) {
+        utter.lang = 'hi-IN';
+        const hiVoice = voices.find(v => v.lang && v.lang.toLowerCase().includes('hi'));
+        if (hiVoice) utter.voice = hiVoice;
+      } else {
+        utter.lang = 'en-IN';
+        const enVoice = voices.find(v => v.lang && (v.lang.toLowerCase() === 'en-in' || v.lang.toLowerCase().startsWith('en-')));
+        if (enVoice) utter.voice = enVoice;
+      }
 
       utter.onstart = () => {
         currentActiveSpeakerBtn = btnElement;
         if (btnElement) {
-          btnElement.innerHTML = '<span class="material-icons-round" style="font-size:16px; color:#10B981;">volume_down</span>';
+          btnElement.innerHTML = '<span class="material-icons-round" style="font-size:16px; color:#10B981;">volume_down</span><span>Speaking</span>';
         }
       };
 
       utter.onend = () => {
         if (btnElement) {
-          btnElement.innerHTML = '<span class="material-icons-round" style="font-size:16px;">volume_up</span>';
+          btnElement.innerHTML = '<span class="material-icons-round" style="font-size:16px;">volume_up</span><span>Suniye</span>';
         }
         currentActiveSpeakerBtn = null;
       };
@@ -13693,13 +13889,17 @@
       window.speechSynthesis.speak(utter);
     }
 
-    // High-Precision Markdown Formatter
+    // High-Precision Markdown Formatter (ChatGPT-Style Rich Text)
     function formatAiMarkdown(md) {
       if (!md) return '';
-      let html = md;
+      let html = String(md);
       html = html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      html = html.replace(/^###\s+(.*)$/gm, '<div style="font-size:13.5px; font-weight:800; color:var(--text-primary); margin:6px 0 3px 0;">$1</div>');
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-primary); font-weight:800;">$1</strong>');
+      html = html.replace(/\*([^\*\n]+)\*/g, '<em>$1</em>');
+      html = html.replace(/`([^`\n]+)`/g, '<code style="background:rgba(148,163,184,0.16); padding:1px 5px; border-radius:5px; font-size:11.5px;">$1</code>');
       html = html.replace(/^[•\*\-]\s+(.*)$/gm, '<div style="display:flex; align-items:flex-start; gap:6px; margin:3px 0;"><span style="color:var(--color-sapphire); font-weight:800;">•</span><span>$1</span></div>');
+      html = html.replace(/^(\d+)\.\s+(.*)$/gm, '<div style="display:flex; align-items:flex-start; gap:6px; margin:3px 0;"><span style="color:var(--color-sapphire); font-weight:800;">$1.</span><span>$2</span></div>');
       html = html.replace(/(₹[\d,]+(?:\.\d+)?)/g, '<span style="font-weight:800; color:var(--text-primary);">$1</span>');
       html = html.replace(/\n\n+/g, '<div style="height:6px;"></div>');
       html = html.replace(/\n/g, '<br>');
@@ -13709,13 +13909,50 @@
     function triggerAiAction(action) {
       triggerHaptic('medium');
       if (!action) return;
+      if (action.type === 'NAVIGATE' && action.target) {
+        closeAiChatModal();
+        switchTab(action.target);
+        return;
+      }
       if (action.type === 'OPEN_QUICK_ENTRY') {
         closeAiChatModal();
-        openQuickEntrySheet('EXPENSE');
+        const txType = (action.transaction_type || 'EXPENSE').toUpperCase();
+        openQuickEntrySheet(txType);
+
         if (action.amount) {
-          const valEl = document.getElementById('calcDisplayVal');
-          if (valEl) valEl.innerText = action.amount.toFixed(2);
-          CURRENT_KEYPAD_VAL = String(action.amount);
+          APP_STATE.sheetAmount = String(parseFloat(action.amount) || 0);
+          updateKeypadDisplay();
+        }
+        if (action.account_name && Array.isArray(APP_STATE.accounts)) {
+          const accMatch = APP_STATE.accounts.find(a =>
+            a.name.toLowerCase() === String(action.account_name).toLowerCase() ||
+            formatAccountName(a.name).toLowerCase() === String(action.account_name).toLowerCase()
+          );
+          if (accMatch) {
+            APP_STATE.sheetAccountId = accMatch.id;
+            APP_STATE.sheetAccountName = formatAccountName(accMatch.name);
+          } else {
+            APP_STATE.sheetAccountName = formatAccountName(action.account_name);
+          }
+          populateSheetAccounts();
+        }
+        if (action.category && APP_STATE.categories) {
+          const pool = (txType === 'INCOME') ? (APP_STATE.categories.income || []) : (APP_STATE.categories.expense || []);
+          const targetLower = String(action.category).toLowerCase();
+          const catMatch = pool.find(c => c.name.toLowerCase() === targetLower || c.name.toLowerCase().includes(targetLower));
+          if (catMatch) {
+            APP_STATE.sheetCategoryId = catMatch.id;
+            APP_STATE.sheetSubcategoryId = null;
+            if (action.subcategory && Array.isArray(catMatch.subcategories)) {
+              const subMatch = catMatch.subcategories.find(s => s.name.toLowerCase() === String(action.subcategory).toLowerCase());
+              if (subMatch) APP_STATE.sheetSubcategoryId = subMatch.id;
+            }
+            populateSheetCategories();
+          }
+        }
+        const noteInp = document.getElementById('sheetNoteInput');
+        if (noteInp && action.note) {
+          noteInp.value = String(action.note);
         }
       }
     }
@@ -13727,109 +13964,64 @@
       if (input) input.value = '';
 
       stopVoiceRecognition();
+      hydrateAiChatStreamIfNeeded();
 
       const stream = document.getElementById('aiChatStream');
       const emptyState = document.getElementById('aiChatEmptyState');
       if (emptyState) emptyState.remove();
 
-      // 1. Append User Bubble
-      const userBubble = document.createElement('div');
-      userBubble.style.cssText = 'background:linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color:#FFF; align-self:flex-end; border-radius:16px 16px 4px 16px; padding:10px 14px; max-width:82%; font-size:13px; font-weight:600; box-shadow:0 2px 8px rgba(37,99,235,0.25); word-break:break-word;';
-      userBubble.innerText = text;
-      stream.appendChild(userBubble);
+      // 1. Append User Bubble immediately
+      stream.appendChild(renderAiUserBubble(text));
       stream.scrollTop = stream.scrollHeight;
 
-      // 2. Append Thinking Indicator
+      const historySnapshot = aiConversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content }));
+      aiConversationHistory.push({ role: 'user', content: text });
+      saveAiChatHistoryToStorage();
+
+      // 2. Append ChatGPT-style Animated Typing Indicator
       const thinkingBubble = document.createElement('div');
       thinkingBubble.id = 'aiThinkingIndicator';
-      thinkingBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-muted); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:8px 12px; font-size:12px; display:flex; align-items:center; gap:6px;';
-      thinkingBubble.innerHTML = '<span class="material-icons-round" style="font-size:16px;">sync</span> <span>Finly hisaab laga raha hai...</span>';
+      thinkingBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-muted); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:10px 14px; font-size:12px; display:flex; align-items:center; gap:8px;';
+      thinkingBubble.innerHTML = '<div class="ai-typing-dots"><span></span><span></span><span></span></div><span>Finly is thinking...</span>';
       stream.appendChild(thinkingBubble);
       stream.scrollTop = stream.scrollHeight;
 
       try {
-        const res = await apiRequest('/ai-mentor/chat', 'POST', { message: text });
+        const res = await apiRequest('/ai-mentor/chat', 'POST', {
+          message: text,
+          history: historySnapshot,
+          client_date: getLocalDateString()
+        });
         if (thinkingBubble) thinkingBubble.remove();
 
         const data = res && res.success && res.data ? res.data : {
-          reply: "Main abhi aapke sawal ka vishleshan nahi kar paya. Kripya punah prayas karein!",
-          spoken_text: "Kripya punah prayas karein.",
-          followup_chips: ["💰 Bacha hua paisa?", "🍔 Food ka kharch?"]
+          reply: "Abhi server se jawab nahi aa paya. Kripya dubara try karein!",
+          spoken_text: "Kripya dubara try karein.",
+          followup_chips: ["Aaj ka kharcha?", "Budget status?"]
         };
 
-        // 3. Create Bot Response Container
-        const botContainer = document.createElement('div');
-        botContainer.style.cssText = 'display:flex; flex-direction:column; gap:6px; align-self:flex-start; max-width:90%; width:100%;';
-
-        const aiBubble = document.createElement('div');
-        aiBubble.className = 'ai-chat-bubble-bot';
-
-        // Decision Badge (if present)
-        let badgeHtml = '';
-        if (data.decision_badge) {
-          let bBg = 'rgba(16, 185, 129, 0.15)';
-          let bBorder = 'rgba(16, 185, 129, 0.4)';
-          let bColor = '#10B981';
-          if (data.decision_badge.type === 'CAUTION') {
-            bBg = 'rgba(245, 158, 11, 0.15)';
-            bBorder = 'rgba(245, 158, 11, 0.4)';
-            bColor = '#F59E0B';
-          } else if (data.decision_badge.type === 'DANGER') {
-            bBg = 'rgba(239, 68, 68, 0.15)';
-            bBorder = 'rgba(239, 68, 68, 0.4)';
-            bColor = '#EF4444';
-          }
-          badgeHtml = `<div style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:10px; background:${bBg}; border:1px solid ${bBorder}; color:${bColor}; font-size:11px; font-weight:800; margin-bottom:8px;">${data.decision_badge.label}</div>`;
+        // Update header AI mode pill cleanly (GPT/GEMINI when cloud LLM active, SMART otherwise)
+        const modePill = document.getElementById('aiEngineStatusPill');
+        if (modePill && data.engine_mode) {
+          modePill.innerText = data.engine_mode === 'llm' ? 'AI LIVE' : 'SMART';
         }
 
-        // Action Button (if present)
-        let actionBtnHtml = '';
-        if (data.action_button) {
-          actionBtnHtml = `
-            <div style="margin-top:10px;">
-              <button type="button" class="ai-action-btn" onclick='triggerAiAction(${JSON.stringify(data.action_button)})' style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:12px; font-weight:800; border-radius:12px; cursor:pointer; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:var(--color-sapphire);">
-                <span class="material-icons-round" style="font-size:15px;">add_circle</span>
-                <span>${data.action_button.label}</span>
-              </button>
-            </div>
-          `;
-        }
+        // 3. Persist assistant response & render sleek bubble
+        aiConversationHistory.push({ role: 'assistant', content: data.reply || '', meta: data });
+        saveAiChatHistoryToStorage();
 
-        // Message Audio & Action Controls
-        const spokenTextSafe = (data.spoken_text || data.reply || '').replace(/'/g, "\\'");
-        const controlsHtml = `
-          <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:6px;">
-            <button type="button" onclick="readMessageAloud('${spokenTextSafe}', this)" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:3px; font-size:11px; font-weight:700;" title="Suniye (Listen Audio)">
-              <span class="material-icons-round" style="font-size:16px;">volume_up</span>
-              <span>Suniye</span>
-            </button>
-          </div>
-        `;
-
-        aiBubble.innerHTML = `${badgeHtml}<div>${formatAiMarkdown(data.reply)}</div>${actionBtnHtml}${controlsHtml}`;
-        botContainer.appendChild(aiBubble);
-
-        // 4. Dynamic Follow-Up Chips Row
-        if (Array.isArray(data.followup_chips) && data.followup_chips.length > 0) {
-          const chipsRow = document.createElement('div');
-          chipsRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;';
-          data.followup_chips.forEach(chipText => {
-            const chipBtn = document.createElement('button');
-            chipBtn.type = 'button';
-            chipBtn.className = 'acc-pill ai-followup-chip';
-            chipBtn.style.cssText = 'font-size:11px; padding:5px 10px; border-radius:12px; cursor:pointer; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); color:#A78BFA; font-weight:700;';
-            chipBtn.innerText = chipText;
-            chipBtn.onclick = () => sendQuickPrompt(chipText);
-            chipsRow.appendChild(chipBtn);
-          });
-          botContainer.appendChild(chipsRow);
-        }
-
-        stream.appendChild(botContainer);
+        stream.appendChild(renderAiBotMessage(data, true));
         stream.scrollTop = stream.scrollHeight;
       } catch (err) {
         if (thinkingBubble) thinkingBubble.remove();
         console.error('AI chat error:', err);
+        const errData = {
+          reply: "Network error aa gaya. Please dubara koshish karein!",
+          spoken_text: "Network error.",
+          followup_chips: ["Today's spend?"]
+        };
+        stream.appendChild(renderAiBotMessage(errData, true));
+        stream.scrollTop = stream.scrollHeight;
       }
     }
 

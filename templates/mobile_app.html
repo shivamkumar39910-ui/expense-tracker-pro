@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.7">
+  <meta name="app-shell-version" content="v5.8">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1391,44 +1391,65 @@
       font-size: 20px !important;
       user-select: none;
     }
-    .auth-verify-email-btn {
+    .auth-email-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       width: 100%;
+    }
+    .auth-email-row .auth-input-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .auth-email-row .form-input-pill {
+      width: 100%;
+      min-width: 0;
+    }
+    .auth-side-verify-btn {
+      flex-shrink: 0;
       height: 46px;
-      margin-bottom: 12px;
+      padding: 0 13px;
       border-radius: 14px;
-      border: none;
-      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 58%, #1D4ED8 100%);
-      color: #FFFFFF;
-      font-size: 14.5px;
+      border: 1px solid rgba(59, 130, 246, 0.48);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.24) 0%, rgba(37, 99, 235, 0.36) 100%);
+      color: #93C5FD;
+      font-size: 12.5px;
       font-weight: 800;
+      white-space: nowrap;
       cursor: pointer;
       display: none;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.36);
-      transition: opacity 0.15s ease, transform 0.12s ease;
+      gap: 5px;
+      transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
     }
-    .auth-verify-email-btn:active { transform: scale(0.99); }
-    .auth-verify-email-btn:disabled { opacity: 0.72; cursor: wait; }
+    .auth-side-verify-btn:hover { filter: brightness(1.08); }
+    .auth-side-verify-btn:disabled { opacity: 0.72; cursor: wait; }
+    .auth-side-verify-btn.verified {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #34D399;
+      cursor: default;
+      opacity: 1;
+    }
     .signup-inline-otp-box {
       display: none;
       margin-bottom: 12px;
-      padding: 13px;
+      padding: 12px 13px;
       border-radius: 14px;
-      background: rgba(37, 99, 235, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.35);
+      background: rgba(37, 99, 235, 0.11);
+      border: 1px solid rgba(59, 130, 246, 0.34);
     }
     .inline-otp-row {
       display: flex;
       justify-content: space-between;
       gap: 6px;
-      margin: 10px 0 12px 0;
+      margin: 8px 0 10px 0;
     }
     .inline-otp-digit {
       width: 100%;
       max-width: 44px;
-      height: 44px;
+      height: 42px;
       border-radius: 10px;
       background: #0F172A;
       border: 1.5px solid rgba(148, 163, 184, 0.28);
@@ -1445,19 +1466,29 @@
     }
     .signup-verify-otp-btn {
       width: 100%;
-      height: 42px;
+      height: 38px;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       background: linear-gradient(135deg, #10B981, #059669);
       color: #FFFFFF;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.28);
+    }
+    body.theme-light .auth-side-verify-btn {
+      background: #EFF6FF !important;
+      border-color: #93C5FD !important;
+      color: #1D4ED8 !important;
+    }
+    body.theme-light .auth-side-verify-btn.verified {
+      background: #ECFDF5 !important;
+      border-color: #6EE7B7 !important;
+      color: #059669 !important;
     }
     body.theme-light .auth-verified-chip {
       color: #059669 !important;
@@ -4475,11 +4506,11 @@
               </div>
             </div>
 
-            <!-- Full-Width Email Field (Zero Button Overlap) -->
+            <!-- Email Row with Side-by-Side Verify Email Button for Sign Up -->
             <div style="margin-bottom:12px;">
               <div class="auth-field-label-row">
                 <label class="auth-field-label" id="authIdentifierLabel" for="authInputIdentifier">Email</label>
-                <div id="signupEmailVerifiedChip" class="auth-verified-chip">
+                <div id="signupEmailVerifiedChip" class="auth-verified-chip" style="display:none;">
                   <span style="display:inline-flex; align-items:center; gap:3px;">
                     <span class="material-icons-round" style="font-size:14px;">verified</span>
                     <span>Verified</span>
@@ -4487,20 +4518,18 @@
                   <button type="button" class="auth-verified-change-btn" onclick="resetInlineSignupVerification(true)">Change</button>
                 </div>
               </div>
-              <div class="auth-input-wrap">
-                <span class="material-icons-round auth-input-icon">mail_outline</span>
-                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier" oninput="handleAuthIdentifierInput()" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='SIGNUP' && !signupVerificationToken) sendInlineSignupOtp();">
+              <div class="auth-email-row">
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">mail_outline</span>
+                  <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier" oninput="handleAuthIdentifierInput()" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='SIGNUP' && !signupVerificationToken) sendInlineSignupOtp();">
+                </div>
+                <button type="button" id="btnSendInlineSignupOtp" class="auth-side-verify-btn" onclick="sendInlineSignupOtp()">
+                  <span id="btnSendInlineSignupOtpText">Verify Email</span>
+                </button>
               </div>
             </div>
 
-            <!-- Clean Full-Width Verify Email CTA during Sign Up Step 1 -->
-            <button type="button" id="btnSendInlineSignupOtp" class="auth-verify-email-btn" onclick="sendInlineSignupOtp()">
-              <span class="material-icons-round" style="font-size:18px;">mark_email_read</span>
-              <span id="btnSendInlineSignupOtpText">Verify Email with OTP</span>
-              <span class="material-icons-round" style="font-size:18px;">arrow_forward</span>
-            </button>
-
-            <!-- Inline Sign-Up Email OTP Verification Box -->
+            <!-- Inline Sign-Up Email OTP Verification Box (Appears between Email and Password) -->
             <div id="signupInlineOtpBox" class="signup-inline-otp-box">
               <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                 <span style="font-size:11.5px; font-weight:700; color:var(--text-primary);">Enter 6-digit OTP sent to email</span>
@@ -4525,25 +4554,14 @@
               </button>
             </div>
 
-            <!-- Password Fields Group (Shown on Log In OR immediately after Email OTP Verified on Sign Up) -->
-            <div id="authPasswordSection">
-              <!-- Password -->
+            <!-- Password Field Group (Single password, no confirm password) -->
+            <div id="authPasswordSection" style="margin-bottom:14px;">
               <div style="margin-bottom:12px;">
                 <label class="auth-field-label" for="authInputPassword">Password</label>
                 <div class="auth-input-wrap">
                   <span class="material-icons-round auth-input-icon">lock_outline</span>
-                  <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='LOGIN') handleAuthSubmit()">
+                  <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
                   <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon">visibility</span>
-                </div>
-              </div>
-
-              <!-- Confirm Password (Only for Signup) -->
-              <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px;">
-                <label class="auth-field-label" for="authInputConfirmPassword">Confirm Password</label>
-                <div class="auth-input-wrap">
-                  <span class="material-icons-round auth-input-icon">verified_user</span>
-                  <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
-                  <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon">visibility</span>
                 </div>
               </div>
             </div>
@@ -11319,8 +11337,6 @@
 
       const p1 = document.getElementById('authInputPassword');
       if (p1) p1.value = '';
-      const p2 = document.getElementById('authInputConfirmPassword');
-      if (p2) p2.value = '';
 
       if (res.bootstrap) {
         localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
@@ -11347,11 +11363,18 @@
       const verifiedChip = document.getElementById('signupEmailVerifiedChip');
       const pwdSection = document.getElementById('authPasswordSection');
       const pwdInp = document.getElementById('authInputPassword');
-      const confirmInp = document.getElementById('authInputConfirmPassword');
       const submitBtn = document.getElementById('authSubmitBtn');
 
       const curEmail = idInput ? idInput.value.trim().toLowerCase() : '';
       const isEmailVerified = !isLogin && Boolean(signupVerificationToken && signupVerifiedEmail && signupVerifiedEmail === curEmail);
+
+      // Password section & submit button are always visible on both Log In and Sign Up tabs
+      if (pwdSection) pwdSection.style.display = 'block';
+      if (pwdInp) pwdInp.disabled = false;
+      if (submitBtn) {
+        submitBtn.style.display = 'flex';
+        submitBtn.disabled = false;
+      }
 
       if (isLogin) {
         if (otpBtn) otpBtn.style.display = 'none';
@@ -11361,46 +11384,37 @@
           idInput.readOnly = false;
           idInput.classList.remove('auth-email-verified');
         }
-        if (pwdSection) pwdSection.style.display = 'block';
-        if (pwdInp) pwdInp.disabled = false;
-        if (confirmInp) confirmInp.disabled = false;
-        if (submitBtn) {
-          submitBtn.style.display = 'flex';
-          submitBtn.disabled = false;
-        }
         return;
       }
 
-      // SIGNUP mode: Clean step-by-step progressive UI
+      // SIGNUP mode: Single-page layout matching requested design
+      if (otpBtn) {
+        otpBtn.style.display = 'inline-flex';
+      }
+
       if (isEmailVerified) {
-        if (otpBtn) otpBtn.style.display = 'none';
+        if (otpBtn) {
+          otpBtn.disabled = true;
+          otpBtn.classList.add('verified');
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:15px;">check_circle</span><span>Verified</span>';
+        }
         if (inlineBox) inlineBox.style.display = 'none';
         if (verifiedChip) verifiedChip.style.display = 'inline-flex';
         if (idInput) {
           idInput.readOnly = true;
           idInput.classList.add('auth-email-verified');
         }
-        if (pwdSection) pwdSection.style.display = 'block';
-        if (pwdInp) pwdInp.disabled = false;
-        if (confirmInp) confirmInp.disabled = false;
-        if (submitBtn) {
-          submitBtn.style.display = 'flex';
-          submitBtn.disabled = false;
-        }
       } else {
-        const otpBoxOpen = Boolean(inlineBox && inlineBox.style.display === 'block');
+        if (otpBtn) {
+          otpBtn.disabled = false;
+          otpBtn.classList.remove('verified');
+          otpBtn.innerHTML = '<span id="btnSendInlineSignupOtpText">Verify Email</span>';
+        }
         if (verifiedChip) verifiedChip.style.display = 'none';
         if (idInput) {
           idInput.readOnly = false;
           idInput.classList.remove('auth-email-verified');
         }
-        if (otpBtn) {
-          otpBtn.style.display = otpBoxOpen ? 'none' : 'flex';
-          otpBtn.disabled = false;
-          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:18px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify Email with OTP</span><span class="material-icons-round" style="font-size:18px;">arrow_forward</span>';
-        }
-        if (pwdSection) pwdSection.style.display = 'none';
-        if (submitBtn) submitBtn.style.display = 'none';
       }
     }
 
@@ -11489,7 +11503,6 @@
         if (res && res.success) {
           const box = document.getElementById('signupInlineOtpBox');
           if (box) box.style.display = 'block';
-          if (otpBtn) otpBtn.style.display = 'none';
           for (let i = 1; i <= 6; i++) {
             const d = document.getElementById('inline_otp_' + i);
             if (d) d.value = '';
@@ -11508,12 +11521,7 @@
         showAuthError('Failed to send OTP: ' + (err.message || 'Network error'));
       } finally {
         if (resendBtn) resendBtn.disabled = false;
-        const boxOpen = document.getElementById('signupInlineOtpBox')?.style.display === 'block';
-        if (otpBtn && !signupVerificationToken && !boxOpen) {
-          otpBtn.style.display = 'flex';
-          otpBtn.disabled = false;
-          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:18px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify Email with OTP</span><span class="material-icons-round" style="font-size:18px;">arrow_forward</span>';
-        }
+        updateSignupVerificationGateUI();
       }
     }
     window.sendInlineSignupOtp = sendInlineSignupOtp;
@@ -11613,9 +11621,6 @@
 
       const nameField = document.getElementById('authNameField');
       if (nameField) nameField.style.display = isLogin ? 'none' : 'block';
-
-      const confirmPwdField = document.getElementById('authConfirmPasswordField');
-      if (confirmPwdField) confirmPwdField.style.display = isLogin ? 'none' : 'block';
 
       const forgotRow = document.getElementById('authForgotPwdRow');
       if (forgotRow) forgotRow.style.display = isLogin ? 'block' : 'none';
@@ -11829,7 +11834,6 @@
 
       if (!isLogin) {
         const name = document.getElementById('authInputName').value.trim();
-        const confirmPassword = document.getElementById('authInputConfirmPassword').value;
 
         if (!name) {
           showAuthError('Please enter your Full Name.');
@@ -11837,14 +11841,12 @@
         }
         if (!signupVerificationToken || signupVerifiedEmail !== identifier) {
           showAuthError('Please verify your email address with OTP before signing up.');
+          const boxOpen = document.getElementById('signupInlineOtpBox')?.style.display === 'block';
+          if (!boxOpen) sendInlineSignupOtp();
           return;
         }
         if (!password || password.length < 6) {
           showAuthError('Password must be at least 6 characters.');
-          return;
-        }
-        if (password !== confirmPassword) {
-          showAuthError('Passwords do not match. Please re-enter.');
           return;
         }
 
@@ -11861,7 +11863,7 @@
             email: identifier,
             phone: '',
             password,
-            confirm_password: confirmPassword,
+            confirm_password: password,
             verification_token: signupVerificationToken
           });
 
@@ -14272,7 +14274,7 @@
       fpVerifiedOtp = '';
       fpResetToken = '';
       if (typeof updateSyncBadge === 'function') updateSyncBadge();
-      ['authInputName', 'authInputIdentifier', 'fpInputIdentifier', 'authInputPassword', 'authInputConfirmPassword'].forEach(id => {
+      ['authInputName', 'authInputIdentifier', 'fpInputIdentifier', 'authInputPassword'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
       });

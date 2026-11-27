@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.5">
+  <meta name="app-shell-version" content="v5.6">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1258,17 +1258,15 @@
       font-weight: 500;
     }
     .auth-card {
-      background: rgba(17, 24, 39, 0.78);
-      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: #131B2E;
+      border: 1px solid rgba(148, 163, 184, 0.18);
       border-radius: 22px;
       padding: 18px 16px;
-      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.44);
     }
     .auth-tab-bar {
       display: flex;
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(148, 163, 184, 0.14);
       border-radius: 14px;
       padding: 4px;
@@ -1290,7 +1288,7 @@
       cursor: pointer;
       background: transparent;
       color: var(--text-muted);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: color 0.15s ease, background 0.15s ease;
     }
     .auth-tab-btn:hover {
       color: var(--text-primary);
@@ -1300,6 +1298,13 @@
       color: #FFFFFF !important;
       box-shadow: 0 6px 16px rgba(37, 99, 235, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
     }
+    .auth-field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
     .auth-field-label {
       font-size: 10.5px;
       font-weight: 800;
@@ -1308,6 +1313,27 @@
       text-transform: uppercase;
       margin-bottom: 6px;
       display: block;
+    }
+    .auth-field-label-row .auth-field-label {
+      margin-bottom: 0;
+    }
+    .auth-verified-chip {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #34D399;
+    }
+    .auth-verified-change-btn {
+      background: rgba(59, 130, 246, 0.16);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #93C5FD;
+      border-radius: 7px;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
     }
     .auth-input-wrap {
       position: relative;
@@ -1320,22 +1346,39 @@
       color: var(--text-muted);
       font-size: 18px !important;
       pointer-events: none;
-      transition: color 0.2s ease;
+      transition: color 0.15s ease;
     }
     .auth-input-wrap .form-input-pill {
       padding-left: 42px;
+      padding-right: 14px;
       margin-bottom: 0;
-      background: rgba(15, 23, 42, 0.72);
-      border: 1.5px solid rgba(148, 163, 184, 0.18);
+      background: #0F172A;
+      border: 1.5px solid rgba(148, 163, 184, 0.2);
       border-radius: 14px;
       height: 46px;
       font-size: 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      color: #F8FAFC;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .auth-input-wrap .form-input-pill:focus {
       border-color: #3B82F6;
-      background: rgba(15, 23, 42, 0.95);
+      background: #0F172A;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    }
+    .auth-input-wrap .form-input-pill:-webkit-autofill,
+    .auth-input-wrap .form-input-pill:-webkit-autofill:hover,
+    .auth-input-wrap .form-input-pill:-webkit-autofill:focus,
+    .auth-input-wrap .form-input-pill:-webkit-autofill:active {
+      -webkit-text-fill-color: #F8FAFC !important;
+      caret-color: #F8FAFC;
+      -webkit-box-shadow: 0 0 0 1000px #0F172A inset !important;
+      box-shadow: 0 0 0 1000px #0F172A inset !important;
+      border-color: rgba(59, 130, 246, 0.45) !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    .auth-input-wrap .form-input-pill.auth-email-verified {
+      border-color: rgba(16, 185, 129, 0.65) !important;
+      background: rgba(16, 185, 129, 0.08) !important;
     }
     .auth-input-wrap:focus-within .auth-input-icon {
       color: #60A5FA;
@@ -1348,58 +1391,53 @@
       font-size: 20px !important;
       user-select: none;
     }
-    .auth-inline-otp-btn {
-      position: absolute;
-      right: 6px;
-      height: 34px;
-      padding: 0 11px;
-      border-radius: 10px;
-      border: 1px solid rgba(59, 130, 246, 0.45);
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.3));
-      color: #93C5FD;
-      font-size: 11px;
+    .auth-verify-email-btn {
+      width: 100%;
+      height: 46px;
+      margin-bottom: 12px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 58%, #1D4ED8 100%);
+      color: #FFFFFF;
+      font-size: 14.5px;
       font-weight: 800;
       cursor: pointer;
       display: none;
       align-items: center;
-      gap: 4px;
-      transition: all 0.2s ease;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.36);
+      transition: opacity 0.15s ease, transform 0.12s ease;
     }
-    .auth-inline-otp-btn:hover { filter: brightness(1.1); }
-    .auth-inline-otp-btn:disabled { opacity: 0.7; cursor: wait; }
-    .auth-inline-otp-btn.verified {
-      background: rgba(16, 185, 129, 0.16);
-      border-color: rgba(16, 185, 129, 0.45);
-      color: #34D399;
-      cursor: default;
-    }
+    .auth-verify-email-btn:active { transform: scale(0.99); }
+    .auth-verify-email-btn:disabled { opacity: 0.72; cursor: wait; }
     .signup-inline-otp-box {
       display: none;
       margin-bottom: 12px;
-      padding: 12px;
+      padding: 13px;
       border-radius: 14px;
-      background: rgba(37, 99, 235, 0.1);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: rgba(37, 99, 235, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.35);
     }
     .inline-otp-row {
       display: flex;
       justify-content: space-between;
       gap: 6px;
-      margin: 8px 0 10px 0;
+      margin: 10px 0 12px 0;
     }
     .inline-otp-digit {
       width: 100%;
-      max-width: 42px;
-      height: 42px;
+      max-width: 44px;
+      height: 44px;
       border-radius: 10px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1.5px solid rgba(148, 163, 184, 0.26);
+      background: #0F172A;
+      border: 1.5px solid rgba(148, 163, 184, 0.28);
       text-align: center;
       font-size: 18px;
       font-weight: 800;
       color: #FFFFFF;
       outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .inline-otp-digit:focus {
       border-color: #3B82F6;
@@ -1407,45 +1445,27 @@
     }
     .signup-verify-otp-btn {
       width: 100%;
-      height: 38px;
+      height: 42px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       background: linear-gradient(135deg, #10B981, #059669);
       color: #FFFFFF;
-      font-size: 12.5px;
+      font-size: 13.5px;
       font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
     }
-    .auth-pwd-gate-locked {
-      opacity: 0.48;
-      pointer-events: none;
+    body.theme-light .auth-verified-chip {
+      color: #059669 !important;
     }
-    .signup-gate-hint {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 10px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      color: #FBBF24;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    body.theme-light .auth-inline-otp-btn {
+    body.theme-light .auth-verified-change-btn {
       background: #EFF6FF !important;
       border-color: #93C5FD !important;
       color: #1D4ED8 !important;
-    }
-    body.theme-light .auth-inline-otp-btn.verified {
-      background: #ECFDF5 !important;
-      border-color: #6EE7B7 !important;
-      color: #059669 !important;
     }
     body.theme-light .signup-inline-otp-box {
       background: #EFF6FF !important;
@@ -1455,11 +1475,6 @@
       background: #FFFFFF !important;
       border-color: #CBD5E1 !important;
       color: #0F172A !important;
-    }
-    body.theme-light .signup-gate-hint {
-      background: #FFFBEB !important;
-      border-color: #FDE68A !important;
-      color: #B45309 !important;
     }
     .auth-error-banner {
       display: none;
@@ -1761,9 +1776,9 @@
       box-shadow: 0 10px 24px rgba(37, 99, 235, 0.16) !important;
     }
     body.theme-light .auth-card {
-      background: rgba(255, 255, 255, 0.94) !important;
+      background: #FFFFFF !important;
       border: 1px solid #E2E8F0 !important;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08) !important;
     }
     body.theme-light .auth-tab-bar {
       background: #F1F5F9 !important;
@@ -1785,6 +1800,21 @@
     body.theme-light .auth-input-wrap .form-input-pill:focus {
       background: #FFFFFF !important;
       border-color: #2563EB !important;
+    }
+    body.theme-light .auth-input-wrap .form-input-pill:-webkit-autofill,
+    body.theme-light .auth-input-wrap .form-input-pill:-webkit-autofill:hover,
+    body.theme-light .auth-input-wrap .form-input-pill:-webkit-autofill:focus,
+    body.theme-light .auth-input-wrap .form-input-pill:-webkit-autofill:active {
+      -webkit-text-fill-color: #0F172A !important;
+      caret-color: #0F172A;
+      -webkit-box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+      box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+      border-color: #CBD5E1 !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    body.theme-light .auth-input-wrap .form-input-pill.auth-email-verified {
+      background: #ECFDF5 !important;
+      border-color: #10B981 !important;
     }
     body.theme-light .auth-error-banner {
       background: #FEF2F2 !important;
@@ -4417,6 +4447,12 @@
         </div>
 
         <div class="auth-card">
+          <!-- Clean Inline Validation Feedback Banner (Shared across Log In, Sign Up & Forgot Password) -->
+          <div id="authErrorBanner" class="auth-error-banner" role="alert">
+            <span class="material-icons-round" style="font-size:17px; flex-shrink:0;">error_outline</span>
+            <span id="authErrorBannerText"></span>
+          </div>
+
           <!-- Segmented Tab: Log In vs Sign Up -->
           <div id="authCredentialsView">
             <div class="auth-tab-bar">
@@ -4430,12 +4466,6 @@
               </button>
             </div>
 
-            <!-- Clean Inline Validation Feedback Banner -->
-            <div id="authErrorBanner" class="auth-error-banner" role="alert">
-              <span class="material-icons-round" style="font-size:17px; flex-shrink:0;">error_outline</span>
-              <span id="authErrorBannerText"></span>
-            </div>
-
             <!-- Full Name (Only for Signup) -->
             <div id="authNameField" style="display:none; margin-bottom:12px;">
               <label class="auth-field-label" for="authInputName">Full Name</label>
@@ -4445,18 +4475,30 @@
               </div>
             </div>
 
-            <!-- Email (+ Inline OTP Trigger during Sign Up) -->
+            <!-- Full-Width Email Field (Zero Button Overlap) -->
             <div style="margin-bottom:12px;">
-              <label class="auth-field-label" id="authIdentifierLabel" for="authInputIdentifier">Email</label>
+              <div class="auth-field-label-row">
+                <label class="auth-field-label" id="authIdentifierLabel" for="authInputIdentifier">Email</label>
+                <div id="signupEmailVerifiedChip" class="auth-verified-chip">
+                  <span style="display:inline-flex; align-items:center; gap:3px;">
+                    <span class="material-icons-round" style="font-size:14px;">verified</span>
+                    <span>Verified</span>
+                  </span>
+                  <button type="button" class="auth-verified-change-btn" onclick="resetInlineSignupVerification(true)">Change</button>
+                </div>
+              </div>
               <div class="auth-input-wrap">
                 <span class="material-icons-round auth-input-icon">mail_outline</span>
-                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier" oninput="handleAuthIdentifierInput()">
-                <button type="button" id="btnSendInlineSignupOtp" class="auth-inline-otp-btn" onclick="sendInlineSignupOtp()">
-                  <span class="material-icons-round" style="font-size:14px;">mark_email_read</span>
-                  <span id="btnSendInlineSignupOtpText">Verify OTP</span>
-                </button>
+                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier" oninput="handleAuthIdentifierInput()" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='SIGNUP' && !signupVerificationToken) sendInlineSignupOtp();">
               </div>
             </div>
+
+            <!-- Clean Full-Width Verify Email CTA during Sign Up Step 1 -->
+            <button type="button" id="btnSendInlineSignupOtp" class="auth-verify-email-btn" onclick="sendInlineSignupOtp()">
+              <span class="material-icons-round" style="font-size:18px;">mark_email_read</span>
+              <span id="btnSendInlineSignupOtpText">Verify Email with OTP</span>
+              <span class="material-icons-round" style="font-size:18px;">arrow_forward</span>
+            </button>
 
             <!-- Inline Sign-Up Email OTP Verification Box -->
             <div id="signupInlineOtpBox" class="signup-inline-otp-box">
@@ -4478,17 +4520,12 @@
                 <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_6" oninput="focusNextInlineOtp(6, event)" onkeydown="handleInlineOtpKeydown(6, event); if(event.key==='Enter') verifyInlineSignupOtp();">
               </div>
               <button type="button" id="btnVerifyInlineSignupOtp" class="signup-verify-otp-btn" onclick="verifyInlineSignupOtp()">
-                <span class="material-icons-round" style="font-size:16px;">verified</span>
-                <span>Verify Email with OTP</span>
+                <span class="material-icons-round" style="font-size:17px;">verified</span>
+                <span>Verify OTP</span>
               </button>
             </div>
 
-            <div id="signupGateHint" class="signup-gate-hint">
-              <span class="material-icons-round" style="font-size:15px;">lock</span>
-              <span>Verify your email with OTP first to create password &amp; sign up</span>
-            </div>
-
-            <!-- Password Fields Group (Locked during Sign Up until Email OTP Verified) -->
+            <!-- Password Fields Group (Shown on Log In OR immediately after Email OTP Verified on Sign Up) -->
             <div id="authPasswordSection">
               <!-- Password -->
               <div style="margin-bottom:12px;">
@@ -4701,10 +4738,39 @@
 
   <!-- Mobile Finance Application Controller Script -->
   <script>
+    function _safeStoredToken() {
+      try {
+        const t = localStorage.getItem('jwt_access_token') || '';
+        return (t && t !== 'undefined' && t !== 'null') ? t : '';
+      } catch { return ''; }
+    }
+    function _safeStoredUser() {
+      try {
+        const raw = localStorage.getItem('user_profile');
+        if (!raw || raw === 'undefined' || raw === 'null') return null;
+        const u = JSON.parse(raw);
+        return (u && typeof u === 'object' && u.id) ? u : null;
+      } catch { return null; }
+    }
+    function _safeOfflineQueue() {
+      try {
+        const raw = JSON.parse(localStorage.getItem('expense_offline_queue') || '[]');
+        if (!Array.isArray(raw)) return [];
+        const clean = raw.filter(item =>
+          item && typeof item.endpoint === 'string' &&
+          (item.endpoint === '/transactions' || item.endpoint.startsWith('/transactions/'))
+        );
+        if (clean.length !== raw.length) {
+          localStorage.setItem('expense_offline_queue', JSON.stringify(clean));
+        }
+        return clean;
+      } catch { return []; }
+    }
+
     // State Store
     const APP_STATE = {
-      token: localStorage.getItem('jwt_access_token') || '',
-      user: JSON.parse(localStorage.getItem('user_profile') || 'null'),
+      token: _safeStoredToken(),
+      user: _safeStoredUser(),
       accounts: [],
       categories: { expense: [], income: [] },
       transactions: [],
@@ -4729,7 +4795,7 @@
       simulatedOtp: '',
       // Phase 12 & 13 State
       privacyMode: localStorage.getItem('privacy_mode') === 'true',
-      offlineQueue: JSON.parse(localStorage.getItem('expense_offline_queue') || '[]'),
+      offlineQueue: _safeOfflineQueue(),
       enteredPin: '',
       hasPin: false,
       // Phase 15, 16, 18 State
@@ -4909,6 +4975,13 @@
       },
       hasAny() {
         return this.getCreates().length > 0 || Object.keys(this.getEdits()).length > 0 || Boolean(this.getBudgetOverride());
+      },
+      clearAll() {
+        try {
+          localStorage.removeItem('pending_tx_creates');
+          localStorage.removeItem('pending_tx_edits');
+          localStorage.removeItem('pending_budget_override');
+        } catch (e) {}
       }
     };
 
@@ -5779,11 +5852,24 @@
     // API Data Loaders (with Offline Queue Integration)
     // ----------------------------------------------------
     async function apiRequest(endpoint, method = 'GET', body = null) {
+      const isPublicAuthEndpoint = /^\/auth\/(login|register|signup|forgot-password|verify-otp|resend-otp|login-verify-otp)/.test(endpoint);
+      const isOfflineQueueEligible = !isPublicAuthEndpoint &&
+        (method === 'POST' || method === 'DELETE') &&
+        (endpoint === '/transactions' || endpoint.startsWith('/transactions/'));
+
       const headers = { 'Content-Type': 'application/json' };
-      if (APP_STATE.token) headers['Authorization'] = `Bearer ${APP_STATE.token}`;
+      if (APP_STATE.token && !isPublicAuthEndpoint) {
+        headers['Authorization'] = `Bearer ${APP_STATE.token}`;
+      }
 
       if (!navigator.onLine && method !== 'GET') {
-        return handleOfflineRequest(endpoint, method, body);
+        if (isOfflineQueueEligible) {
+          return handleOfflineRequest(endpoint, method, body);
+        }
+        return {
+          success: false,
+          error: 'You appear to be offline. Please check your internet connection and try again.'
+        };
       }
 
       try {
@@ -5796,16 +5882,40 @@
           fetchOpts.keepalive = true;
         }
         const res = await fetch(`${API_BASE}${endpoint}`, fetchOpts);
-        const data = await res.json();
+
+        let data = null;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          data = null;
+        }
+
         if (res.status === 401) {
+          if (isPublicAuthEndpoint) {
+            return data || { success: false, error: 'Invalid credentials or verification code.' };
+          }
           logoutUser();
           return null;
         }
+
+        if (!res.ok) {
+          return data || {
+            success: false,
+            error: `Server returned an error (${res.status}). Please try again.`
+          };
+        }
+
         return data;
       } catch (err) {
         console.warn('API Network Issue:', err);
-        if (method !== 'GET') {
+        if (isOfflineQueueEligible) {
           return handleOfflineRequest(endpoint, method, body);
+        }
+        if (method !== 'GET') {
+          return {
+            success: false,
+            error: 'Connection interrupted. Please check your internet and try again.'
+          };
         }
         return null;
       }
@@ -11163,6 +11273,41 @@
     let inlineOtpCountdownTimer = null;
 
     async function completeAuthAndEnterApp(res, welcomeMsg) {
+      if (!res || !res.success || res.offline || !res.access_token || !res.user) {
+        showAuthError((res && res.error) || 'Authentication failed. Please try again.');
+        return false;
+      }
+
+      const prevUserId = APP_STATE.user && APP_STATE.user.id ? String(APP_STATE.user.id) : '';
+      const nextUserId = res.user && res.user.id ? String(res.user.id) : '';
+      const switchedAccount = Boolean(prevUserId && nextUserId && prevUserId !== nextUserId);
+
+      // Isolate new session completely from any previous account's local caches
+      localStorage.removeItem('cached_bootstrap');
+      localStorage.removeItem('cached_accounts');
+      localStorage.removeItem('cached_categories');
+      localStorage.removeItem('cached_dashboard');
+      localStorage.removeItem('cached_goals');
+      localStorage.removeItem('app_pin_hash');
+      LOCAL_TOMBSTONES.clearAll();
+      LOCAL_PENDING_OPS.clearAll();
+      if (switchedAccount) {
+        APP_STATE.offlineQueue = [];
+        localStorage.removeItem('expense_offline_queue');
+      }
+
+      APP_STATE.transactions = [];
+      APP_STATE.history6m = [];
+      APP_STATE.weeklyDaily = [];
+      APP_STATE.categoryBreakdown = [];
+      APP_STATE.categoryTotalExpense = 0;
+      APP_STATE.monthlyIncome = 0;
+      APP_STATE._txListDirty = true;
+      APP_STATE.forecast = null;
+      APP_STATE.accounts = [];
+      APP_STATE.budgets = null;
+      if (typeof userGoals !== 'undefined') userGoals = [];
+
       APP_STATE.token = res.access_token;
       APP_STATE.user = res.user;
       localStorage.setItem('jwt_access_token', res.access_token);
@@ -11170,8 +11315,15 @@
       APP_STATE.pinUnlockedThisSession = true;
       sessionStorage.setItem('pin_unlocked_session', 'true');
       updateUserUI();
+      if (typeof updateSyncBadge === 'function') updateSyncBadge();
+
+      const p1 = document.getElementById('authInputPassword');
+      if (p1) p1.value = '';
+      const p2 = document.getElementById('authInputConfirmPassword');
+      if (p2) p2.value = '';
 
       if (res.bootstrap) {
+        localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
         applyBootstrapData(res.bootstrap, false);
         persistUnifiedLocalState();
       } else {
@@ -11184,15 +11336,15 @@
       if (typeof showToast === 'function' && welcomeMsg) {
         showToast(welcomeMsg, 'success');
       }
+      return true;
     }
 
     function updateSignupVerificationGateUI() {
       const isLogin = (APP_STATE.authMode === 'LOGIN');
       const idInput = document.getElementById('authInputIdentifier');
       const otpBtn = document.getElementById('btnSendInlineSignupOtp');
-      const otpBtnTxt = document.getElementById('btnSendInlineSignupOtpText');
       const inlineBox = document.getElementById('signupInlineOtpBox');
-      const gateHint = document.getElementById('signupGateHint');
+      const verifiedChip = document.getElementById('signupEmailVerifiedChip');
       const pwdSection = document.getElementById('authPasswordSection');
       const pwdInp = document.getElementById('authInputPassword');
       const confirmInp = document.getElementById('authInputConfirmPassword');
@@ -11204,61 +11356,55 @@
       if (isLogin) {
         if (otpBtn) otpBtn.style.display = 'none';
         if (inlineBox) inlineBox.style.display = 'none';
-        if (gateHint) gateHint.style.display = 'none';
+        if (verifiedChip) verifiedChip.style.display = 'none';
         if (idInput) {
-          idInput.style.paddingRight = '14px';
-          idInput.style.borderColor = '';
+          idInput.readOnly = false;
+          idInput.classList.remove('auth-email-verified');
         }
-        if (pwdSection) pwdSection.classList.remove('auth-pwd-gate-locked');
+        if (pwdSection) pwdSection.style.display = 'block';
         if (pwdInp) pwdInp.disabled = false;
         if (confirmInp) confirmInp.disabled = false;
         if (submitBtn) {
+          submitBtn.style.display = 'flex';
           submitBtn.disabled = false;
-          submitBtn.style.opacity = '1';
         }
         return;
       }
 
-      // SIGNUP mode
-      if (idInput) idInput.style.paddingRight = '112px';
-      if (otpBtn) {
-        otpBtn.style.display = 'inline-flex';
-        if (isEmailVerified) {
-          otpBtn.classList.add('verified');
-          otpBtn.disabled = true;
-          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">verified</span><span>Verified</span>';
-          if (idInput) idInput.style.borderColor = 'rgba(16, 185, 129, 0.55)';
-        } else {
-          otpBtn.classList.remove('verified');
-          otpBtn.disabled = false;
-          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify OTP</span>';
-          if (idInput) idInput.style.borderColor = '';
-        }
-      }
-
+      // SIGNUP mode: Clean step-by-step progressive UI
       if (isEmailVerified) {
+        if (otpBtn) otpBtn.style.display = 'none';
         if (inlineBox) inlineBox.style.display = 'none';
-        if (gateHint) gateHint.style.display = 'none';
-        if (pwdSection) pwdSection.classList.remove('auth-pwd-gate-locked');
+        if (verifiedChip) verifiedChip.style.display = 'inline-flex';
+        if (idInput) {
+          idInput.readOnly = true;
+          idInput.classList.add('auth-email-verified');
+        }
+        if (pwdSection) pwdSection.style.display = 'block';
         if (pwdInp) pwdInp.disabled = false;
         if (confirmInp) confirmInp.disabled = false;
         if (submitBtn) {
+          submitBtn.style.display = 'flex';
           submitBtn.disabled = false;
-          submitBtn.style.opacity = '1';
         }
       } else {
-        if (gateHint) gateHint.style.display = 'flex';
-        if (pwdSection) pwdSection.classList.add('auth-pwd-gate-locked');
-        if (pwdInp) pwdInp.disabled = true;
-        if (confirmInp) confirmInp.disabled = true;
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.style.opacity = '0.55';
+        const otpBoxOpen = Boolean(inlineBox && inlineBox.style.display === 'block');
+        if (verifiedChip) verifiedChip.style.display = 'none';
+        if (idInput) {
+          idInput.readOnly = false;
+          idInput.classList.remove('auth-email-verified');
         }
+        if (otpBtn) {
+          otpBtn.style.display = otpBoxOpen ? 'none' : 'flex';
+          otpBtn.disabled = false;
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:18px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify Email with OTP</span><span class="material-icons-round" style="font-size:18px;">arrow_forward</span>';
+        }
+        if (pwdSection) pwdSection.style.display = 'none';
+        if (submitBtn) submitBtn.style.display = 'none';
       }
     }
 
-    function resetInlineSignupVerification() {
+    function resetInlineSignupVerification(focusEmail = false) {
       signupVerifiedEmail = '';
       signupVerificationToken = '';
       if (inlineOtpCountdownTimer) {
@@ -11267,18 +11413,26 @@
       }
       const inlineBox = document.getElementById('signupInlineOtpBox');
       if (inlineBox) inlineBox.style.display = 'none';
+      const idInput = document.getElementById('authInputIdentifier');
+      if (idInput) {
+        idInput.readOnly = false;
+        idInput.classList.remove('auth-email-verified');
+        if (focusEmail) setTimeout(() => idInput.focus(), 50);
+      }
       for (let i = 1; i <= 6; i++) {
         const d = document.getElementById('inline_otp_' + i);
         if (d) d.value = '';
       }
       updateSignupVerificationGateUI();
     }
+    window.resetInlineSignupVerification = resetInlineSignupVerification;
 
     function handleAuthIdentifierInput() {
       if (APP_STATE.authMode === 'SIGNUP') {
         const curEmail = (document.getElementById('authInputIdentifier')?.value || '').trim().toLowerCase();
-        if (signupVerifiedEmail && curEmail !== signupVerifiedEmail) {
-          resetInlineSignupVerification();
+        const boxOpen = document.getElementById('signupInlineOtpBox')?.style.display === 'block';
+        if ((signupVerifiedEmail && curEmail !== signupVerifiedEmail) || boxOpen) {
+          resetInlineSignupVerification(false);
         }
       }
     }
@@ -11326,7 +11480,7 @@
       const resendBtn = document.getElementById('btnInlineOtpResend');
       if (otpBtn) {
         otpBtn.disabled = true;
-        otpBtn.innerHTML = '<span>Sending...</span>';
+        otpBtn.innerHTML = '<span>Sending OTP...</span>';
       }
       if (resendBtn) resendBtn.disabled = true;
 
@@ -11335,6 +11489,7 @@
         if (res && res.success) {
           const box = document.getElementById('signupInlineOtpBox');
           if (box) box.style.display = 'block';
+          if (otpBtn) otpBtn.style.display = 'none';
           for (let i = 1; i <= 6; i++) {
             const d = document.getElementById('inline_otp_' + i);
             if (d) d.value = '';
@@ -11353,9 +11508,11 @@
         showAuthError('Failed to send OTP: ' + (err.message || 'Network error'));
       } finally {
         if (resendBtn) resendBtn.disabled = false;
-        if (otpBtn && !signupVerificationToken) {
+        const boxOpen = document.getElementById('signupInlineOtpBox')?.style.display === 'block';
+        if (otpBtn && !signupVerificationToken && !boxOpen) {
+          otpBtn.style.display = 'flex';
           otpBtn.disabled = false;
-          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">' + (isResend ? 'Resent' : 'Resend OTP') + '</span>';
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:18px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify Email with OTP</span><span class="material-icons-round" style="font-size:18px;">arrow_forward</span>';
         }
       }
     }
@@ -11769,6 +11926,7 @@
     let fpVerifiedOtp = '';
 
     function openForgotPasswordFlow() {
+      clearAuthError();
       const creds = document.getElementById('authCredentialsView');
       if (creds) creds.style.display = 'none';
       const fp = document.getElementById('authForgotPasswordView');
@@ -11788,6 +11946,7 @@
     window.openForgotPasswordFlow = openForgotPasswordFlow;
 
     function closeForgotPasswordFlow() {
+      clearAuthError();
       if (fpCountdownTimer) clearInterval(fpCountdownTimer);
       const fp = document.getElementById('authForgotPasswordView');
       if (fp) fp.style.display = 'none';
@@ -11800,6 +11959,7 @@
     window.closeForgotPasswordFlow = closeForgotPasswordFlow;
 
     function showFpStep(step) {
+      clearAuthError();
       // Strictly guarantee authCredentialsView and authSignupOtpView are hidden
       const creds = document.getElementById('authCredentialsView');
       if (creds) creds.style.display = 'none';
@@ -11829,9 +11989,10 @@
     window.showFpStep = showFpStep;
 
     async function submitForgotPasswordIdentifier() {
+      clearAuthError();
       const identifier = document.getElementById('fpInputIdentifier').value.trim().toLowerCase();
       if (!identifier || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-        alert('Please enter your registered Email address.');
+        showAuthError('Please enter your registered Email address.');
         return;
       }
       fpPendingIdentifier = identifier;
@@ -11867,10 +12028,10 @@
             showToast(res.message || 'Verification code sent!', 'info');
           }
         } else {
-          alert(res?.error || 'Failed to dispatch verification code. Please check your contact.');
+          showAuthError(res?.error || 'Failed to dispatch verification code. Please check your contact.');
         }
       } catch (err) {
-        alert('Failed to send verification code: ' + (err.message || 'Network error'));
+        showAuthError('Failed to send verification code: ' + (err.message || 'Network error'));
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -11940,6 +12101,7 @@
     window.handleFpOtpPaste = handleFpOtpPaste;
 
     async function submitForgotPasswordOtp() {
+      clearAuthError();
       let otp = '';
       for (let i = 1; i <= 6; i++) {
         const inp = document.getElementById('fp_otp_' + i);
@@ -11947,7 +12109,7 @@
       }
 
       if (otp.length !== 6) {
-        alert('Please enter all 6 digits of the verification code.');
+        showAuthError('Please enter all 6 digits of the verification code.');
         return;
       }
 
@@ -11972,10 +12134,10 @@
             if (np) np.focus();
           }, 150);
         } else {
-          alert(res?.error || 'Invalid verification code. Please check and try again.');
+          showAuthError(res?.error || 'Invalid verification code. Please check and try again.');
         }
       } catch (err) {
-        alert('Verification error: ' + (err.message || 'Network error'));
+        showAuthError('Verification error: ' + (err.message || 'Network error'));
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -11986,19 +12148,20 @@
     window.submitForgotPasswordOtp = submitForgotPasswordOtp;
 
     async function submitForgotPasswordReset() {
+      clearAuthError();
       const new_password = document.getElementById('fpInputNewPassword').value;
       const confirm_password = document.getElementById('fpInputConfirmPassword').value;
 
       if (!new_password) {
-        alert('Please enter a new password.');
+        showAuthError('Please enter a new password.');
         return;
       }
       if (new_password.length < 6) {
-        alert('Password must be at least 6 characters.');
+        showAuthError('Password must be at least 6 characters.');
         return;
       }
       if (new_password !== confirm_password) {
-        alert('Passwords do not match. Please re-enter.');
+        showAuthError('Passwords do not match. Please re-enter.');
         return;
       }
 
@@ -12022,10 +12185,10 @@
           document.getElementById('fpInputConfirmPassword').value = '';
           await completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
         } else {
-          alert(res?.error || 'Failed to reset password. Please try again.');
+          showAuthError(res?.error || 'Failed to reset password. Please try again.');
         }
       } catch (err) {
-        alert('Reset request failed: ' + (err.message || 'Network error'));
+        showAuthError('Reset request failed: ' + (err.message || 'Network error'));
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -12383,6 +12546,13 @@
     }
 
     function handleOfflineRequest(endpoint, method, body) {
+      if (!(endpoint === '/transactions' || endpoint.startsWith('/transactions/'))) {
+        return {
+          success: false,
+          error: 'Action unavailable while offline. Please check your internet connection.'
+        };
+      }
+
       const clientUuid = 'client-' + Date.now() + '-' + Math.random().toString(36).substr(2, 7);
       let action = 'CREATE_TRANSACTION';
       if (method === 'DELETE') action = 'DELETE_TRANSACTION';
@@ -14067,10 +14237,14 @@
       localStorage.removeItem('cached_categories');
       localStorage.removeItem('cached_dashboard');
       localStorage.removeItem('cached_goals');
+      localStorage.removeItem('expense_offline_queue');
+      localStorage.removeItem('app_pin_hash');
       try { sessionStorage.removeItem('pin_unlocked_session'); } catch (e) {}
       LOCAL_TOMBSTONES.clearAll();
+      LOCAL_PENDING_OPS.clearAll();
       APP_STATE.token = '';
       APP_STATE.user = null;
+      APP_STATE.offlineQueue = [];
       APP_STATE.transactions = [];
       APP_STATE.history6m = [];
       APP_STATE.weeklyDaily = [];
@@ -14082,10 +14256,14 @@
       APP_STATE.accounts = [];
       APP_STATE.budgets = null;
       APP_STATE.pinUnlockedThisSession = false;
-      const p1 = document.getElementById('authInputPassword');
-      if (p1) p1.value = '';
-      const p2 = document.getElementById('authInputConfirmPassword');
-      if (p2) p2.value = '';
+      if (typeof userGoals !== 'undefined') userGoals = [];
+      fpPendingIdentifier = '';
+      fpVerifiedOtp = '';
+      if (typeof updateSyncBadge === 'function') updateSyncBadge();
+      ['authInputName', 'authInputIdentifier', 'fpInputIdentifier', 'authInputPassword', 'authInputConfirmPassword'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
       resetInlineSignupVerification();
       showAuthOverlay('LOGIN');
     }

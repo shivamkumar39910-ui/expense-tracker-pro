@@ -691,8 +691,17 @@ def run_tests():
     assert "482910" in plain_msg and "482910" in html_msg
     print("27c. Clean Spam-Resistant Transactional OTP Templates Verified!")
 
+    # 28. Debug SMTP Status & IPv4 SMTP Helper Integrity
+    r_smtp = client.get('/api/v1/debug/smtp-status')
+    assert r_smtp.status_code == 200, f"smtp-status failed: {r_smtp.status_code}"
+    smtp_data = r_smtp.get_json()
+    for req_key in ("has_smtp_user", "has_smtp_password", "port_465_ipv4", "port_587_ipv4", "ipv4_resolved", "connection_test"):
+        assert req_key in smtp_data, f"Missing key in smtp-status: {req_key}"
+    assert hasattr(otp_service, "_IPv4SMTP") and hasattr(otp_service, "_IPv4SMTP_SSL")
+    print("28. SMTP IPv4 Diagnostics & Dispatcher Helpers Verified!")
+
     print("==================================================")
-    print("ALL 26 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
+    print("ALL 28 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")
 
 if __name__ == "__main__":

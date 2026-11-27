@@ -1,17 +1,18 @@
 """
 Expense Tracker Pro - Real OTP Delivery Engine (otp_service.py)
 Dispatches transactional verification codes reliably with spam-safe light formatting,
-multipart plain-text + HTML MIME bodies, clean subjects, and Port-443 HTTPS delivery:
+multipart plain-text + HTML MIME bodies, clean subjects, and smart transport ordering:
 1. Optional Native Gmail Apps Script Webhook (GMAIL_WEBHOOK_URL) -> 100% DMARC Pass
-2. Brevo HTTPS REST API (BREVO_API_KEY + BREVO_SENDER_EMAIL / SMTP_USER)
-3. Resend HTTPS REST API (RESEND_API_KEY)
-4. Direct SMTP fallback (Gmail App Password)
+2. Direct IPv4 Authenticated Gmail SMTP (465 SSL / 587 STARTTLS) -> 100% SPF/DKIM/DMARC Pass
+3. Resend HTTPS REST API (RESEND_API_KEY) -> DKIM-signed Port-443 delivery
+4. Brevo HTTPS REST API (BREVO_API_KEY) -> Port-443 fallback
 5. Non-blocking background dispatch (<1ms UI response)
 """
 
 import json
 import os
 import smtplib
+import socket
 import threading
 import urllib.error
 import urllib.parse
@@ -25,6 +26,44 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "Expense Tracker Pro")
 
 FAST2SMS_API_KEY = os.environ.get("FAST2SMS_API_KEY", "")
+
+
+def _ipv4_create_connection(host: str, port: int, timeout: float):
+    """Creates a TCP socket strictly over IPv4 (AF_INET) to avoid IPv6 ENETUNREACH on Render/Docker."""
+    ipv4_infos = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+    if not ipv4_infos:
+        raise OSError(f"No IPv4 address resolved for {host}:{port}")
+    last_err = None
+    for af, socktype, proto, _, sa in ipv4_infos:
+        sock = None
+        try:
+            sock = socket.socket(af, socktype, proto)
+            sock.settimeout(timeout)
+            sock.connect(sa)
+            return sock
+        except OSError as err:
+            last_err = err
+            if sock is not None:
+                try:
+                    sock.close()
+                except OSError:
+                    pass
+    if last_err is not None:
+        raise last_err
+    raise OSError(f"Failed IPv4 connection to {host}:{port}")
+
+
+class _IPv4SMTP(smtplib.SMTP):
+    """SMTP client pinned to IPv4 sockets while preserving server_hostname for TLS."""
+    def _get_socket(self, host, port, timeout):
+        return _ipv4_create_connection(host, port, timeout)
+
+
+class _IPv4SMTP_SSL(smtplib.SMTP_SSL):
+    """SMTP_SSL client pinned to IPv4 sockets while preserving server_hostname for TLS."""
+    def _get_socket(self, host, port, timeout):
+        sock = _ipv4_create_connection(host, port, timeout)
+        return self.context.wrap_socket(sock, server_hostname=self._host)
 
 
 def generate_email_plain(otp_code: str, user_name: str = "User") -> str:
@@ -192,7 +231,7 @@ def send_resend_email(recipient_email: str, otp_code: str, user_name: str = "Use
 
 
 def send_smtp_email(recipient_email: str, otp_code: str, user_name: str = "User") -> bool:
-    """Sends multipart plain + HTML OTP via direct SMTP (when host permits outbound 587/465)."""
+    """Sends multipart plain + HTML OTP via direct IPv4 SMTP (465 SSL / 587 STARTTLS)."""
     user = (os.environ.get("SMTP_USER") or "").strip()
     password = (os.environ.get("SMTP_PASSWORD") or "").replace(" ", "").strip()
 
@@ -204,22 +243,26 @@ def send_smtp_email(recipient_email: str, otp_code: str, user_name: str = "User"
         msg["Subject"] = _otp_subject(otp_code)
         msg["From"] = formataddr((SMTP_FROM_NAME, user))
         msg["To"] = recipient_email
+        msg["Reply-To"] = user
 
         msg.attach(MIMEText(generate_email_plain(otp_code, user_name), "plain", "utf-8"))
         msg.attach(MIMEText(generate_email_html(otp_code, user_name), "html", "utf-8"))
 
         try:
-            with smtplib.SMTP(SMTP_HOST, 587, timeout=2.5) as server:
-                server.starttls()
+            with _IPv4SMTP_SSL(SMTP_HOST, 465, timeout=2.5) as server:
                 server.login(user, password)
                 server.sendmail(user, recipient_email, msg.as_string())
-                print(f"[OTP SMTP SUCCESS] Sent to {recipient_email} (port 587)")
+                print(f"[OTP SMTP SUCCESS] Sent to {recipient_email} (IPv4 port 465)")
                 return True
-        except Exception:
-            with smtplib.SMTP_SSL(SMTP_HOST, 465, timeout=2.5) as server:
+        except Exception as err_465:
+            print(f"[OTP SMTP 465 NOTE] {err_465}")
+            with _IPv4SMTP(SMTP_HOST, 587, timeout=2.5) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
                 server.login(user, password)
                 server.sendmail(user, recipient_email, msg.as_string())
-                print(f"[OTP SMTP SUCCESS] Sent to {recipient_email} (port 465)")
+                print(f"[OTP SMTP SUCCESS] Sent to {recipient_email} (IPv4 port 587)")
                 return True
     except Exception as e:
         print(f"[OTP SMTP ERROR] SMTP failed: {e}")
@@ -230,9 +273,9 @@ def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User")
     """
     Unified Transactional Email Dispatcher:
     1. Optional Native Gmail Webhook (Port 443 Google Apps Script -> full Gmail DMARC/SPF/DKIM pass)
-    2. Brevo HTTPS API (multipart plain+HTML)
+    2. Direct IPv4 Authenticated Gmail SMTP (465/587 -> authentic From + SPF/DKIM/DMARC pass)
     3. Resend HTTPS API (multipart plain+HTML)
-    4. Direct SMTP (multipart plain+HTML)
+    4. Brevo HTTPS API (multipart plain+HTML)
     """
     clean_email = recipient_email.strip().lower()
 
@@ -240,16 +283,16 @@ def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User")
         if send_gmail_webhook_email(clean_email, otp_code, user_name):
             return True
 
-    if os.environ.get("BREVO_API_KEY"):
-        if send_brevo_email(clean_email, otp_code, user_name):
+    if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
+        if send_smtp_email(clean_email, otp_code, user_name):
             return True
 
     if os.environ.get("RESEND_API_KEY"):
         if send_resend_email(clean_email, otp_code, user_name):
             return True
 
-    if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
-        if send_smtp_email(clean_email, otp_code, user_name):
+    if os.environ.get("BREVO_API_KEY"):
+        if send_brevo_email(clean_email, otp_code, user_name):
             return True
 
     print(f"[OTP AUDIT - DISPATCH PENDING] Code generated for {clean_email}: {otp_code}.")

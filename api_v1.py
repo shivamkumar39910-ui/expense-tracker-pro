@@ -125,25 +125,54 @@ def clear_security_failed_attempts(action_key: str):
 
 @api_v1.route('/debug/smtp-status', methods=['GET'])
 def debug_smtp_status():
+    import socket
+    from otp_service import SMTP_HOST, _IPv4SMTP, _IPv4SMTP_SSL
+
     user = os.environ.get("SMTP_USER", "").strip()
     pwd = os.environ.get("SMTP_PASSWORD", "").replace(" ", "").strip()
-    
+
     status_report = {
         "has_smtp_user": bool(user),
         "smtp_user": user if user else None,
         "has_smtp_password": bool(pwd),
         "password_length": len(pwd),
+        "has_gmail_webhook": bool((os.environ.get("GMAIL_WEBHOOK_URL") or os.environ.get("EMAIL_WEBHOOK_URL") or "").strip()),
+        "has_resend_key": bool((os.environ.get("RESEND_API_KEY") or "").strip()),
+        "has_brevo_key": bool((os.environ.get("BREVO_API_KEY") or "").strip()),
+        "ipv4_resolved": [],
+        "port_465_ipv4": "NOT_TESTED",
+        "port_587_ipv4": "NOT_TESTED",
         "connection_test": "NOT_TESTED"
     }
 
+    try:
+        status_report["ipv4_resolved"] = [
+            info[4][0] for info in socket.getaddrinfo(SMTP_HOST, 465, socket.AF_INET, socket.SOCK_STREAM)
+        ]
+    except Exception as e:
+        status_report["ipv4_resolved"] = [f"DNS_ERROR: {e}"]
+
     if user and pwd:
         try:
-            import smtplib
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            with _IPv4SMTP_SSL(SMTP_HOST, 465, timeout=3.5) as server:
                 server.login(user, pwd)
-            status_report["connection_test"] = "SUCCESS_AUTHENTICATED_465"
+            status_report["port_465_ipv4"] = "SUCCESS_AUTHENTICATED_465_IPV4"
+            status_report["connection_test"] = "SUCCESS_AUTHENTICATED_465_IPV4"
         except Exception as e:
-            status_report["connection_test"] = f"FAILED_465: {str(e)}"
+            status_report["port_465_ipv4"] = f"FAILED_465_IPV4: {e}"
+            status_report["connection_test"] = status_report["port_465_ipv4"]
+
+        try:
+            with _IPv4SMTP(SMTP_HOST, 587, timeout=3.5) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(user, pwd)
+            status_report["port_587_ipv4"] = "SUCCESS_AUTHENTICATED_587_IPV4"
+            if status_report["connection_test"].startswith("FAILED"):
+                status_report["connection_test"] = "SUCCESS_AUTHENTICATED_587_IPV4"
+        except Exception as e:
+            status_report["port_587_ipv4"] = f"FAILED_587_IPV4: {e}"
 
     return jsonify(status_report), 200
 

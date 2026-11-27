@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.1">
+  <meta name="app-shell-version" content="v6.2">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5837,15 +5837,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_1'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_2'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.1-cache') {
-            triggerSwUpgradeReload('v6_1');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.2-cache') {
+            triggerSwUpgradeReload('v6_2');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.1').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.2').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -11877,22 +11877,28 @@
       const p1 = document.getElementById('authInputPassword');
       if (p1) p1.value = '';
 
-      // 1. INSTANT ZERO-DELAY TRANSITION (0ms): Dismiss auth modal immediately so user enters home page instantly
+      // 1. CRITICAL 0ms INSTANT RENDER: Apply and paint all screen data FIRST
+      // before dismissing auth overlay so the user NEVER sees an empty screen or 00 delay!
+      if (res.bootstrap) {
+        localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
+        applyBootstrapData(res.bootstrap, false);
+        persistUnifiedLocalState();
+      } else {
+        // Fallback: If inline bootstrap was missing, fetch and render before removing overlay
+        try {
+          await initializeAppData(true);
+        } catch (e) {
+          console.warn('Fallback hydration note:', e);
+        }
+      }
+
+      // 2. NOW dismiss auth modal: The DOM is 100% painted with real data! Zero flash, zero 00 state!
       resetInlineSignupVerification();
       closeAllSheets();
       hideAuthOverlay();
 
       if (typeof showToast === 'function' && welcomeMsg) {
         showToast(welcomeMsg, 'success');
-      }
-
-      // 2. Apply bootstrap snapshot or hydrate data non-blockingly in background
-      if (res.bootstrap) {
-        localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
-        applyBootstrapData(res.bootstrap, false);
-        persistUnifiedLocalState();
-      } else {
-        initializeAppData(true).catch(e => console.warn('Background hydration note:', e));
       }
       return true;
     }

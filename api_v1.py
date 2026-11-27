@@ -269,18 +269,32 @@ def _lookup_user_by_identifier(cursor, identifier: str, columns: str = "id, name
 
 def _safe_bootstrap_payload(user_id: int, conn=None):
     """Builds inline bootstrap snapshot without allowing non-critical query issues to abort auth."""
+    if conn is not None:
+        try:
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
     try:
-        if conn is not None:
-            _ensure_hidden_category_tables(conn)
         return _build_bootstrap_payload(user_id, conn=conn)
     except Exception as boot_err:
+        import traceback
+        traceback.print_exc()
         print(f"[AUTH BOOTSTRAP FALLBACK WARNING] user_id={user_id}: {boot_err}")
         try:
             if conn is not None:
                 conn.rollback()
         except Exception:
             pass
-        return None
+        # Fallback: try building with a dedicated fresh connection so auth response ALWAYS has bootstrap!
+        try:
+            return _build_bootstrap_payload(user_id, conn=None)
+        except Exception as retry_err:
+            traceback.print_exc()
+            print(f"[AUTH BOOTSTRAP RETRY ERROR] user_id={user_id}: {retry_err}")
+            return None
 
 
 @api_v1.route('/auth/signup/send-otp', methods=['POST'])
@@ -2378,10 +2392,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
         start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
 
         cursor.execute("""
-            SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
+            SELECT SUBSTR(CAST(date AS TEXT), 1, 7) as ym, transaction_type, SUM(amount) as total
             FROM transactions
-            WHERE user_id = ? AND SUBSTR(date, 1, 10) >= ?
-            GROUP BY SUBSTR(date, 1, 7), transaction_type
+            WHERE user_id = ? AND SUBSTR(CAST(date AS TEXT), 1, 10) >= ?
+            GROUP BY SUBSTR(CAST(date AS TEXT), 1, 7), transaction_type
         """, (user_id, start_date_str))
         hist_rows = cursor.fetchall()
 
@@ -2469,6 +2483,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             """, (user_id, user_id))
             cats = [dict(c) for c in cursor.fetchall()]
         except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             _ensure_hidden_category_tables(conn)
             cursor.execute("""
                 SELECT id, name, type, icon, color_hex, image_url, is_default
@@ -2493,6 +2511,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
                 """, tuple(params))
                 sub_rows = cursor.fetchall()
             except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 cursor.execute(f"""
                     SELECT id, category_id, name 
                     FROM subcategories 
@@ -2535,6 +2557,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             tx_rows = [dict(r) for r in cursor.fetchall()]
         except Exception:
             try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
                 cursor.execute("""
                     SELECT t.id, t.client_uuid, t.transaction_type, t.amount, t.date, t.note,
                            t.account_id, t.category_id, t.subcategory_id,
@@ -2552,6 +2578,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
                 for tx in tx_rows:
                     tx["category_image"] = None
             except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 tx_rows = []
         for tx in tx_rows:
             tx["account_name"] = normalize_account_name(tx.get("account_name"))
@@ -2569,7 +2599,7 @@ def _build_bootstrap_payload(user_id: int, conn=None):
                    COUNT(t.id) as tx_count
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
-            WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND t.date LIKE ?
+            WHERE t.user_id = ? AND t.transaction_type = 'EXPENSE' AND CAST(t.date AS TEXT) LIKE ?
             GROUP BY t.category_id, c.name, c.color_hex, c.icon
             ORDER BY total_amount DESC
         """, (user_id, pattern))
@@ -2650,11 +2680,11 @@ def _build_bootstrap_payload(user_id: int, conn=None):
         monday = today - timedelta(days=diff_to_monday)
         sunday = monday + timedelta(days=6)
         cursor.execute("""
-            SELECT SUBSTR(date, 1, 10) as d, SUM(amount) as daily_total
+            SELECT SUBSTR(CAST(date AS TEXT), 1, 10) as d, SUM(amount) as daily_total
             FROM transactions
             WHERE user_id = ? AND transaction_type = 'EXPENSE' 
-              AND SUBSTR(date, 1, 10) >= ? AND SUBSTR(date, 1, 10) <= ?
-            GROUP BY SUBSTR(date, 1, 10)
+              AND SUBSTR(CAST(date AS TEXT), 1, 10) >= ? AND SUBSTR(CAST(date AS TEXT), 1, 10) <= ?
+            GROUP BY SUBSTR(CAST(date AS TEXT), 1, 10)
         """, (user_id, monday.isoformat(), sunday.isoformat()))
         daily_rows = {row["d"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
 
@@ -2674,6 +2704,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
         try:
             goals_list = database.get_financial_goals(user_id, conn=conn)
         except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             goals_list = []
 
         return {

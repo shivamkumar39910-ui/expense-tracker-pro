@@ -137,6 +137,17 @@ def create_database():
             PRIMARY KEY (user_id, subcategory_id)
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS email_otp_verifications (
+            email TEXT PRIMARY KEY,
+            otp_code TEXT NOT NULL,
+            otp_expires_at TEXT NOT NULL,
+            verified INTEGER DEFAULT 0,
+            verify_token TEXT,
+            attempts INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     # 5. Transactions Table (v2.0 Ledger: EXPENSE, INCOME, TRANSFER)
     cursor.execute("""
@@ -769,9 +780,11 @@ def seed_default_accounts_and_migrate_legacy():
 # Core Business Logic & CRUD Operations (v2.0)
 # ==================================================
 
-def create_user_default_data(user_id):
-    """Creates initial accounts for newly registered users: Cash, UPI, and Cards."""
-    conn = get_db_connection()
+def create_user_default_data(user_id, conn=None):
+    """Creates initial accounts for newly registered users: Cash, UPI, and Cards (supports pooled conn reuse)."""
+    owns_conn = conn is None
+    if owns_conn:
+        conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
@@ -786,7 +799,8 @@ def create_user_default_data(user_id):
         VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
     """, (user_id,))
     conn.commit()
-    conn.close()
+    if owns_conn:
+        conn.close()
 
 def get_user_accounts(user_id):
     conn = get_db_connection()

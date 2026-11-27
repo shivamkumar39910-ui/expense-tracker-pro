@@ -130,6 +130,7 @@ class PostgresCursorWrapper:
                 "user_hidden_categories",
                 "user_hidden_subcategories",
                 "notification_preferences",
+                "email_otp_verifications",
             }
             if tbl_name not in no_id_tables:
                 # Append RETURNING id so we can capture cursor.lastrowid

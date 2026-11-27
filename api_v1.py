@@ -151,6 +151,142 @@ def debug_smtp_status():
 # 1. Authentication & 2FA OTP Endpoints
 # ==================================================
 
+_EMAIL_OTP_TABLE_ENSURED = False
+
+def _ensure_email_otp_table(conn):
+    global _EMAIL_OTP_TABLE_ENSURED
+    if _EMAIL_OTP_TABLE_ENSURED:
+        return
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS email_otp_verifications (
+            email TEXT PRIMARY KEY,
+            otp_code TEXT NOT NULL,
+            otp_expires_at TEXT NOT NULL,
+            verified INTEGER DEFAULT 0,
+            verify_token TEXT,
+            attempts INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    _EMAIL_OTP_TABLE_ENSURED = True
+
+
+@api_v1.route('/auth/signup/send-otp', methods=['POST'])
+def signup_send_otp():
+    """Step 1 of Inline Email-Verified Sign Up: validates new email and dispatches 6-digit OTP."""
+    data = request.get_json() or {}
+    email = (data.get("email") or data.get("identifier") or "").strip().lower()
+    name = (data.get("name") or "User").strip() or "User"
+
+    if not email or not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
+
+    if check_security_rate_limit(f"signup_send:{email}", max_attempts=8, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many OTP requests. Please wait a few minutes and try again."}), 429
+
+    conn = database.get_db_connection()
+    try:
+        _ensure_email_otp_table(conn)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, is_verified FROM users WHERE LOWER(email) = ?", (email,))
+        existing = cursor.fetchone()
+        if existing and existing["is_verified"] == 1:
+            return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+
+        otp = generate_otp()
+        otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("""
+            INSERT INTO email_otp_verifications (email, otp_code, otp_expires_at, verified, verify_token, attempts, updated_at)
+            VALUES (?, ?, ?, 0, NULL, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT (email) DO UPDATE SET
+                otp_code = EXCLUDED.otp_code,
+                otp_expires_at = EXCLUDED.otp_expires_at,
+                verified = 0,
+                verify_token = NULL,
+                attempts = 0,
+                updated_at = CURRENT_TIMESTAMP
+        """, (email, otp, otp_expiry))
+        conn.commit()
+    finally:
+        conn.close()
+
+    record_security_failed_attempt(f"signup_send:{email}")
+    otp_service.dispatch_otp(email, otp, name)
+
+    res_payload = {
+        "success": True,
+        "message": "Verification code sent to your email!",
+        "email": email
+    }
+    is_prod = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+    from flask import current_app
+    if not is_prod or current_app.config.get("TESTING"):
+        res_payload["otp_code"] = otp
+    return jsonify(res_payload), 200
+
+
+@api_v1.route('/auth/signup/verify-otp', methods=['POST'])
+def signup_verify_otp():
+    """Step 2 of Inline Email-Verified Sign Up: validates 6-digit OTP and returns signed token."""
+    data = request.get_json() or {}
+    email = (data.get("email") or data.get("identifier") or "").strip().lower()
+    otp = (data.get("otp") or data.get("otp_code") or "").strip()
+
+    if not email or not otp:
+        return jsonify({"success": False, "error": "Email and 6-digit verification code are required."}), 400
+
+    if check_security_rate_limit(f"signup_verify:{email}", max_attempts=6, window_seconds=900):
+        return jsonify({"success": False, "error": "Too many incorrect attempts. Please request a fresh OTP."}), 429
+
+    conn = database.get_db_connection()
+    try:
+        _ensure_email_otp_table(conn)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT otp_code, otp_expires_at FROM email_otp_verifications WHERE email = ?",
+            (email,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "Please send an OTP to your email first."}), 400
+
+        exp_str = str(row["otp_expires_at"] or "")[:19]
+        if exp_str:
+            try:
+                if datetime.utcnow() > datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S"):
+                    return jsonify({"success": False, "error": "Verification code expired. Please resend a new code."}), 400
+            except Exception:
+                pass
+
+        if str(row["otp_code"]) != otp:
+            record_security_failed_attempt(f"signup_verify:{email}")
+            return jsonify({"success": False, "error": "Invalid verification code. Please check and try again."}), 400
+
+        clear_security_failed_attempts(f"signup_verify:{email}")
+        now = datetime.utcnow()
+        v_token = jwt.encode(
+            {"sub": email, "purpose": "signup_email_verified", "iat": now, "exp": now + timedelta(minutes=30)},
+            JWT_SECRET,
+            algorithm=JWT_ALGORITHM
+        )
+        cursor.execute(
+            "UPDATE email_otp_verifications SET verified = 1, verify_token = ?, updated_at = CURRENT_TIMESTAMP WHERE email = ?",
+            (v_token, email)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return jsonify({
+        "success": True,
+        "message": "Email verified successfully!",
+        "verification_token": v_token,
+        "email": email
+    }), 200
+
+
 @api_v1.route('/auth/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
@@ -159,39 +295,103 @@ def register():
     phone = (data.get("phone") or "").strip()
     password = data.get("password") or ""
     confirm_password = data.get("confirm_password") or ""
+    verification_token = (data.get("verification_token") or "").strip()
 
     if not name:
         return jsonify({"success": False, "error": "Name is required"}), 400
     if not email and not phone:
-        return jsonify({"success": False, "error": "Email or Phone number is required"}), 400
+        return jsonify({"success": False, "error": "Email address is required"}), 400
     if len(password) < 6:
         return jsonify({"success": False, "error": "Password must be at least 6 characters"}), 400
     if confirm_password and password != confirm_password:
         return jsonify({"success": False, "error": "Passwords do not match. Please re-enter."}), 400
 
+    hashed_pwd = generate_password_hash(password, method="pbkdf2:sha256:150000")
+
+    # Validate pre-verified email token if provided (inline verified Sign Up flow)
+    preverified_email = False
+    if verification_token:
+        try:
+            v_payload = jwt.decode(verification_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            if v_payload.get("purpose") == "signup_email_verified" and v_payload.get("sub") == email:
+                preverified_email = True
+        except Exception:
+            return jsonify({"success": False, "error": "Email verification expired or invalid. Please verify your email again."}), 400
+
+        if not preverified_email:
+            return jsonify({"success": False, "error": "Verified email does not match. Please verify your email with OTP."}), 400
+
     conn = database.get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    otp = generate_otp()
-    otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-    hashed_pwd = generate_password_hash(password)
+        if preverified_email:
+            _ensure_email_otp_table(conn)
+            cursor.execute("SELECT verified, verify_token FROM email_otp_verifications WHERE email = ?", (email,))
+            vrow = cursor.fetchone()
+            if not vrow or int(vrow["verified"] or 0) != 1 or vrow["verify_token"] != verification_token:
+                return jsonify({"success": False, "error": "Please complete Email OTP verification first."}), 400
 
-    # Check existing user
-    if email:
-        cursor.execute("SELECT id, is_verified FROM users WHERE LOWER(email) = ?", (email,))
-        existing = cursor.fetchone()
-        if existing:
-            if existing["is_verified"] == 1:
-                conn.close()
-                return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+            cursor.execute("SELECT id, is_verified, currency_symbol FROM users WHERE LOWER(email) = ?", (email,))
+            existing = cursor.fetchone()
+            if existing:
+                if existing["is_verified"] == 1:
+                    return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
+                user_id = existing["id"]
+                currency_sym = existing["currency_symbol"] or "₹"
+                cursor.execute("""
+                    UPDATE users SET name = ?, password = ?, is_verified = 1, otp_code = NULL, otp_expires_at = NULL
+                    WHERE id = ?
+                """, (name, hashed_pwd, user_id))
+                cursor.execute("SELECT count(*) FROM accounts WHERE user_id = ?", (user_id,))
+                if int(cursor.fetchone()[0] or 0) == 0:
+                    database.create_user_default_data(user_id, conn=conn)
             else:
+                cursor.execute("""
+                    INSERT INTO users (name, email, phone, password, is_verified, otp_code, otp_expires_at)
+                    VALUES (?, ?, ?, ?, 1, NULL, NULL)
+                """, (name, email, phone, hashed_pwd))
+                user_id = cursor.lastrowid
+                currency_sym = "₹"
+                database.create_user_default_data(user_id, conn=conn)
+
+            cursor.execute("DELETE FROM email_otp_verifications WHERE email = ?", (email,))
+            conn.commit()
+
+            access_token, refresh_token = generate_tokens(user_id)
+            bootstrap = _build_bootstrap_payload(user_id, conn=conn)
+            return jsonify({
+                "success": True,
+                "require_otp": False,
+                "message": "Account created successfully!",
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "user": {
+                    "id": user_id,
+                    "name": name,
+                    "email": email,
+                    "phone": phone,
+                    "currency_symbol": currency_sym
+                },
+                "bootstrap": bootstrap
+            }), 201
+
+        otp = generate_otp()
+        otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Legacy post-submit OTP flow (retained for direct API compatibility)
+        if email:
+            cursor.execute("SELECT id, is_verified FROM users WHERE LOWER(email) = ?", (email,))
+            existing = cursor.fetchone()
+            if existing:
+                if existing["is_verified"] == 1:
+                    return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
                 user_id = existing["id"]
                 cursor.execute("""
                     UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
                     WHERE id = ?
                 """, (name, hashed_pwd, otp, otp_expiry, user_id))
                 conn.commit()
-                conn.close()
                 otp_service.dispatch_otp(email, otp, name)
                 res_payload = {
                     "success": True,
@@ -204,21 +404,18 @@ def register():
                     res_payload["otp_code"] = otp
                 return jsonify(res_payload), 200
 
-    if phone:
-        cursor.execute("SELECT id, is_verified FROM users WHERE phone = ?", (phone,))
-        existing = cursor.fetchone()
-        if existing:
-            if existing["is_verified"] == 1:
-                conn.close()
-                return jsonify({"success": False, "error": "An account with this phone number already exists. Please Log In."}), 400
-            else:
+        if phone:
+            cursor.execute("SELECT id, is_verified FROM users WHERE phone = ?", (phone,))
+            existing = cursor.fetchone()
+            if existing:
+                if existing["is_verified"] == 1:
+                    return jsonify({"success": False, "error": "An account with this phone number already exists. Please Log In."}), 400
                 user_id = existing["id"]
                 cursor.execute("""
                     UPDATE users SET name = ?, password = ?, otp_code = ?, otp_expires_at = ?
                     WHERE id = ?
                 """, (name, hashed_pwd, otp, otp_expiry, user_id))
                 conn.commit()
-                conn.close()
                 otp_service.dispatch_otp(phone, otp, name)
                 res_payload = {
                     "success": True,
@@ -231,18 +428,15 @@ def register():
                     res_payload["otp_code"] = otp
                 return jsonify(res_payload), 200
 
-    cursor.execute("""
-        INSERT INTO users (name, email, phone, password, is_verified, otp_code, otp_expires_at)
-        VALUES (?, ?, ?, ?, 0, ?, ?)
-    """, (name, email or f"{phone}@phone.local", phone, hashed_pwd, otp, otp_expiry))
-    user_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
+        cursor.execute("""
+            INSERT INTO users (name, email, phone, password, is_verified, otp_code, otp_expires_at)
+            VALUES (?, ?, ?, ?, 0, ?, ?)
+        """, (name, email or f"{phone}@phone.local", phone, hashed_pwd, otp, otp_expiry))
+        user_id = cursor.lastrowid
+        database.create_user_default_data(user_id, conn=conn)
+    finally:
+        conn.close()
 
-    # Initialize default accounts for user
-    database.create_user_default_data(user_id)
-
-    # Dispatch OTP via real Email/SMS engine
     otp_service.dispatch_otp(email or phone, otp, name)
 
     res_payload = {
@@ -313,7 +507,7 @@ def forgot_password_send_otp():
     identifier = (data.get("identifier") or data.get("email") or data.get("phone") or "").strip().lower()
 
     if not identifier:
-        return jsonify({"success": False, "error": "Email or Mobile number is required"}), 400
+        return jsonify({"success": False, "error": "Email address is required"}), 400
 
     conn = database.get_db_connection()
     cursor = conn.cursor()
@@ -324,7 +518,7 @@ def forgot_password_send_otp():
 
     if not user:
         conn.close()
-        return jsonify({"success": False, "error": "No account found with this email or mobile number."}), 404
+        return jsonify({"success": False, "error": "No account found with this email address."}), 404
 
     user_dict = dict(user)
     otp = generate_otp()
@@ -336,7 +530,6 @@ def forgot_password_send_otp():
     conn.commit()
     conn.close()
 
-    # Dispatch via Real Email or SMS
     dispatch_info = otp_service.dispatch_otp(identifier, otp, user_dict.get("name", "User"))
     channel_name = "email inbox" if dispatch_info["channel"] == "EMAIL" else "mobile phone (SMS)"
 
@@ -377,7 +570,6 @@ def forgot_password_verify_otp():
         conn.close()
         return jsonify({"success": False, "error": "Too many failed attempts. Security lockout active for 15 minutes."}), 429
 
-    # Verify expiry
     if user_dict.get("otp_expires_at"):
         try:
             exp_str = str(user_dict["otp_expires_at"])[:19]
@@ -405,7 +597,7 @@ def forgot_password_verify_otp():
 def forgot_password_reset():
     """
     Step 3 of Forgot Password:
-    Sets the new password and automatically logs the user into their dashboard.
+    Sets the new password and returns token + bootstrap snapshot for instant zero-flash login.
     """
     data = request.get_json() or {}
     identifier = (data.get("identifier") or data.get("email") or data.get("phone") or "").strip().lower()
@@ -421,33 +613,31 @@ def forgot_password_reset():
         return jsonify({"success": False, "error": "Passwords do not match. Please re-enter."}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, email, phone, currency_symbol, otp_code, otp_expires_at FROM users WHERE LOWER(email) = ? OR phone = ?
-    """, (identifier, identifier))
-    user = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, email, phone, currency_symbol, otp_code, otp_expires_at FROM users WHERE LOWER(email) = ? OR phone = ?
+        """, (identifier, identifier))
+        user = cursor.fetchone()
 
-    if not user:
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        user_dict = dict(user)
+
+        if user_dict.get("otp_code") != otp:
+            return jsonify({"success": False, "error": "Invalid verification code."}), 400
+
+        hashed_pwd = generate_password_hash(new_password, method="pbkdf2:sha256:150000")
+        cursor.execute("""
+            UPDATE users SET password = ?, otp_code = NULL, otp_expires_at = NULL, is_verified = 1 WHERE id = ?
+        """, (hashed_pwd, user_dict["id"]))
+        conn.commit()
+
+        access_token, refresh_token = generate_tokens(user_dict["id"])
+        bootstrap = _build_bootstrap_payload(user_dict["id"], conn=conn)
+    finally:
         conn.close()
-        return jsonify({"success": False, "error": "User not found"}), 404
-
-    user_dict = dict(user)
-
-    # Verify OTP once more
-    if user_dict.get("otp_code") != otp:
-        conn.close()
-        return jsonify({"success": False, "error": "Invalid verification code."}), 400
-
-    # Update password and clear OTP
-    hashed_pwd = generate_password_hash(new_password)
-    cursor.execute("""
-        UPDATE users SET password = ?, otp_code = NULL, otp_expires_at = NULL, is_verified = 1 WHERE id = ?
-    """, (hashed_pwd, user_dict["id"]))
-    conn.commit()
-    conn.close()
-
-    # Generate tokens for instant login
-    access_token, refresh_token = generate_tokens(user_dict["id"])
 
     return jsonify({
         "success": True,
@@ -460,7 +650,8 @@ def forgot_password_reset():
             "email": user_dict["email"],
             "phone": user_dict["phone"],
             "currency_symbol": user_dict["currency_symbol"]
-        }
+        },
+        "bootstrap": bootstrap
     }), 200
 
 @api_v1.route('/auth/verify-otp', methods=['POST'])
@@ -473,50 +664,47 @@ def verify_registration_otp():
         return jsonify({"success": False, "error": "Identifier and OTP code are required"}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, email, phone, currency_symbol, otp_code, otp_expires_at
-        FROM users
-        WHERE LOWER(email) = ? OR phone = ?
-    """, (identifier, identifier))
-    user = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, email, phone, currency_symbol, otp_code, otp_expires_at
+            FROM users
+            WHERE LOWER(email) = ? OR phone = ?
+        """, (identifier, identifier))
+        user = cursor.fetchone()
 
-    if not user:
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        user = dict(user)
+
+        if check_security_rate_limit(f"otp_reg:{user['id']}", max_attempts=5, window_seconds=900):
+            return jsonify({"success": False, "error": "Too many failed attempts. Security lockout active for 15 minutes."}), 429
+
+        if user.get("otp_expires_at"):
+            try:
+                exp_str = str(user["otp_expires_at"])[:19]
+                exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
+                if datetime.utcnow() > exp_dt:
+                    return jsonify({"success": False, "error": "Verification OTP has expired. Please request a new code."}), 400
+            except Exception:
+                pass
+
+        if user["otp_code"] != otp:
+            record_security_failed_attempt(f"otp_reg:{user['id']}")
+            return jsonify({"success": False, "error": "Invalid OTP code. Please check and re-enter."}), 400
+
+        clear_security_failed_attempts(f"otp_reg:{user['id']}")
+
+        cursor.execute("""
+            UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?
+        """, (user["id"],))
+        conn.commit()
+
+        access_token, refresh_token = generate_tokens(user["id"])
+        bootstrap = _build_bootstrap_payload(user["id"], conn=conn)
+    finally:
         conn.close()
-        return jsonify({"success": False, "error": "User not found"}), 404
-
-    user = dict(user)
-
-    if check_security_rate_limit(f"otp_reg:{user['id']}", max_attempts=5, window_seconds=900):
-        conn.close()
-        return jsonify({"success": False, "error": "Too many failed attempts. Security lockout active for 15 minutes."}), 429
-
-    # Check OTP expiry
-    if user.get("otp_expires_at"):
-        try:
-            exp_str = str(user["otp_expires_at"])[:19]
-            exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
-            if datetime.utcnow() > exp_dt:
-                conn.close()
-                return jsonify({"success": False, "error": "Verification OTP has expired. Please request a new code."}), 400
-        except Exception:
-            pass
-
-    if user["otp_code"] != otp:
-        record_security_failed_attempt(f"otp_reg:{user['id']}")
-        conn.close()
-        return jsonify({"success": False, "error": "Invalid OTP code. Please check and re-enter."}), 400
-
-    clear_security_failed_attempts(f"otp_reg:{user['id']}")
-
-    # Mark verified and clear OTP
-    cursor.execute("""
-        UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?
-    """, (user["id"],))
-    conn.commit()
-    conn.close()
-
-    access_token, refresh_token = generate_tokens(user["id"])
 
     return jsonify({
         "success": True,
@@ -529,65 +717,63 @@ def verify_registration_otp():
             "email": user["email"],
             "phone": user["phone"],
             "currency_symbol": user["currency_symbol"]
-        }
+        },
+        "bootstrap": bootstrap
     }), 200
 
 @api_v1.route('/auth/login', methods=['POST'])
 def login():
     """
-    Step 1 of 2FA Login:
-    Verifies credentials, generates fresh OTP, sends to user.
+    Fast Password Login (returns JWT + full bootstrap payload on same pooled connection
+    so the UI transitions straight into real balances & data with zero flash).
     """
     data = request.get_json() or {}
     identifier = (data.get("identifier") or data.get("email") or data.get("phone") or "").strip().lower()
     password = data.get("password") or ""
 
     if not identifier or not password:
-        return jsonify({"success": False, "error": "Email/Phone and password are required"}), 400
+        return jsonify({"success": False, "error": "Email and password are required"}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, email, phone, password, is_verified, currency_symbol
-        FROM users
-        WHERE LOWER(email) = ? OR phone = ?
-    """, (identifier, identifier))
-    user = cursor.fetchone()
-
-    if not user or not check_password_hash(user["password"], password):
-        conn.close()
-        return jsonify({"success": False, "error": "Invalid email/phone or password"}), 401
-
-    user_dict = dict(user)
-
-    # Check if 2FA OTP is explicitly requested (default is direct fast login)
-    require_2fa = data.get("require_2fa", False)
-
-    if require_2fa:
-        # Generate Login 2FA OTP
-        otp = generate_otp()
-        otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-
+    try:
+        cursor = conn.cursor()
         cursor.execute("""
-            UPDATE users SET login_otp_code = ?, login_otp_expires_at = ? WHERE id = ?
-        """, (otp, otp_expiry, user_dict["id"]))
-        conn.commit()
+            SELECT id, name, email, phone, password, is_verified, currency_symbol
+            FROM users
+            WHERE LOWER(email) = ? OR phone = ?
+        """, (identifier, identifier))
+        user = cursor.fetchone()
+
+        if not user or not check_password_hash(user["password"], password):
+            return jsonify({"success": False, "error": "Invalid email or password"}), 401
+
+        user_dict = dict(user)
+        require_2fa = data.get("require_2fa", False)
+
+        if require_2fa:
+            otp = generate_otp()
+            otp_expiry = (datetime.utcnow() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+            cursor.execute("""
+                UPDATE users SET login_otp_code = ?, login_otp_expires_at = ? WHERE id = ?
+            """, (otp, otp_expiry, user_dict["id"]))
+            conn.commit()
+
+            otp_service.dispatch_otp(identifier, otp, user_dict.get("name", "User"))
+            print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
+
+            return jsonify({
+                "success": True,
+                "require_otp": True,
+                "message": "Login 2FA OTP sent to your registered contact.",
+                "identifier": identifier,
+                "otp_code": otp
+            }), 200
+
+        access_token, refresh_token = generate_tokens(user_dict["id"])
+        bootstrap = _build_bootstrap_payload(user_dict["id"], conn=conn)
+    finally:
         conn.close()
-
-        otp_service.dispatch_otp(identifier, otp, user_dict.get("name", "User"))
-        print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
-
-        return jsonify({
-            "success": True,
-            "require_otp": True,
-            "message": "Login 2FA OTP sent to your registered contact.",
-            "identifier": identifier,
-            "otp_code": otp # Returned for testing / development ease
-        }), 200
-
-    # Direct Password Login (Instant, user-friendly authentication)
-    conn.close()
-    access_token, refresh_token = generate_tokens(user_dict["id"])
 
     return jsonify({
         "success": True,
@@ -601,14 +787,15 @@ def login():
             "email": user_dict["email"],
             "phone": user_dict["phone"],
             "currency_symbol": user_dict["currency_symbol"]
-        }
+        },
+        "bootstrap": bootstrap
     }), 200
 
 @api_v1.route('/auth/login-verify-otp', methods=['POST'])
 def login_verify_otp():
     """
     Step 2 of 2FA Login:
-    Validates Login OTP and issues JWT tokens upon success.
+    Validates Login OTP and issues JWT tokens + bootstrap snapshot upon success.
     """
     data = request.get_json() or {}
     identifier = (data.get("identifier") or data.get("email") or data.get("phone") or "").strip().lower()
@@ -618,48 +805,45 @@ def login_verify_otp():
         return jsonify({"success": False, "error": "Identifier and OTP are required"}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, email, phone, currency_symbol, login_otp_code, login_otp_expires_at
-        FROM users
-        WHERE LOWER(email) = ? OR phone = ?
-    """, (identifier, identifier))
-    user = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, email, phone, currency_symbol, login_otp_code, login_otp_expires_at
+            FROM users
+            WHERE LOWER(email) = ? OR phone = ?
+        """, (identifier, identifier))
+        user = cursor.fetchone()
 
-    if not user:
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        user = dict(user)
+
+        if check_security_rate_limit(f"otp_login:{user['id']}", max_attempts=5, window_seconds=900):
+            return jsonify({"success": False, "error": "Too many failed login attempts. Security lockout active for 15 minutes."}), 429
+
+        if user.get("login_otp_expires_at"):
+            try:
+                exp_str = str(user["login_otp_expires_at"])[:19]
+                exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
+                if datetime.utcnow() > exp_dt:
+                    return jsonify({"success": False, "error": "Login 2FA OTP has expired. Please log in again."}), 400
+            except Exception:
+                pass
+
+        if user["login_otp_code"] != otp:
+            record_security_failed_attempt(f"otp_login:{user['id']}")
+            return jsonify({"success": False, "error": "Invalid 2FA OTP code"}), 400
+
+        clear_security_failed_attempts(f"otp_login:{user['id']}")
+
+        cursor.execute("UPDATE users SET login_otp_code = NULL, login_otp_expires_at = NULL WHERE id = ?", (user["id"],))
+        conn.commit()
+
+        access_token, refresh_token = generate_tokens(user["id"])
+        bootstrap = _build_bootstrap_payload(user["id"], conn=conn)
+    finally:
         conn.close()
-        return jsonify({"success": False, "error": "User not found"}), 404
-
-    user = dict(user)
-
-    if check_security_rate_limit(f"otp_login:{user['id']}", max_attempts=5, window_seconds=900):
-        conn.close()
-        return jsonify({"success": False, "error": "Too many failed login attempts. Security lockout active for 15 minutes."}), 429
-
-    # Check Login OTP expiry
-    if user.get("login_otp_expires_at"):
-        try:
-            exp_str = str(user["login_otp_expires_at"])[:19]
-            exp_dt = datetime.strptime(exp_str, "%Y-%m-%d %H:%M:%S")
-            if datetime.utcnow() > exp_dt:
-                conn.close()
-                return jsonify({"success": False, "error": "Login 2FA OTP has expired. Please log in again."}), 400
-        except Exception:
-            pass
-
-    if user["login_otp_code"] != otp:
-        record_security_failed_attempt(f"otp_login:{user['id']}")
-        conn.close()
-        return jsonify({"success": False, "error": "Invalid 2FA OTP code"}), 400
-
-    clear_security_failed_attempts(f"otp_login:{user['id']}")
-
-    # Clear login OTP upon successful validation
-    cursor.execute("UPDATE users SET login_otp_code = NULL, login_otp_expires_at = NULL WHERE id = ?", (user["id"],))
-    conn.commit()
-    conn.close()
-
-    access_token, refresh_token = generate_tokens(user["id"])
 
     return jsonify({
         "success": True,
@@ -672,7 +856,8 @@ def login_verify_otp():
             "email": user["email"],
             "phone": user["phone"],
             "currency_symbol": user["currency_symbol"]
-        }
+        },
+        "bootstrap": bootstrap
     }), 200
 
 @api_v1.route('/auth/me', methods=['GET'])
@@ -1935,21 +2120,21 @@ def get_command_center_summary():
         }
     }), 200
 
-@api_v1.route('/app/bootstrap', methods=['GET'])
-@token_required
-def get_app_bootstrap():
+def _build_bootstrap_payload(user_id: int, conn=None):
     """
-    Single-Connection Pooled Bootstrap Endpoint:
+    Single-Connection Pooled Bootstrap Builder:
     Executes all initial screen queries using ONE pooled DB connection
-    with batched GROUP BY SQL (zero N+1 loops, zero multiple connection overhead).
+    with batched GROUP BY SQL (zero redundant DDL, zero multi-roundtrip latency).
+    Reused by both /app/bootstrap and inline auth responses for instant 0-flash transitions.
     """
-    user_id = request.user["id"]
     today = date.today()
     month = today.month
     year = today.year
     pattern = f"{year:04d}-{month:02d}%"
 
-    conn = database.get_db_connection()
+    owns_conn = conn is None
+    if owns_conn:
+        conn = database.get_db_connection()
     cursor = conn.cursor()
 
     try:
@@ -2059,24 +2244,10 @@ def get_app_bootstrap():
             "savings_rate_pct": round(sav_rate, 1)
         }
 
-        # 3b. Forecast reusing the SAME pooled connection (live, zero multi-worker stale cache)
+        # 3b. Forecast reusing the SAME pooled connection
         forecast = forecasting_engine.calculate_month_end_forecast(user_id, conn=conn, use_cache=False)
 
         # 4. Categories & Subcategories (excluding user-deleted/hidden)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_hidden_categories (
-                user_id INTEGER NOT NULL,
-                category_id INTEGER NOT NULL,
-                PRIMARY KEY (user_id, category_id)
-            )
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
-                user_id INTEGER NOT NULL,
-                subcategory_id INTEGER NOT NULL,
-                PRIMARY KEY (user_id, subcategory_id)
-            )
-        """)
         cursor.execute("""
             SELECT id, name, type, icon, color_hex, image_url, is_default
             FROM categories
@@ -2212,7 +2383,6 @@ def get_app_bootstrap():
             "category_budgets": category_budgets
         }
 
-        # 8. history_6m already computed cleanly in merged Step 3 above
         # 9. Unread notifications count (single lightweight scalar query)
         cursor.execute("""
             SELECT COUNT(*) as cnt FROM notifications
@@ -2250,29 +2420,35 @@ def get_app_bootstrap():
         # 11. Goals included right in single bootstrap connection
         goals_list = database.get_financial_goals(user_id, conn=conn)
 
-        return jsonify({
-            "success": True,
-            "bootstrap": {
-                "currency": curr,
-                "security": security_settings,
-                "accounts": accounts,
-                "net_worth": net_worth,
-                "cashflow": cashflow,
-                "forecast": forecast,
-                "categories": categories,
-                "recent_transactions": tx_rows[:5],
-                "transactions": tx_rows,
-                "budgets": budget_data,
-                "goals": goals_list,
-                "breakdown": breakdown,
-                "total_expense": round(total_expense, 2),
-                "history_6m": history_6m,
-                "weekly_daily": weekly_daily,
-                "unread_notifications": unread_cnt
-            }
-        }), 200
+        return {
+            "currency": curr,
+            "security": security_settings,
+            "accounts": accounts,
+            "net_worth": net_worth,
+            "cashflow": cashflow,
+            "forecast": forecast,
+            "categories": categories,
+            "recent_transactions": tx_rows[:5],
+            "transactions": tx_rows,
+            "budgets": budget_data,
+            "goals": goals_list,
+            "breakdown": breakdown,
+            "total_expense": round(total_expense, 2),
+            "history_6m": history_6m,
+            "weekly_daily": weekly_daily,
+            "unread_notifications": unread_cnt
+        }
     finally:
-        conn.close()
+        if owns_conn:
+            conn.close()
+
+
+@api_v1.route('/app/bootstrap', methods=['GET'])
+@token_required
+def get_app_bootstrap():
+    """Returns consolidated initial screen bootstrap payload in one pooled query pass."""
+    user_id = request.user["id"]
+    return jsonify({"success": True, "bootstrap": _build_bootstrap_payload(user_id)}), 200
 
 # ==================================================
 # 8. Financial Goals (Phase 11 Deepening)

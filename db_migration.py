@@ -254,6 +254,16 @@ CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
     PRIMARY KEY (user_id, subcategory_id)
 );
 
+CREATE TABLE IF NOT EXISTS email_otp_verifications (
+    email TEXT PRIMARY KEY,
+    otp_code TEXT NOT NULL,
+    otp_expires_at TEXT NOT NULL,
+    verified INTEGER DEFAULT 0,
+    verify_token TEXT,
+    attempts INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance and data isolation
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);

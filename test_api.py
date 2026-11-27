@@ -614,6 +614,83 @@ def run_tests():
     assert isinstance(r_diag.json["diagnostics"]["gemini_key_present"], bool)
     print("26f. Zero-Thinking Parser, Action Tag & Diagnostics Endpoint Verified!")
 
+    # 27. Inline Pre-Signup Email OTP Verification + Instant Bootstrap Speed + Spam-Free Email Checks
+    pre_email = f"verified.signup.{ts}@test.com"
+    r_pre_send = client.post('/api/v1/auth/signup/send-otp', json={
+        "name": "Rahul",
+        "email": pre_email
+    })
+    assert r_pre_send.status_code == 200, f"Pre-signup OTP send failed: {r_pre_send.json}"
+    pre_otp = r_pre_send.json.get("otp_code")
+    assert pre_otp and len(pre_otp) == 6
+
+    # Reject bad OTP
+    r_pre_bad = client.post('/api/v1/auth/signup/verify-otp', json={
+        "email": pre_email,
+        "otp": "000000"
+    })
+    assert r_pre_bad.status_code == 400
+
+    # Verify right OTP -> receives verification_token
+    r_pre_ok = client.post('/api/v1/auth/signup/verify-otp', json={
+        "email": pre_email,
+        "otp": pre_otp
+    })
+    assert r_pre_ok.status_code == 200
+    v_tok = r_pre_ok.json.get("verification_token")
+    assert v_tok
+
+    # Complete registration with verification_token -> instant verified login + inline bootstrap!
+    r_pre_reg = client.post('/api/v1/auth/register', json={
+        "name": "Rahul",
+        "email": pre_email,
+        "password": "password123",
+        "confirm_password": "password123",
+        "verification_token": v_tok
+    })
+    assert r_pre_reg.status_code == 201, f"Pre-verified signup failed: {r_pre_reg.json}"
+    assert r_pre_reg.json["require_otp"] is False
+    assert r_pre_reg.json["access_token"]
+    assert "bootstrap" in r_pre_reg.json
+    assert len(r_pre_reg.json["bootstrap"]["accounts"]) == 3
+    print("27a. Inline Pre-Signup Email OTP Verification & Instant Bootstrap Verified!")
+
+    # 27b. Login & Forgot-Password Reset both return inline bootstrap (0-flash UI)
+    r_fast_login = client.post('/api/v1/auth/login', json={
+        "identifier": pre_email,
+        "password": "password123"
+    })
+    assert r_fast_login.status_code == 200
+    assert "bootstrap" in r_fast_login.json and "cashflow" in r_fast_login.json["bootstrap"]
+
+    r_fp_s = client.post('/api/v1/auth/forgot-password/send-otp', json={"identifier": pre_email})
+    assert r_fp_s.status_code == 200
+    fp_conn = database.get_db_connection()
+    fp_row = fp_conn.execute("SELECT otp_code FROM users WHERE LOWER(email) = ?", (pre_email,)).fetchone()
+    fp_conn.close()
+    fp_otp = fp_row["otp_code"]
+    assert fp_otp and len(fp_otp) == 6
+    r_fp_v = client.post('/api/v1/auth/forgot-password/verify-otp', json={"identifier": pre_email, "otp": fp_otp})
+    assert r_fp_v.status_code == 200
+    r_fp_rst = client.post('/api/v1/auth/forgot-password/reset', json={
+        "identifier": pre_email,
+        "otp": fp_otp,
+        "new_password": "newpassword123",
+        "confirm_password": "newpassword123"
+    })
+    assert r_fp_rst.status_code == 200
+    assert "bootstrap" in r_fp_rst.json and "accounts" in r_fp_rst.json["bootstrap"]
+    print("27b. Instant Inline Bootstrap in Login & Forgot Password Reset Verified!")
+
+    # 27c. Clean Spam-Resistant Transactional OTP Email Templates
+    import otp_service
+    subj = otp_service._otp_subject("482910")
+    plain_msg = otp_service.generate_email_plain("482910", "Rahul")
+    html_msg = otp_service.generate_email_html("482910", "Rahul")
+    assert "482910" in subj and "🔐" not in subj and "💰" not in html_msg and "⚠️" not in html_msg
+    assert "482910" in plain_msg and "482910" in html_msg
+    print("27c. Clean Spam-Resistant Transactional OTP Templates Verified!")
+
     print("==================================================")
     print("ALL 26 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")

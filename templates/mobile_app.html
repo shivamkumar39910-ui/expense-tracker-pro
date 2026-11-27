@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.4">
+  <meta name="app-shell-version" content="v5.5">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1347,6 +1347,119 @@
       cursor: pointer;
       font-size: 20px !important;
       user-select: none;
+    }
+    .auth-inline-otp-btn {
+      position: absolute;
+      right: 6px;
+      height: 34px;
+      padding: 0 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.3));
+      color: #93C5FD;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .auth-inline-otp-btn:hover { filter: brightness(1.1); }
+    .auth-inline-otp-btn:disabled { opacity: 0.7; cursor: wait; }
+    .auth-inline-otp-btn.verified {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #34D399;
+      cursor: default;
+    }
+    .signup-inline-otp-box {
+      display: none;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .inline-otp-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin: 8px 0 10px 0;
+    }
+    .inline-otp-digit {
+      width: 100%;
+      max-width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(148, 163, 184, 0.26);
+      text-align: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .inline-otp-digit:focus {
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+    }
+    .signup-verify-otp-btn {
+      width: 100%;
+      height: 38px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: #FFFFFF;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .auth-pwd-gate-locked {
+      opacity: 0.48;
+      pointer-events: none;
+    }
+    .signup-gate-hint {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #FBBF24;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    body.theme-light .auth-inline-otp-btn {
+      background: #EFF6FF !important;
+      border-color: #93C5FD !important;
+      color: #1D4ED8 !important;
+    }
+    body.theme-light .auth-inline-otp-btn.verified {
+      background: #ECFDF5 !important;
+      border-color: #6EE7B7 !important;
+      color: #059669 !important;
+    }
+    body.theme-light .signup-inline-otp-box {
+      background: #EFF6FF !important;
+      border-color: #BFDBFE !important;
+    }
+    body.theme-light .inline-otp-digit {
+      background: #FFFFFF !important;
+      border-color: #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .signup-gate-hint {
+      background: #FFFBEB !important;
+      border-color: #FDE68A !important;
+      color: #B45309 !important;
     }
     .auth-error-banner {
       display: none;
@@ -4332,32 +4445,69 @@
               </div>
             </div>
 
-            <!-- Email -->
+            <!-- Email (+ Inline OTP Trigger during Sign Up) -->
             <div style="margin-bottom:12px;">
               <label class="auth-field-label" id="authIdentifierLabel" for="authInputIdentifier">Email</label>
               <div class="auth-input-wrap">
                 <span class="material-icons-round auth-input-icon">mail_outline</span>
-                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier">
+                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier" oninput="handleAuthIdentifierInput()">
+                <button type="button" id="btnSendInlineSignupOtp" class="auth-inline-otp-btn" onclick="sendInlineSignupOtp()">
+                  <span class="material-icons-round" style="font-size:14px;">mark_email_read</span>
+                  <span id="btnSendInlineSignupOtpText">Verify OTP</span>
+                </button>
               </div>
             </div>
 
-            <!-- Password -->
-            <div style="margin-bottom:12px;">
-              <label class="auth-field-label" for="authInputPassword">Password</label>
-              <div class="auth-input-wrap">
-                <span class="material-icons-round auth-input-icon">lock_outline</span>
-                <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='LOGIN') handleAuthSubmit()">
-                <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon">visibility</span>
+            <!-- Inline Sign-Up Email OTP Verification Box -->
+            <div id="signupInlineOtpBox" class="signup-inline-otp-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <span style="font-size:11.5px; font-weight:700; color:var(--text-primary);">Enter 6-digit OTP sent to email</span>
+                <span id="inlineOtpCountdownWrap" style="font-size:11px; color:var(--text-muted);">
+                  Resend in <strong id="inlineOtpCountdownVal">30s</strong>
+                </span>
+                <button type="button" id="btnInlineOtpResend" onclick="sendInlineSignupOtp(true)" style="display:none; background:transparent; border:none; color:#60A5FA; font-size:11px; font-weight:800; cursor:pointer; padding:0;">
+                  Resend OTP
+                </button>
               </div>
+              <div class="inline-otp-row">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_1" oninput="focusNextInlineOtp(1, event)" onkeydown="handleInlineOtpKeydown(1, event)" onpaste="handleInlineOtpPaste(event)">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_2" oninput="focusNextInlineOtp(2, event)" onkeydown="handleInlineOtpKeydown(2, event)">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_3" oninput="focusNextInlineOtp(3, event)" onkeydown="handleInlineOtpKeydown(3, event)">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_4" oninput="focusNextInlineOtp(4, event)" onkeydown="handleInlineOtpKeydown(4, event)">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_5" oninput="focusNextInlineOtp(5, event)" onkeydown="handleInlineOtpKeydown(5, event)">
+                <input type="tel" inputmode="numeric" maxlength="1" class="inline-otp-digit" id="inline_otp_6" oninput="focusNextInlineOtp(6, event)" onkeydown="handleInlineOtpKeydown(6, event); if(event.key==='Enter') verifyInlineSignupOtp();">
+              </div>
+              <button type="button" id="btnVerifyInlineSignupOtp" class="signup-verify-otp-btn" onclick="verifyInlineSignupOtp()">
+                <span class="material-icons-round" style="font-size:16px;">verified</span>
+                <span>Verify Email with OTP</span>
+              </button>
             </div>
 
-            <!-- Confirm Password (Only for Signup) -->
-            <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px;">
-              <label class="auth-field-label" for="authInputConfirmPassword">Confirm Password</label>
-              <div class="auth-input-wrap">
-                <span class="material-icons-round auth-input-icon">verified_user</span>
-                <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
-                <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon">visibility</span>
+            <div id="signupGateHint" class="signup-gate-hint">
+              <span class="material-icons-round" style="font-size:15px;">lock</span>
+              <span>Verify your email with OTP first to create password &amp; sign up</span>
+            </div>
+
+            <!-- Password Fields Group (Locked during Sign Up until Email OTP Verified) -->
+            <div id="authPasswordSection">
+              <!-- Password -->
+              <div style="margin-bottom:12px;">
+                <label class="auth-field-label" for="authInputPassword">Password</label>
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">lock_outline</span>
+                  <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='LOGIN') handleAuthSubmit()">
+                  <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon">visibility</span>
+                </div>
+              </div>
+
+              <!-- Confirm Password (Only for Signup) -->
+              <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px;">
+                <label class="auth-field-label" for="authInputConfirmPassword">Confirm Password</label>
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">verified_user</span>
+                  <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+                  <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon">visibility</span>
+                </div>
               </div>
             </div>
 
@@ -5175,15 +5325,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_4'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_5'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.4-cache') {
-            triggerSwUpgradeReload('v5_4');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.5-cache') {
+            triggerSwUpgradeReload('v5_5');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=5.4').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=5.5').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -11007,6 +11157,290 @@
     }
     function clearAuthError() { showAuthError(''); }
 
+    // Inline Sign-Up Email OTP Verification State
+    let signupVerifiedEmail = '';
+    let signupVerificationToken = '';
+    let inlineOtpCountdownTimer = null;
+
+    async function completeAuthAndEnterApp(res, welcomeMsg) {
+      APP_STATE.token = res.access_token;
+      APP_STATE.user = res.user;
+      localStorage.setItem('jwt_access_token', res.access_token);
+      localStorage.setItem('user_profile', JSON.stringify(res.user));
+      APP_STATE.pinUnlockedThisSession = true;
+      sessionStorage.setItem('pin_unlocked_session', 'true');
+      updateUserUI();
+
+      if (res.bootstrap) {
+        applyBootstrapData(res.bootstrap, false);
+        persistUnifiedLocalState();
+      } else {
+        await initializeAppData(true);
+      }
+
+      resetInlineSignupVerification();
+      closeAllSheets();
+      hideAuthOverlay();
+      if (typeof showToast === 'function' && welcomeMsg) {
+        showToast(welcomeMsg, 'success');
+      }
+    }
+
+    function updateSignupVerificationGateUI() {
+      const isLogin = (APP_STATE.authMode === 'LOGIN');
+      const idInput = document.getElementById('authInputIdentifier');
+      const otpBtn = document.getElementById('btnSendInlineSignupOtp');
+      const otpBtnTxt = document.getElementById('btnSendInlineSignupOtpText');
+      const inlineBox = document.getElementById('signupInlineOtpBox');
+      const gateHint = document.getElementById('signupGateHint');
+      const pwdSection = document.getElementById('authPasswordSection');
+      const pwdInp = document.getElementById('authInputPassword');
+      const confirmInp = document.getElementById('authInputConfirmPassword');
+      const submitBtn = document.getElementById('authSubmitBtn');
+
+      const curEmail = idInput ? idInput.value.trim().toLowerCase() : '';
+      const isEmailVerified = !isLogin && Boolean(signupVerificationToken && signupVerifiedEmail && signupVerifiedEmail === curEmail);
+
+      if (isLogin) {
+        if (otpBtn) otpBtn.style.display = 'none';
+        if (inlineBox) inlineBox.style.display = 'none';
+        if (gateHint) gateHint.style.display = 'none';
+        if (idInput) {
+          idInput.style.paddingRight = '14px';
+          idInput.style.borderColor = '';
+        }
+        if (pwdSection) pwdSection.classList.remove('auth-pwd-gate-locked');
+        if (pwdInp) pwdInp.disabled = false;
+        if (confirmInp) confirmInp.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+        }
+        return;
+      }
+
+      // SIGNUP mode
+      if (idInput) idInput.style.paddingRight = '112px';
+      if (otpBtn) {
+        otpBtn.style.display = 'inline-flex';
+        if (isEmailVerified) {
+          otpBtn.classList.add('verified');
+          otpBtn.disabled = true;
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">verified</span><span>Verified</span>';
+          if (idInput) idInput.style.borderColor = 'rgba(16, 185, 129, 0.55)';
+        } else {
+          otpBtn.classList.remove('verified');
+          otpBtn.disabled = false;
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">Verify OTP</span>';
+          if (idInput) idInput.style.borderColor = '';
+        }
+      }
+
+      if (isEmailVerified) {
+        if (inlineBox) inlineBox.style.display = 'none';
+        if (gateHint) gateHint.style.display = 'none';
+        if (pwdSection) pwdSection.classList.remove('auth-pwd-gate-locked');
+        if (pwdInp) pwdInp.disabled = false;
+        if (confirmInp) confirmInp.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+        }
+      } else {
+        if (gateHint) gateHint.style.display = 'flex';
+        if (pwdSection) pwdSection.classList.add('auth-pwd-gate-locked');
+        if (pwdInp) pwdInp.disabled = true;
+        if (confirmInp) confirmInp.disabled = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.55';
+        }
+      }
+    }
+
+    function resetInlineSignupVerification() {
+      signupVerifiedEmail = '';
+      signupVerificationToken = '';
+      if (inlineOtpCountdownTimer) {
+        clearInterval(inlineOtpCountdownTimer);
+        inlineOtpCountdownTimer = null;
+      }
+      const inlineBox = document.getElementById('signupInlineOtpBox');
+      if (inlineBox) inlineBox.style.display = 'none';
+      for (let i = 1; i <= 6; i++) {
+        const d = document.getElementById('inline_otp_' + i);
+        if (d) d.value = '';
+      }
+      updateSignupVerificationGateUI();
+    }
+
+    function handleAuthIdentifierInput() {
+      if (APP_STATE.authMode === 'SIGNUP') {
+        const curEmail = (document.getElementById('authInputIdentifier')?.value || '').trim().toLowerCase();
+        if (signupVerifiedEmail && curEmail !== signupVerifiedEmail) {
+          resetInlineSignupVerification();
+        }
+      }
+    }
+    window.handleAuthIdentifierInput = handleAuthIdentifierInput;
+
+    function startInlineOtpCountdown(seconds) {
+      if (inlineOtpCountdownTimer) clearInterval(inlineOtpCountdownTimer);
+      let rem = seconds;
+      const wrap = document.getElementById('inlineOtpCountdownWrap');
+      const valSpan = document.getElementById('inlineOtpCountdownVal');
+      const resendBtn = document.getElementById('btnInlineOtpResend');
+      if (wrap) wrap.style.display = 'inline';
+      if (resendBtn) resendBtn.style.display = 'none';
+      if (valSpan) valSpan.innerText = rem + 's';
+      inlineOtpCountdownTimer = setInterval(() => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(inlineOtpCountdownTimer);
+          inlineOtpCountdownTimer = null;
+          if (wrap) wrap.style.display = 'none';
+          if (resendBtn) resendBtn.style.display = 'inline';
+        } else if (valSpan) {
+          valSpan.innerText = rem + 's';
+        }
+      }, 1000);
+    }
+
+    async function sendInlineSignupOtp(isResend = false) {
+      clearAuthError();
+      const name = (document.getElementById('authInputName')?.value || '').trim();
+      const email = (document.getElementById('authInputIdentifier')?.value || '').trim().toLowerCase();
+
+      if (!name) {
+        showAuthError('Please enter your Full Name first.');
+        document.getElementById('authInputName')?.focus();
+        return;
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showAuthError('Please enter a valid email address.');
+        document.getElementById('authInputIdentifier')?.focus();
+        return;
+      }
+
+      const otpBtn = document.getElementById('btnSendInlineSignupOtp');
+      const resendBtn = document.getElementById('btnInlineOtpResend');
+      if (otpBtn) {
+        otpBtn.disabled = true;
+        otpBtn.innerHTML = '<span>Sending...</span>';
+      }
+      if (resendBtn) resendBtn.disabled = true;
+
+      try {
+        const res = await apiRequest('/auth/signup/send-otp', 'POST', { email, name });
+        if (res && res.success) {
+          const box = document.getElementById('signupInlineOtpBox');
+          if (box) box.style.display = 'block';
+          for (let i = 1; i <= 6; i++) {
+            const d = document.getElementById('inline_otp_' + i);
+            if (d) d.value = '';
+          }
+          startInlineOtpCountdown(30);
+          setTimeout(() => {
+            document.getElementById('inline_otp_1')?.focus();
+          }, 100);
+          if (typeof showToast === 'function') {
+            showToast(res.message || 'Verification OTP sent to your email!', 'info');
+          }
+        } else {
+          showAuthError(res?.error || 'Could not send OTP. Please check your email.');
+        }
+      } catch (err) {
+        showAuthError('Failed to send OTP: ' + (err.message || 'Network error'));
+      } finally {
+        if (resendBtn) resendBtn.disabled = false;
+        if (otpBtn && !signupVerificationToken) {
+          otpBtn.disabled = false;
+          otpBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;">mark_email_read</span><span id="btnSendInlineSignupOtpText">' + (isResend ? 'Resent' : 'Resend OTP') + '</span>';
+        }
+      }
+    }
+    window.sendInlineSignupOtp = sendInlineSignupOtp;
+
+    function focusNextInlineOtp(idx, e) {
+      const val = (e.target.value || '').replace(/\D/g, '');
+      e.target.value = val.slice(0, 1);
+      if (e.target.value.length === 1 && idx < 6) {
+        document.getElementById('inline_otp_' + (idx + 1))?.focus();
+      }
+    }
+    window.focusNextInlineOtp = focusNextInlineOtp;
+
+    function handleInlineOtpKeydown(idx, e) {
+      if (e.key === 'Backspace' && !e.target.value && idx > 1) {
+        const prev = document.getElementById('inline_otp_' + (idx - 1));
+        if (prev) {
+          prev.focus();
+          prev.value = '';
+        }
+      }
+    }
+    window.handleInlineOtpKeydown = handleInlineOtpKeydown;
+
+    function handleInlineOtpPaste(e) {
+      e.preventDefault();
+      const pasted = ((e.clipboardData || window.clipboardData).getData('text') || '').trim();
+      if (/^\d{6}$/.test(pasted)) {
+        for (let i = 0; i < 6; i++) {
+          const inp = document.getElementById('inline_otp_' + (i + 1));
+          if (inp) inp.value = pasted[i];
+        }
+        document.getElementById('inline_otp_6')?.focus();
+      }
+    }
+    window.handleInlineOtpPaste = handleInlineOtpPaste;
+
+    async function verifyInlineSignupOtp() {
+      clearAuthError();
+      const email = (document.getElementById('authInputIdentifier')?.value || '').trim().toLowerCase();
+      let otp = '';
+      for (let i = 1; i <= 6; i++) {
+        const inp = document.getElementById('inline_otp_' + i);
+        if (inp) otp += inp.value.trim();
+      }
+      if (otp.length !== 6) {
+        showAuthError('Please enter all 6 digits of the email verification code.');
+        return;
+      }
+
+      const btn = document.getElementById('btnVerifyInlineSignupOtp');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>Verifying...</span>';
+      }
+
+      try {
+        const res = await apiRequest('/auth/signup/verify-otp', 'POST', { email, otp });
+        if (res && res.success && res.verification_token) {
+          if (inlineOtpCountdownTimer) clearInterval(inlineOtpCountdownTimer);
+          signupVerifiedEmail = email;
+          signupVerificationToken = res.verification_token;
+          updateSignupVerificationGateUI();
+          if (typeof showToast === 'function') {
+            showToast('Email verified! Now create your password to finish.', 'success');
+          }
+          setTimeout(() => {
+            document.getElementById('authInputPassword')?.focus();
+          }, 120);
+        } else {
+          showAuthError(res?.error || 'Invalid verification code. Please check and try again.');
+        }
+      } catch (err) {
+        showAuthError('Verification failed: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+    window.verifyInlineSignupOtp = verifyInlineSignupOtp;
+
     // Switch between Login and Signup tabs
     function switchAuthTab(mode) {
       APP_STATE.authMode = mode;
@@ -11052,6 +11486,7 @@
       const signupOtpView = document.getElementById('authSignupOtpView');
       if (signupOtpView) signupOtpView.style.display = 'none';
       if (signupCountdownTimer) clearInterval(signupCountdownTimer);
+      updateSignupVerificationGateUI();
     }
     window.switchAuthTab = switchAuthTab;
 
@@ -11208,23 +11643,7 @@
 
         if (res && res.success) {
           if (signupCountdownTimer) clearInterval(signupCountdownTimer);
-          APP_STATE.token = res.access_token;
-          APP_STATE.user = res.user;
-          localStorage.setItem('jwt_access_token', res.access_token);
-          localStorage.setItem('user_profile', JSON.stringify(res.user));
-
-          hideAuthOverlay();
-          updateUserUI();
-          closeAllSheets();
-          renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
-          renderHistoryBarChart(ensureHistory6mInitialized());
-          renderWeeklyDailyBarChart();
-          updateForecastUI(ensureForecastInitialized());
-          await initializeAppData();
-
-          if (typeof showToast === 'function') {
-            showToast('Account verified! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
-          }
+          await completeAuthAndEnterApp(res, 'Account verified! Welcome, ' + (res.user?.name || 'User') + '!');
         } else {
           alert(res?.error || 'Invalid verification code. Please check and try again.');
         }
@@ -11239,18 +11658,14 @@
     }
     window.submitSignupOtp = submitSignupOtp;
 
-    // Handle Login or Signup submission (Email-first validation & inline errors)
+    // Handle Login or Signup submission (Email-verified Sign Up + Zero-Flash Fast Auth)
     async function handleAuthSubmit() {
       clearAuthError();
       const identifier = document.getElementById('authInputIdentifier').value.trim().toLowerCase();
       const password = document.getElementById('authInputPassword').value;
       const isLogin = (APP_STATE.authMode === 'LOGIN');
 
-      if (!identifier || !password) {
-        showAuthError('Please enter your Email and Password.');
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+      if (!identifier || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
         showAuthError('Please enter a valid email address.');
         return;
       }
@@ -11263,7 +11678,11 @@
           showAuthError('Please enter your Full Name.');
           return;
         }
-        if (password.length < 6) {
+        if (!signupVerificationToken || signupVerifiedEmail !== identifier) {
+          showAuthError('Please verify your email address with OTP before signing up.');
+          return;
+        }
+        if (!password || password.length < 6) {
           showAuthError('Password must be at least 6 characters.');
           return;
         }
@@ -11285,31 +11704,15 @@
             email: identifier,
             phone: '',
             password,
-            confirm_password: confirmPassword
+            confirm_password: confirmPassword,
+            verification_token: signupVerificationToken
           });
 
           if (res && res.success) {
             if (res.require_otp) {
               openSignupOtpFlow(res.identifier || identifier);
-              if (typeof showToast === 'function') {
-                showToast('Verification code dispatched! Check your email inbox.', 'info');
-              }
             } else {
-              APP_STATE.token = res.access_token;
-              APP_STATE.user = res.user;
-              localStorage.setItem('jwt_access_token', res.access_token);
-              localStorage.setItem('user_profile', JSON.stringify(res.user));
-              hideAuthOverlay();
-              updateUserUI();
-              closeAllSheets();
-              renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
-              renderHistoryBarChart(ensureHistory6mInitialized());
-              renderWeeklyDailyBarChart();
-              updateForecastUI(ensureForecastInitialized());
-              await initializeAppData();
-              if (typeof showToast === 'function') {
-                showToast('Account created! Welcome, ' + (res.user?.name || 'User') + '!', 'success');
-              }
+              await completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
             }
           } else {
             showAuthError(res?.error || 'Registration failed. Please check your details.');
@@ -11324,6 +11727,10 @@
         }
 
       } else {
+        if (!password) {
+          showAuthError('Please enter your Password.');
+          return;
+        }
         const submitBtn = document.getElementById('authSubmitBtn');
         const origContent = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
@@ -11338,22 +11745,7 @@
           });
 
           if (res && res.success) {
-            APP_STATE.token = res.access_token;
-            APP_STATE.user = res.user;
-            localStorage.setItem('jwt_access_token', res.access_token);
-            localStorage.setItem('user_profile', JSON.stringify(res.user));
-
-            hideAuthOverlay();
-            updateUserUI();
-            closeAllSheets();
-            renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
-            renderHistoryBarChart(ensureHistory6mInitialized());
-            renderWeeklyDailyBarChart();
-            updateForecastUI(ensureForecastInitialized());
-            await initializeAppData();
-            if (typeof showToast === 'function') {
-              showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
-            }
+            await completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
           } else {
             showAuthError(res?.error || 'Invalid email or password.');
           }
@@ -11626,24 +12018,9 @@
         });
 
         if (res && res.success) {
-          // Automatically logged in and directed to dashboard!
-          APP_STATE.token = res.access_token;
-          APP_STATE.user = res.user;
-          localStorage.setItem('jwt_access_token', res.access_token);
-          localStorage.setItem('user_profile', JSON.stringify(res.user));
-
-          hideAuthOverlay();
-          updateUserUI();
-      closeAllSheets();
-          renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
-          renderHistoryBarChart(ensureHistory6mInitialized());
-          renderWeeklyDailyBarChart();
-          updateForecastUI(ensureForecastInitialized());
-          await initializeAppData();
-
-          if (typeof showToast === 'function') {
-            showToast('Password reset successful! Welcome to your dashboard.', 'success');
-          }
+          document.getElementById('fpInputNewPassword').value = '';
+          document.getElementById('fpInputConfirmPassword').value = '';
+          await completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
         } else {
           alert(res?.error || 'Failed to reset password. Please try again.');
         }
@@ -13690,6 +14067,7 @@
       localStorage.removeItem('cached_categories');
       localStorage.removeItem('cached_dashboard');
       localStorage.removeItem('cached_goals');
+      try { sessionStorage.removeItem('pin_unlocked_session'); } catch (e) {}
       LOCAL_TOMBSTONES.clearAll();
       APP_STATE.token = '';
       APP_STATE.user = null;
@@ -13704,6 +14082,11 @@
       APP_STATE.accounts = [];
       APP_STATE.budgets = null;
       APP_STATE.pinUnlockedThisSession = false;
+      const p1 = document.getElementById('authInputPassword');
+      if (p1) p1.value = '';
+      const p2 = document.getElementById('authInputConfirmPassword');
+      if (p2) p2.value = '';
+      resetInlineSignupVerification();
       showAuthOverlay('LOGIN');
     }
     function hideFloatingAiBtn() {

@@ -18,7 +18,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.0">
+  <meta name="app-shell-version" content="v6.1">
+
+  <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
+  <script>
+    (function() {
+      try {
+        var isStandalone = (window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches)) ||
+                           (window.navigator.standalone === true) ||
+                           (document.referrer && document.referrer.indexOf('android-app://') !== -1) ||
+                           (window.location.search && window.location.search.indexOf('mode=pwa') !== -1) ||
+                           (localStorage.getItem('pwa_is_installed') === '1');
+        if (isStandalone) {
+          document.documentElement.classList.add('is-standalone-pwa');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2694,6 +2710,34 @@
       color: var(--text-secondary);
       line-height: 1.4;
     }
+
+    /* ======================================================== */
+    /* STANDALONE PWA HIDING RULES (v6.1)                      */
+    /* ======================================================== */
+    /* Completely hide install button in home header under all circumstances per user instruction */
+    #btnPwaInstall {
+      display: none !important;
+    }
+
+    /* Completely hide install CTA, banner & sheet when app is installed & opened standalone */
+    @media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+      #authPwaInstallRow,
+      #pwaInstallBanner,
+      #btnPwaInstall,
+      #profilePwaInstallItem {
+        display: none !important;
+      }
+    }
+    html.is-standalone-pwa #authPwaInstallRow,
+    html.is-standalone-pwa #pwaInstallBanner,
+    html.is-standalone-pwa #btnPwaInstall,
+    html.is-standalone-pwa #profilePwaInstallItem,
+    body.is-standalone-pwa #authPwaInstallRow,
+    body.is-standalone-pwa #pwaInstallBanner,
+    body.is-standalone-pwa #btnPwaInstall,
+    body.is-standalone-pwa #profilePwaInstallItem {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -2737,10 +2781,6 @@
             </div>
           </div>
           <div class="header-actions">
-            <!-- PWA Download / Install App Button -->
-            <div class="btn-icon-header" id="btnPwaInstall" onclick="installPwaApp()" title="Download & Install App on Phone" style="display:flex; color:var(--color-sapphire);">
-              <span class="material-icons-round" style="font-size: 20px;">install_mobile</span>
-            </div>
             <!-- Theme Toggle (Midnight Navy / Light Mode) -->
             <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (Midnight / Light)">
               <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">light_mode</span>
@@ -5797,15 +5837,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_0'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_1'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.0-cache') {
-            triggerSwUpgradeReload('v6_0');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.1-cache') {
+            triggerSwUpgradeReload('v6_1');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.0').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.1').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -5848,34 +5888,64 @@
           triggerManualSync().catch(console.warn);
         }
       }
+
+      // Initial PWA Standalone UI sync on DOM ready
+      applyPwaStandaloneUI();
     });
 
-    // PWA Install Prompt & Standalone Manager (Phase 15 + v6.0)
+    // PWA Install Prompt & Standalone Manager (Phase 15 + v6.1)
     let deferredPwaPrompt = null;
 
     function isRunningStandalone() {
-      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-             (window.navigator.standalone === true) ||
-             document.referrer.includes('android-app://');
+      const matchMediaCheck = window.matchMedia && (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches
+      );
+      const navStandalone = (window.navigator.standalone === true);
+      const isWebApk = Boolean(
+        (document.referrer && document.referrer.includes('android-app://')) ||
+        (window.location.search && window.location.search.includes('mode=pwa'))
+      );
+      const storedInstalled = localStorage.getItem('pwa_is_installed') === '1';
+
+      return Boolean(matchMediaCheck || navStandalone || isWebApk || storedInstalled);
     }
     window.isRunningStandalone = isRunningStandalone;
+
+    function applyPwaStandaloneUI() {
+      const isStandalone = isRunningStandalone();
+      if (isStandalone) {
+        document.documentElement.classList.add('is-standalone-pwa');
+        if (document.body) document.body.classList.add('is-standalone-pwa');
+        const authBtn = document.getElementById('authPwaInstallRow');
+        if (authBtn) authBtn.style.setProperty('display', 'none', 'important');
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.style.setProperty('display', 'none', 'important');
+        const profileItem = document.getElementById('profilePwaInstallItem');
+        if (profileItem) profileItem.style.setProperty('display', 'none', 'important');
+      } else {
+        const authBtn = document.getElementById('authPwaInstallRow');
+        if (authBtn) authBtn.style.display = 'flex';
+      }
+    }
+    window.applyPwaStandaloneUI = applyPwaStandaloneUI;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       // Prevent standard browser infobar from appearing automatically at an awkward moment
       e.preventDefault();
       deferredPwaPrompt = e;
 
-      // If already installed and running standalone, do nothing
-      if (isRunningStandalone()) return;
+      // If already installed and running standalone, apply standalone hiding and do nothing
+      if (isRunningStandalone()) {
+        applyPwaStandaloneUI();
+        return;
+      }
 
       const banner = document.getElementById('pwaInstallBanner');
-      const headerBtn = document.getElementById('btnPwaInstall');
       const authBtn = document.getElementById('authPwaInstallRow');
-      const profileItem = document.getElementById('profilePwaInstallItem');
 
-      if (headerBtn) headerBtn.style.display = 'flex';
       if (authBtn) authBtn.style.display = 'flex';
-      if (profileItem) profileItem.style.display = 'flex';
       if (banner && sessionStorage.getItem('pwa_banner_dismissed') !== '1') {
         banner.style.display = 'flex';
       }
@@ -5883,13 +5953,9 @@
 
     window.addEventListener('appinstalled', () => {
       deferredPwaPrompt = null;
+      localStorage.setItem('pwa_is_installed', '1');
+      applyPwaStandaloneUI();
       dismissPwaBanner();
-      const headerBtn = document.getElementById('btnPwaInstall');
-      const authBtn = document.getElementById('authPwaInstallRow');
-      const profileItem = document.getElementById('profilePwaInstallItem');
-      if (headerBtn) headerBtn.style.display = 'none';
-      if (authBtn) authBtn.style.display = 'none';
-      if (profileItem) profileItem.style.display = 'none';
       showToast('App installed successfully! Opened from Home screen. 📱');
     });
 
@@ -5903,6 +5969,8 @@
         deferredPwaPrompt.prompt();
         deferredPwaPrompt.userChoice.then((choice) => {
           if (choice && choice.outcome === 'accepted') {
+            localStorage.setItem('pwa_is_installed', '1');
+            applyPwaStandaloneUI();
             dismissPwaBanner();
             showToast('Downloading & Installing app to your phone... 🚀');
           }
@@ -5957,12 +6025,15 @@
     }
     window.switchPwaPlatformGuide = switchPwaPlatformGuide;
 
-    // Auto-show install banner on first load if not in standalone mode and not dismissed
+    // Auto-show install banner on first load if in Chrome and not standalone and not dismissed
     window.addEventListener('load', () => {
+      applyPwaStandaloneUI();
       if (!isRunningStandalone() && sessionStorage.getItem('pwa_banner_dismissed') !== '1') {
         setTimeout(() => {
-          const banner = document.getElementById('pwaInstallBanner');
-          if (banner) banner.style.display = 'flex';
+          if (!isRunningStandalone()) {
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.style.display = 'flex';
+          }
         }, 1200);
       }
     });
@@ -11715,6 +11786,7 @@
       if (fp) fp.style.display = 'none';
       const so = document.getElementById('authSignupOtpView');
       if (so) so.style.display = 'none';
+      if (typeof applyPwaStandaloneUI === 'function') applyPwaStandaloneUI();
       switchAuthTab(mode);
     }
 

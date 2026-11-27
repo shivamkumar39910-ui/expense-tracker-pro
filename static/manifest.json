@@ -3,7 +3,7 @@
   "name": "Expense Tracker Pro 2.0",
   "short_name": "ExpensePro",
   "description": "Mobile Personal Finance, Forecasting & Multi-Wallet Manager",
-  "start_url": "/mobile",
+  "start_url": "/mobile?mode=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -47,21 +47,21 @@
       "name": "Add Transaction",
       "short_name": "Add",
       "description": "Quickly record a new expense or income",
-      "url": "/mobile?action=new_expense",
+      "url": "/mobile?mode=pwa&action=new_expense",
       "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Wallets & Accounts",
       "short_name": "Wallets",
       "description": "View account balances and transfers",
-      "url": "/mobile?tab=wallets",
+      "url": "/mobile?mode=pwa&tab=wallets",
       "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Financial Insights",
       "short_name": "Insights",
       "description": "Check monthly forecast and anomaly detection",
-      "url": "/mobile?tab=insights",
+      "url": "/mobile?mode=pwa&tab=insights",
       "icons": [{ "src": "/static/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

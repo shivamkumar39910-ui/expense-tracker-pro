@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.2">
+  <meta name="app-shell-version" content="v5.3">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1186,56 +1186,91 @@
     }
 
     /* ======================================================== */
-    /* MODERN AUTH MODAL & TAB SYSTEM                           */
+    /* MODERN AUTH MODAL & TAB SYSTEM (FLAGSHIP FINTECH UI)     */
     /* ======================================================== */
     .auth-overlay {
       position: absolute;
       inset: 0;
-      background: #0B0F19;
+      background:
+        radial-gradient(circle at 15% 12%, rgba(59, 130, 246, 0.22) 0%, transparent 45%),
+        radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.16) 0%, transparent 48%),
+        linear-gradient(180deg, #090D16 0%, #0D1322 100%);
       z-index: 200;
-      padding: 30px 24px;
+      padding: 20px 18px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       overflow-y: auto;
       color: var(--text-primary);
     }
     .auth-overlay.hidden { display: none !important; }
+    .auth-shell {
+      width: 100%;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+    }
     .auth-brand {
       text-align: center;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
+    }
+    .auth-brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.24);
+      color: #38BDF8;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
     .auth-shield-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(16, 185, 129, 0.2));
-      border: 1px solid rgba(56, 189, 248, 0.35);
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(37, 99, 235, 0.28), rgba(6, 182, 212, 0.22));
+      border: 1px solid rgba(56, 189, 248, 0.42);
+      box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 12px auto;
-      color: var(--color-sapphire);
-      font-size: 32px;
+      margin: 0 auto 10px auto;
+      color: #60A5FA;
+      font-size: 28px;
     }
     .auth-title {
       font-size: 24px;
       font-weight: 800;
       color: var(--text-primary);
       letter-spacing: -0.5px;
+      line-height: 1.2;
     }
     .auth-subtitle {
       font-size: 13px;
       color: var(--text-secondary);
       margin-top: 4px;
+      font-weight: 500;
+    }
+    .auth-card {
+      background: rgba(17, 24, 39, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 22px;
+      padding: 18px 16px;
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
     .auth-tab-bar {
       display: flex;
-      background: var(--bg-card-subtle);
-      border: 1px solid var(--border-card);
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.14);
       border-radius: 14px;
       padding: 4px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       gap: 4px;
     }
     .auth-tab-btn {
@@ -1243,9 +1278,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 11px 16px;
-      font-size: 14px;
+      gap: 7px;
+      padding: 10px 14px;
+      font-size: 13.5px;
       font-weight: 700;
       border: none;
       outline: none;
@@ -1259,9 +1294,118 @@
       color: var(--text-primary);
     }
     .auth-tab-btn.active {
-      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 60%, #1D4ED8 100%) !important;
       color: #FFFFFF !important;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+    .auth-field-label {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .auth-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .auth-input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-muted);
+      font-size: 18px !important;
+      pointer-events: none;
+      transition: color 0.2s ease;
+    }
+    .auth-input-wrap .form-input-pill {
+      padding-left: 42px;
+      margin-bottom: 0;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1.5px solid rgba(148, 163, 184, 0.18);
+      border-radius: 14px;
+      height: 46px;
+      font-size: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .auth-input-wrap .form-input-pill:focus {
+      border-color: #3B82F6;
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    }
+    .auth-input-wrap:focus-within .auth-input-icon {
+      color: #60A5FA;
+    }
+    .auth-eye-btn {
+      position: absolute;
+      right: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 20px !important;
+      user-select: none;
+    }
+    .auth-error-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #FCA5A5;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .auth-error-banner.visible {
+      display: flex;
+    }
+    .auth-cta-btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 55%, #1D4ED8 100%);
+      color: #FFFFFF;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .auth-cta-btn:active {
+      transform: scale(0.985);
+    }
+    .auth-cta-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+    .auth-trust-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .auth-trust-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .auth-trust-item .material-icons-round {
+      font-size: 14px;
+      color: #10B981;
     }
     .otp-boxes-row {
       display: flex;
@@ -1484,20 +1628,53 @@
     }
 
     body.theme-light .auth-overlay {
-      background: #F8FAFC !important;
+      background:
+        radial-gradient(circle at 15% 12%, rgba(59, 130, 246, 0.14) 0%, transparent 48%),
+        radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+        linear-gradient(180deg, #F1F5F9 0%, #FFFFFF 100%) !important;
       color: #0F172A !important;
     }
+    body.theme-light .auth-brand-pill {
+      background: #EFF6FF !important;
+      border-color: #BFDBFE !important;
+      color: #1D4ED8 !important;
+    }
+    body.theme-light .auth-shield-icon {
+      background: linear-gradient(145deg, #DBEAFE, #D1FAE5) !important;
+      border-color: #93C5FD !important;
+      color: #1D4ED8 !important;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.16) !important;
+    }
+    body.theme-light .auth-card {
+      background: rgba(255, 255, 255, 0.94) !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+    }
     body.theme-light .auth-tab-bar {
-      background: #E2E8F0 !important;
-      border-color: #CBD5E1 !important;
+      background: #F1F5F9 !important;
+      border-color: #E2E8F0 !important;
     }
     body.theme-light .auth-tab-btn {
       color: #64748B !important;
     }
     body.theme-light .auth-tab-btn.active {
-      background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important;
       color: #FFFFFF !important;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+    }
+    body.theme-light .auth-input-wrap .form-input-pill {
+      background: #F8FAFC !important;
+      border-color: #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .auth-input-wrap .form-input-pill:focus {
+      background: #FFFFFF !important;
+      border-color: #2563EB !important;
+    }
+    body.theme-light .auth-error-banner {
+      background: #FEF2F2 !important;
+      border-color: #FECACA !important;
+      color: #B91C1C !important;
     }
     body.theme-light .otp-digit-input {
       background: #FFFFFF !important;
@@ -4111,225 +4288,256 @@
     <!-- MODERN USER-FRIENDLY AUTH MODAL (LOGIN & SIGNUP) -->
     <!-- ============================================== -->
     <div class="auth-overlay hidden" id="authOverlay">
-      <div class="auth-brand" style="margin-bottom:20px;">
-        <div class="auth-shield-icon">
-          <span class="material-icons-round" style="font-size:32px;">account_balance_wallet</span>
-        </div>
-        <div class="auth-title" id="authModalTitle">Welcome Back</div>
-        <div class="auth-subtitle" id="authModalSubtitle">Log in with your Mobile/Email and Password</div>
-      </div>
-
-            <!-- Segmented Tab: Log In vs Sign Up -->
-      <div id="authCredentialsView">
-        <div class="auth-tab-bar">
-          <button type="button" class="auth-tab-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')">
-            <span class="material-icons-round" style="font-size:18px;">login</span>
-            <span>Log In</span>
-          </button>
-          <button type="button" class="auth-tab-btn" id="authTabSignup" onclick="switchAuthTab('SIGNUP')">
-            <span class="material-icons-round" style="font-size:18px;">person_add</span>
-            <span>Sign Up</span>
-          </button>
-        </div>
-
-        <!-- Full Name (Only for Signup) -->
-        <div id="authNameField" style="display:none; margin-bottom:14px;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Full Name</label>
-          <input type="text" class="form-input-pill" placeholder="e.g. Rahul Sharma" id="authInputName" style="margin-bottom:0;">
-        </div>
-
-        <!-- Email or Mobile -->
-        <div style="margin-bottom:14px;">
-          <label id="authIdentifierLabel" style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Mobile Number or Email</label>
-          <input type="text" class="form-input-pill" placeholder="Enter Mobile No (+91...) or Email" id="authInputIdentifier" style="margin-bottom:0;">
-        </div>
-
-        <!-- Password -->
-        <div style="margin-bottom:14px; position:relative;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Password</label>
-          <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="margin-bottom:0; padding-right:42px;">
-          <span class="material-icons-round" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
-        </div>
-
-        <!-- Confirm Password (Only for Signup) -->
-        <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px; position:relative;">
-          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Confirm Password</label>
-          <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="margin-bottom:0; padding-right:42px;">
-          <span class="material-icons-round" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
-        </div>
-
-        <!-- Forgot Password Link (Only for Login) -->
-        <div id="authForgotPwdRow" style="text-align:right; margin-top:-4px; margin-bottom:18px;">
-          <button type="button" onclick="openForgotPasswordFlow()" style="background:transparent; border:none; color:var(--color-sapphire); font-size:12px; font-weight:700; cursor:pointer; padding:0; text-decoration:none;">
-            Forgot Password?
-          </button>
-        </div>
-
-        <button class="btn-submit-sheet" onclick="handleAuthSubmit()" id="authSubmitBtn" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
-          <span>Log In</span>
-          <span class="material-icons-round" style="font-size:20px;">arrow_forward</span>
-        </button>
-
-        <!-- Quick Demo One-Tap Fill Pill -->
-        <div id="demoAccountPill" style="text-align:center;">
-          <div onclick="fillDemoCredentials()" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:var(--color-sapphire); font-size:11px; font-weight:700; cursor:pointer;" title="Tap to auto-fill demo account credentials">
-            <span class="material-icons-round" style="font-size:15px;">flash_on</span>
-            <span>Quick Demo: rahul@expensetracker.pro</span>
+      <div class="auth-shell">
+        <div class="auth-brand">
+          <div class="auth-brand-pill">
+            <span class="material-icons-round" style="font-size:12px;">auto_awesome</span>
+            <span>Expense Tracker Pro</span>
           </div>
+          <div class="auth-shield-icon">
+            <span class="material-icons-round" style="font-size:28px;">account_balance_wallet</span>
+          </div>
+          <div class="auth-title" id="authModalTitle">Welcome Back</div>
+          <div class="auth-subtitle" id="authModalSubtitle">Log in with your Email and Password</div>
         </div>
-      </div>
 
-      <!-- Forgot Password & OTP Flow View (Professional 3-Step Flow) -->
-      <div id="authForgotPasswordView" style="display:none;">
-
-        <!-- Step 1: Identifier Input -->
-        <div id="fpStepIdentifier" style="display:block;">
-          <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; align-items:center; gap:10px;">
-            <span class="material-icons-round" style="color:var(--color-sapphire); font-size:24px;">lock_reset</span>
-            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-              Enter your registered Email or Mobile number to receive a secure 6-digit verification code.
+        <div class="auth-card">
+          <!-- Segmented Tab: Log In vs Sign Up -->
+          <div id="authCredentialsView">
+            <div class="auth-tab-bar">
+              <button type="button" class="auth-tab-btn active" id="authTabLogin" onclick="switchAuthTab('LOGIN')">
+                <span class="material-icons-round" style="font-size:18px;">login</span>
+                <span>Log In</span>
+              </button>
+              <button type="button" class="auth-tab-btn" id="authTabSignup" onclick="switchAuthTab('SIGNUP')">
+                <span class="material-icons-round" style="font-size:18px;">person_add</span>
+                <span>Sign Up</span>
+              </button>
             </div>
-          </div>
 
-          <div style="margin-bottom:20px;">
-            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Registered Email or Mobile</label>
-            <input type="text" class="form-input-pill" placeholder="e.g. rahul@gmail.com or +919876543210" id="fpInputIdentifier" style="margin-bottom:0;">
-          </div>
-
-          <button class="btn-submit-sheet" onclick="submitForgotPasswordIdentifier()" id="btnFpSendOtp" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
-            <span>Send Verification Code</span>
-            <span class="material-icons-round" style="font-size:20px;">send</span>
-          </button>
-
-          <div style="text-align:center;">
-            <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer;">
-              ← Back to Login
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 2: 6-Digit OTP Verification (Real Delivery Only - Never shown on screen!) -->
-        <div id="fpStepOtp" style="display:none; text-align:center;">
-          <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
-            <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
-              <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
+            <!-- Clean Inline Validation Feedback Banner -->
+            <div id="authErrorBanner" class="auth-error-banner" role="alert">
+              <span class="material-icons-round" style="font-size:17px; flex-shrink:0;">error_outline</span>
+              <span id="authErrorBannerText"></span>
             </div>
-            <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Dispatched</div>
-            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-              We sent a 6-digit code to your registered destination:
-            </div>
-            <div id="fpRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
-            <div style="font-size:11px; color:#ef4444; margin-top:6px; font-weight:600;">
-              ⚠️ Check your Email Inbox/Spam or SMS. Code is valid for 10 minutes.
-            </div>
-          </div>
 
-          <div class="otp-boxes-row" style="margin-bottom:18px;">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_1" oninput="focusNextFpOtp(1, event)" onkeydown="handleFpOtpKeydown(1, event)" onpaste="handleFpOtpPaste(event)">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_2" oninput="focusNextFpOtp(2, event)" onkeydown="handleFpOtpKeydown(2, event)">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_3" oninput="focusNextFpOtp(3, event)" onkeydown="handleFpOtpKeydown(3, event)">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_4" oninput="focusNextFpOtp(4, event)" onkeydown="handleFpOtpKeydown(4, event)">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_5" oninput="focusNextFpOtp(5, event)" onkeydown="handleFpOtpKeydown(5, event)">
-            <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_6" oninput="focusNextFpOtp(6, event)" onkeydown="handleFpOtpKeydown(6, event)">
-          </div>
+            <!-- Full Name (Only for Signup) -->
+            <div id="authNameField" style="display:none; margin-bottom:12px;">
+              <label class="auth-field-label" for="authInputName">Full Name</label>
+              <div class="auth-input-wrap">
+                <span class="material-icons-round auth-input-icon">person_outline</span>
+                <input type="text" class="form-input-pill" placeholder="e.g. Rahul" id="authInputName" autocomplete="name">
+              </div>
+            </div>
 
-          <!-- Resend Countdown -->
-          <div style="margin-bottom:18px; font-size:12px; color:var(--text-muted);">
-            <span id="fpResendTimerText">Didn't receive code? Resend in <strong id="fpCountdownVal">30s</strong></span>
-            <button type="button" id="btnFpResend" onclick="resendForgotPasswordOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
-              Resend Code
+            <!-- Email -->
+            <div style="margin-bottom:12px;">
+              <label class="auth-field-label" id="authIdentifierLabel" for="authInputIdentifier">Email</label>
+              <div class="auth-input-wrap">
+                <span class="material-icons-round auth-input-icon">mail_outline</span>
+                <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="authInputIdentifier">
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div style="margin-bottom:12px;">
+              <label class="auth-field-label" for="authInputPassword">Password</label>
+              <div class="auth-input-wrap">
+                <span class="material-icons-round auth-input-icon">lock_outline</span>
+                <input type="password" class="form-input-pill" placeholder="Enter your password" id="authInputPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter' && APP_STATE.authMode==='LOGIN') handleAuthSubmit()">
+                <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputPassword', 'pwdToggleIcon')" id="pwdToggleIcon">visibility</span>
+              </div>
+            </div>
+
+            <!-- Confirm Password (Only for Signup) -->
+            <div id="authConfirmPasswordField" style="display:none; margin-bottom:14px;">
+              <label class="auth-field-label" for="authInputConfirmPassword">Confirm Password</label>
+              <div class="auth-input-wrap">
+                <span class="material-icons-round auth-input-icon">verified_user</span>
+                <input type="password" class="form-input-pill" placeholder="Re-enter your password" id="authInputConfirmPassword" style="padding-right:42px;" onkeydown="if(event.key==='Enter') handleAuthSubmit()">
+                <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('authInputConfirmPassword', 'pwdConfirmToggleIcon')" id="pwdConfirmToggleIcon">visibility</span>
+              </div>
+            </div>
+
+            <!-- Forgot Password Link (Only for Login) -->
+            <div id="authForgotPwdRow" style="text-align:right; margin-top:-2px; margin-bottom:14px;">
+              <button type="button" onclick="openForgotPasswordFlow()" style="background:transparent; border:none; color:#60A5FA; font-size:12px; font-weight:700; cursor:pointer; padding:2px 0; text-decoration:none;">
+                Forgot Password?
+              </button>
+            </div>
+
+            <button type="button" class="auth-cta-btn" onclick="handleAuthSubmit()" id="authSubmitBtn">
+              <span>Log In</span>
+              <span class="material-icons-round" style="font-size:20px;">arrow_forward</span>
             </button>
           </div>
 
-          <button class="btn-submit-sheet" onclick="submitForgotPasswordOtp()" id="btnVerifyFpOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
-            <span class="material-icons-round" style="font-size:20px;">verified</span>
-            <span>Verify OTP</span>
-          </button>
+          <!-- Forgot Password & OTP Flow View (Professional 3-Step Email Flow) -->
+          <div id="authForgotPasswordView" style="display:none;">
 
-          <div style="text-align:center;">
-            <button type="button" onclick="showFpStep('IDENTIFIER')" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
-              ← Change Mobile / Email
-            </button>
+            <!-- Step 1: Email Input -->
+            <div id="fpStepIdentifier" style="display:block;">
+              <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:14px; padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                <span class="material-icons-round" style="color:var(--color-sapphire); font-size:24px;">lock_reset</span>
+                <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                  Enter your registered Email address to receive a secure 6-digit verification code.
+                </div>
+              </div>
+
+              <div style="margin-bottom:18px;">
+                <label class="auth-field-label" for="fpInputIdentifier">Registered Email</label>
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">mail_outline</span>
+                  <input type="email" inputmode="email" autocomplete="email" class="form-input-pill" placeholder="Enter your email" id="fpInputIdentifier">
+                </div>
+              </div>
+
+              <button type="button" class="auth-cta-btn" onclick="submitForgotPasswordIdentifier()" id="btnFpSendOtp" style="margin-bottom:14px;">
+                <span>Send Verification Code</span>
+                <span class="material-icons-round" style="font-size:20px;">send</span>
+              </button>
+
+              <div style="text-align:center;">
+                <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; font-weight:700; cursor:pointer;">
+                  ← Back to Log In
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: 6-Digit OTP Verification -->
+            <div id="fpStepOtp" style="display:none; text-align:center;">
+              <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:16px;">
+                <div style="width:46px; height:46px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
+                  <span class="material-icons-round" style="font-size:24px;">mark_email_read</span>
+                </div>
+                <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Sent</div>
+                <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                  We sent a 6-digit code to your email:
+                </div>
+                <div id="fpRecipientDisplay" style="font-size:13.5px; font-weight:800; color:var(--color-sapphire); margin-top:4px; word-break:break-all;"></div>
+                <div style="font-size:11px; color:#F59E0B; margin-top:6px; font-weight:600;">
+                  Check your Email Inbox or Spam folder. Valid for 10 minutes.
+                </div>
+              </div>
+
+              <div class="otp-boxes-row" style="margin-bottom:16px;">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_1" oninput="focusNextFpOtp(1, event)" onkeydown="handleFpOtpKeydown(1, event)" onpaste="handleFpOtpPaste(event)">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_2" oninput="focusNextFpOtp(2, event)" onkeydown="handleFpOtpKeydown(2, event)">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_3" oninput="focusNextFpOtp(3, event)" onkeydown="handleFpOtpKeydown(3, event)">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_4" oninput="focusNextFpOtp(4, event)" onkeydown="handleFpOtpKeydown(4, event)">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_5" oninput="focusNextFpOtp(5, event)" onkeydown="handleFpOtpKeydown(5, event)">
+                <input type="tel" maxlength="1" class="otp-digit-input" id="fp_otp_6" oninput="focusNextFpOtp(6, event)" onkeydown="handleFpOtpKeydown(6, event)">
+              </div>
+
+              <div style="margin-bottom:16px; font-size:12px; color:var(--text-muted);">
+                <span id="fpResendTimerText">Didn't receive code? Resend in <strong id="fpCountdownVal">30s</strong></span>
+                <button type="button" id="btnFpResend" onclick="resendForgotPasswordOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
+                  Resend Code
+                </button>
+              </div>
+
+              <button type="button" class="auth-cta-btn" onclick="submitForgotPasswordOtp()" id="btnVerifyFpOtp" style="margin-bottom:14px;">
+                <span class="material-icons-round" style="font-size:20px;">verified</span>
+                <span>Verify Code</span>
+              </button>
+
+              <div style="text-align:center;">
+                <button type="button" onclick="showFpStep('IDENTIFIER')" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+                  ← Change Email
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 3: Create New Password -->
+            <div id="fpStepNewPassword" style="display:none;">
+              <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:12px 14px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+                <span class="material-icons-round" style="color:var(--color-emerald); font-size:24px;">lock</span>
+                <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                  Identity verified! Enter your new password below.
+                </div>
+              </div>
+
+              <div style="margin-bottom:12px;">
+                <label class="auth-field-label" for="fpInputNewPassword">New Password (Min 6 Characters)</label>
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">lock_outline</span>
+                  <input type="password" class="form-input-pill" placeholder="Enter new password" id="fpInputNewPassword" style="padding-right:42px;">
+                  <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('fpInputNewPassword', 'fpNewPwdIcon')" id="fpNewPwdIcon">visibility</span>
+                </div>
+              </div>
+
+              <div style="margin-bottom:18px;">
+                <label class="auth-field-label" for="fpInputConfirmPassword">Confirm New Password</label>
+                <div class="auth-input-wrap">
+                  <span class="material-icons-round auth-input-icon">verified_user</span>
+                  <input type="password" class="form-input-pill" placeholder="Re-enter new password" id="fpInputConfirmPassword" style="padding-right:42px;">
+                  <span class="material-icons-round auth-eye-btn" onclick="togglePasswordVisibility('fpInputConfirmPassword', 'fpConfirmPwdIcon')" id="fpConfirmPwdIcon">visibility</span>
+                </div>
+              </div>
+
+              <button type="button" class="auth-cta-btn" onclick="submitForgotPasswordReset()" id="btnFpResetSubmit" style="margin-bottom:14px;">
+                <span>Save & Enter App</span>
+                <span class="material-icons-round" style="font-size:20px;">check_circle</span>
+              </button>
+
+              <div style="text-align:center;">
+                <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+                  Cancel
+                </button>
+              </div>
+            </div>
+
           </div>
-        </div>
 
-        <!-- Step 3: Create New Password -->
-        <div id="fpStepNewPassword" style="display:none;">
-          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:12px 14px; margin-bottom:18px; display:flex; align-items:center; gap:10px;">
-            <span class="material-icons-round" style="color:var(--color-emerald); font-size:24px;">lock</span>
-            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-              Identity verified! Enter your new password below.
+          <!-- Signup OTP Verification View (Email Verification) -->
+          <div id="authSignupOtpView" style="display:none; text-align:center;">
+            <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:16px;">
+              <div style="width:46px; height:46px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
+                <span class="material-icons-round" style="font-size:24px;">mark_email_read</span>
+              </div>
+              <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verify Your Email</div>
+              <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                We sent a 6-digit verification code to:
+              </div>
+              <div id="signupRecipientDisplay" style="font-size:13.5px; font-weight:800; color:var(--color-sapphire); margin-top:4px; word-break:break-all;"></div>
+              <div style="font-size:11px; color:#F59E0B; margin-top:6px; font-weight:600;">
+                Check your Email Inbox or Spam folder. Valid for 10 minutes.
+              </div>
+            </div>
+
+            <div class="otp-boxes-row" style="margin-bottom:16px;">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_1" oninput="focusNextSignupOtp(1, event)" onkeydown="handleSignupOtpKeydown(1, event)" onpaste="handleSignupOtpPaste(event)">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_2" oninput="focusNextSignupOtp(2, event)" onkeydown="handleSignupOtpKeydown(2, event)">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_3" oninput="focusNextSignupOtp(3, event)" onkeydown="handleSignupOtpKeydown(3, event)">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_4" oninput="focusNextSignupOtp(4, event)" onkeydown="handleSignupOtpKeydown(4, event)">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_5" oninput="focusNextSignupOtp(5, event)" onkeydown="handleSignupOtpKeydown(5, event)">
+              <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_6" oninput="focusNextSignupOtp(6, event)" onkeydown="handleSignupOtpKeydown(6, event)">
+            </div>
+
+            <div style="margin-bottom:16px; font-size:12px; color:var(--text-muted);">
+              <span id="signupResendTimerText">Didn't receive code? Resend in <strong id="signupCountdownVal">30s</strong></span>
+              <button type="button" id="btnSignupResend" onclick="resendSignupOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
+                Resend Code
+              </button>
+            </div>
+
+            <button type="button" class="auth-cta-btn" onclick="submitSignupOtp()" id="btnVerifySignupOtp" style="margin-bottom:14px;">
+              <span class="material-icons-round" style="font-size:20px;">verified</span>
+              <span>Verify & Activate Account</span>
+            </button>
+
+            <div style="text-align:center;">
+              <button type="button" onclick="closeSignupOtpFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
+                ← Edit Registration Details
+              </button>
             </div>
           </div>
-
-          <div style="margin-bottom:14px; position:relative;">
-            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">New Password (Min 6 Characters)</label>
-            <input type="password" class="form-input-pill" placeholder="Enter new password" id="fpInputNewPassword" style="margin-bottom:0; padding-right:42px;">
-            <span class="material-icons-round" onclick="togglePasswordVisibility('fpInputNewPassword', 'fpNewPwdIcon')" id="fpNewPwdIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
-          </div>
-
-          <div style="margin-bottom:20px; position:relative;">
-            <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Confirm New Password</label>
-            <input type="password" class="form-input-pill" placeholder="Re-enter new password" id="fpInputConfirmPassword" style="margin-bottom:0; padding-right:42px;">
-            <span class="material-icons-round" onclick="togglePasswordVisibility('fpInputConfirmPassword', 'fpConfirmPwdIcon')" id="fpConfirmPwdIcon" style="position:absolute; right:14px; top:33px; color:var(--text-muted); cursor:pointer; font-size:20px;">visibility</span>
-          </div>
-
-          <button class="btn-submit-sheet" onclick="submitForgotPasswordReset()" id="btnFpResetSubmit" style="height:48px; font-size:15px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
-            <span>Save & Enter App</span>
-            <span class="material-icons-round" style="font-size:20px;">check_circle</span>
-          </button>
-
-          <div style="text-align:center;">
-            <button type="button" onclick="closeForgotPasswordFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
-              Cancel
-            </button>
-          </div>
         </div>
 
-      </div>
-
-      <!-- Signup OTP Verification View (Dispatched to real email/mobile) -->
-      <div id="authSignupOtpView" style="display:none; text-align:center;">
-        <div style="background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.25); border-radius:16px; padding:16px 18px; margin-bottom:18px;">
-          <div style="width:48px; height:48px; border-radius:50%; background:rgba(37,99,235,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto 8px auto; color:var(--color-sapphire);">
-            <span class="material-icons-round" style="font-size:26px;">mark_email_read</span>
-          </div>
-          <div style="font-size:15px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">Verification Code Dispatched</div>
-          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
-            We dispatched a 6-digit verification code to:
-          </div>
-          <div id="signupRecipientDisplay" style="font-size:14px; font-weight:800; color:var(--color-sapphire); margin-top:4px;"></div>
-          <div style="font-size:11px; color:#ef4444; margin-top:6px; font-weight:600;">
-            ⚠️ Check your Email Inbox/Spam or SMS. Code is valid for 10 minutes.
-          </div>
-        </div>
-
-        <div class="otp-boxes-row" style="margin-bottom:18px;">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_1" oninput="focusNextSignupOtp(1, event)" onkeydown="handleSignupOtpKeydown(1, event)" onpaste="handleSignupOtpPaste(event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_2" oninput="focusNextSignupOtp(2, event)" onkeydown="handleSignupOtpKeydown(2, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_3" oninput="focusNextSignupOtp(3, event)" onkeydown="handleSignupOtpKeydown(3, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_4" oninput="focusNextSignupOtp(4, event)" onkeydown="handleSignupOtpKeydown(4, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_5" oninput="focusNextSignupOtp(5, event)" onkeydown="handleSignupOtpKeydown(5, event)">
-          <input type="tel" maxlength="1" class="otp-digit-input" id="signup_otp_6" oninput="focusNextSignupOtp(6, event)" onkeydown="handleSignupOtpKeydown(6, event)">
-        </div>
-
-        <!-- Resend Countdown -->
-        <div style="margin-bottom:18px; font-size:12px; color:var(--text-muted);">
-          <span id="signupResendTimerText">Didn't receive code? Resend in <strong id="signupCountdownVal">30s</strong></span>
-          <button type="button" id="btnSignupResend" onclick="resendSignupOtp()" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-weight:700; cursor:pointer; font-size:12px;">
-            Resend Code
-          </button>
-        </div>
-
-        <button class="btn-submit-sheet" onclick="submitSignupOtp()" id="btnVerifySignupOtp" style="height:48px; font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px;">
-          <span class="material-icons-round" style="font-size:20px;">verified</span>
-          <span>Verify & Activate Account</span>
-        </button>
-
-        <div style="text-align:center;">
-          <button type="button" onclick="closeSignupOtpFlow()" style="background:transparent; border:none; color:var(--text-muted); font-size:12px; cursor:pointer;">
-            ← Edit Registration Details
-          </button>
+        <div class="auth-trust-row">
+          <span class="auth-trust-item"><span class="material-icons-round">verified_user</span> Private & Secure</span>
+          <span class="auth-trust-item"><span class="material-icons-round">insights</span> Smart Budgets</span>
+          <span class="auth-trust-item"><span class="material-icons-round">auto_awesome</span> Finly AI</span>
         </div>
       </div>
     </div>
@@ -4965,15 +5173,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_2'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_3'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.2-cache') {
-            triggerSwUpgradeReload('v5_2');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.3-cache') {
+            triggerSwUpgradeReload('v5_3');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=5.2').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=5.3').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -10775,11 +10983,24 @@
     }
     window.togglePasswordVisibility = togglePasswordVisibility;
 
+    function showAuthError(msg) {
+      const box = document.getElementById('authErrorBanner');
+      const txt = document.getElementById('authErrorBannerText');
+      if (box && txt) {
+        txt.innerText = msg || '';
+        box.classList.toggle('visible', Boolean(msg));
+      } else if (msg) {
+        alert(msg);
+      }
+    }
+    function clearAuthError() { showAuthError(''); }
+
     // Switch between Login and Signup tabs
     function switchAuthTab(mode) {
       APP_STATE.authMode = mode;
       const isLogin = mode === 'LOGIN';
-      
+      clearAuthError();
+
       const tabLog = document.getElementById('authTabLogin');
       const tabSign = document.getElementById('authTabSignup');
       if (tabLog && tabSign) {
@@ -10796,14 +11017,11 @@
       const forgotRow = document.getElementById('authForgotPwdRow');
       if (forgotRow) forgotRow.style.display = isLogin ? 'block' : 'none';
 
-      const demoPill = document.getElementById('demoAccountPill');
-      if (demoPill) demoPill.style.display = isLogin ? 'block' : 'none';
-
       const submitBtn = document.getElementById('authSubmitBtn');
       if (submitBtn) {
-        submitBtn.innerHTML = isLogin 
-          ? `<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>`
-          : `<span>Sign Up</span><span class="material-icons-round" style="font-size:20px;">person_add</span>`;
+        submitBtn.innerHTML = isLogin
+          ? '<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>'
+          : '<span>Sign Up</span><span class="material-icons-round" style="font-size:20px;">person_add</span>';
       }
 
       const title = document.getElementById('authModalTitle');
@@ -10811,9 +11029,9 @@
 
       const subtitle = document.getElementById('authModalSubtitle');
       if (subtitle) {
-        subtitle.innerText = isLogin 
-          ? 'Log in with your Mobile/Email and Password' 
-          : 'Enter your details to create a free account';
+        subtitle.innerText = isLogin
+          ? 'Log in with your Email and Password'
+          : 'Enter your details to create an account';
       }
 
       document.getElementById('authCredentialsView').style.display = 'block';
@@ -10824,14 +11042,6 @@
       if (signupCountdownTimer) clearInterval(signupCountdownTimer);
     }
     window.switchAuthTab = switchAuthTab;
-
-    function fillDemoCredentials() {
-      const idInput = document.getElementById('authInputIdentifier');
-      const pwdInput = document.getElementById('authInputPassword');
-      if (idInput) idInput.value = 'rahul@expensetracker.pro';
-      if (pwdInput) pwdInput.value = 'password123';
-    }
-    window.fillDemoCredentials = fillDemoCredentials;
 
     // ==================================================
     // Signup OTP Flow Controller
@@ -10854,10 +11064,10 @@
       const title = document.getElementById('authModalTitle');
       if (title) title.innerText = 'Verify Registration';
       const subtitle = document.getElementById('authModalSubtitle');
-      if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your contact';
+      if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your email';
 
       for (let i = 1; i <= 6; i++) {
-        const inp = document.getElementById(signup_otp_);
+        const inp = document.getElementById('signup_otp_' + i);
         if (inp) inp.value = '';
       }
       setTimeout(() => {
@@ -10928,7 +11138,7 @@
 
     function focusNextSignupOtp(idx, e) {
       if (e.target.value.length === 1 && idx < 6) {
-        const next = document.getElementById(signup_otp_);
+        const next = document.getElementById('signup_otp_' + (idx + 1));
         if (next) next.focus();
       }
     }
@@ -10936,7 +11146,7 @@
 
     function handleSignupOtpKeydown(idx, e) {
       if (e.key === 'Backspace' && !e.target.value && idx > 1) {
-        const prev = document.getElementById(signup_otp_);
+        const prev = document.getElementById('signup_otp_' + (idx - 1));
         if (prev) {
           prev.focus();
           prev.value = '';
@@ -10950,7 +11160,7 @@
       const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
       if (/^\d{6}$/.test(pasted)) {
         for (let i = 0; i < 6; i++) {
-          const inp = document.getElementById(signup_otp_);
+          const inp = document.getElementById('signup_otp_' + (i + 1));
           if (inp) inp.value = pasted[i];
         }
         const last = document.getElementById('signup_otp_6');
@@ -10962,7 +11172,7 @@
     async function submitSignupOtp() {
       let otp = '';
       for (let i = 1; i <= 6; i++) {
-        const inp = document.getElementById(signup_otp_);
+        const inp = document.getElementById('signup_otp_' + i);
         if (inp) otp += inp.value.trim();
       }
 
@@ -10993,7 +11203,7 @@
 
           document.getElementById('authOverlay').classList.add('hidden');
           updateUserUI();
-      closeAllSheets();
+          closeAllSheets();
           renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
           renderHistoryBarChart(ensureHistory6mInitialized());
           renderWeeklyDailyBarChart();
@@ -11017,32 +11227,36 @@
     }
     window.submitSignupOtp = submitSignupOtp;
 
-    // Handle Login or Signup submission
+    // Handle Login or Signup submission (Email-first validation & inline errors)
     async function handleAuthSubmit() {
-      const identifier = document.getElementById('authInputIdentifier').value.trim();
+      clearAuthError();
+      const identifier = document.getElementById('authInputIdentifier').value.trim().toLowerCase();
       const password = document.getElementById('authInputPassword').value;
       const isLogin = (APP_STATE.authMode === 'LOGIN');
 
       if (!identifier || !password) {
-        alert('Please enter your Mobile/Email and Password.');
+        showAuthError('Please enter your Email and Password.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+        showAuthError('Please enter a valid email address.');
         return;
       }
 
       if (!isLogin) {
-        // Condition 2: Sign Up with OTP verification
         const name = document.getElementById('authInputName').value.trim();
         const confirmPassword = document.getElementById('authInputConfirmPassword').value;
 
         if (!name) {
-          alert('Please enter your Full Name.');
+          showAuthError('Please enter your Full Name.');
           return;
         }
         if (password.length < 6) {
-          alert('Password must be at least 6 characters.');
+          showAuthError('Password must be at least 6 characters.');
           return;
         }
         if (password !== confirmPassword) {
-          alert('Passwords do not match. Please re-enter.');
+          showAuthError('Passwords do not match. Please re-enter.');
           return;
         }
 
@@ -11056,8 +11270,8 @@
         try {
           const res = await apiRequest('/auth/register', 'POST', {
             name,
-            email: identifier.includes('@') ? identifier : '',
-            phone: !identifier.includes('@') ? identifier : '',
+            email: identifier,
+            phone: '',
             password,
             confirm_password: confirmPassword
           });
@@ -11066,7 +11280,7 @@
             if (res.require_otp) {
               openSignupOtpFlow(res.identifier || identifier);
               if (typeof showToast === 'function') {
-                showToast('Verification code dispatched! Please check your inbox.', 'info');
+                showToast('Verification code dispatched! Check your email inbox.', 'info');
               }
             } else {
               APP_STATE.token = res.access_token;
@@ -11075,7 +11289,7 @@
               localStorage.setItem('user_profile', JSON.stringify(res.user));
               document.getElementById('authOverlay').classList.add('hidden');
               updateUserUI();
-      closeAllSheets();
+              closeAllSheets();
               renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
               renderHistoryBarChart(ensureHistory6mInitialized());
               renderWeeklyDailyBarChart();
@@ -11086,10 +11300,10 @@
               }
             }
           } else {
-            alert(res?.error || 'Registration failed. Please check your details.');
+            showAuthError(res?.error || 'Registration failed. Please check your details.');
           }
         } catch (err) {
-          alert('Registration request failed: ' + (err.message || 'Network error'));
+          showAuthError('Registration failed: ' + (err.message || 'Network error'));
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -11098,7 +11312,6 @@
         }
 
       } else {
-        // Condition 1: Direct Password Login
         const submitBtn = document.getElementById('authSubmitBtn');
         const origContent = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
@@ -11120,7 +11333,7 @@
 
             document.getElementById('authOverlay').classList.add('hidden');
             updateUserUI();
-      closeAllSheets();
+            closeAllSheets();
             renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
             renderHistoryBarChart(ensureHistory6mInitialized());
             renderWeeklyDailyBarChart();
@@ -11130,10 +11343,10 @@
               showToast('Welcome back, ' + (res.user?.name || 'User') + '!', 'success');
             }
           } else {
-            alert(res?.error || 'Invalid email/phone or password.');
+            showAuthError(res?.error || 'Invalid email or password.');
           }
         } catch (err) {
-          alert('Login request failed: ' + (err.message || 'Network error'));
+          showAuthError('Login failed: ' + (err.message || 'Network error'));
         } finally {
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -11200,10 +11413,10 @@
 
       if (step === 'IDENTIFIER') {
         if (title) title.innerText = 'Reset Password';
-        if (subtitle) subtitle.innerText = 'Enter your registered contact to recover account';
+        if (subtitle) subtitle.innerText = 'Enter your registered email to recover your account';
       } else if (step === 'OTP') {
         if (title) title.innerText = 'Verify Identity';
-        if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your contact';
+        if (subtitle) subtitle.innerText = 'Enter the 6-digit code sent to your email';
       } else if (step === 'NEW_PWD') {
         if (title) title.innerText = 'Create New Password';
         if (subtitle) subtitle.innerText = 'Choose a strong new password for your account';
@@ -11212,9 +11425,9 @@
     window.showFpStep = showFpStep;
 
     async function submitForgotPasswordIdentifier() {
-      const identifier = document.getElementById('fpInputIdentifier').value.trim();
-      if (!identifier) {
-        alert('Please enter your registered Email or Mobile number.');
+      const identifier = document.getElementById('fpInputIdentifier').value.trim().toLowerCase();
+      if (!identifier || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+        alert('Please enter your registered Email address.');
         return;
       }
       fpPendingIdentifier = identifier;
@@ -11238,7 +11451,7 @@
 
           // Clear previous OTP boxes
           for (let i = 1; i <= 6; i++) {
-            const inp = document.getElementById(p_otp_);
+            const inp = document.getElementById('fp_otp_' + i);
             if (inp) inp.value = '';
           }
           setTimeout(() => {
@@ -11325,7 +11538,7 @@
     async function submitForgotPasswordOtp() {
       let otp = '';
       for (let i = 1; i <= 6; i++) {
-        const inp = document.getElementById(p_otp_);
+        const inp = document.getElementById('fp_otp_' + i);
         if (inp) otp += inp.value.trim();
       }
 

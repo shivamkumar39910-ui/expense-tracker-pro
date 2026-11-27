@@ -292,20 +292,28 @@ class PostgresConnectionWrapper:
 def get_db_connection():
     """
     Universal database connection factory.
-    Uses pre-warmed connection pool for sub-millisecond acquisition time in production.
+    Uses pre-warmed connection pool with stale-socket eviction for reliable production queries.
     """
     if is_postgres():
         pool = _get_pg_pool()
         if pool:
-            for _ in range(2):
+            for _ in range(3):
+                raw_conn = None
                 try:
                     raw_conn = pool.getconn()
                     if raw_conn.closed:
                         pool.putconn(raw_conn, close=True)
                         continue
+                    with raw_conn.cursor() as ping_cur:
+                        ping_cur.execute("SELECT 1")
+                    raw_conn.rollback()
                     return PostgresConnectionWrapper(raw_conn, from_pool=True)
                 except Exception:
-                    pass
+                    if raw_conn is not None:
+                        try:
+                            pool.putconn(raw_conn, close=True)
+                        except Exception:
+                            pass
         
         # Fallback to direct connect if pool is empty or during initialization
         import psycopg2

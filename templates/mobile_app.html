@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.6">
+  <meta name="app-shell-version" content="v5.7">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11924,9 +11924,12 @@
     let fpCountdownTimer = null;
     let fpPendingIdentifier = '';
     let fpVerifiedOtp = '';
+    let fpResetToken = '';
 
     function openForgotPasswordFlow() {
       clearAuthError();
+      fpVerifiedOtp = '';
+      fpResetToken = '';
       const creds = document.getElementById('authCredentialsView');
       if (creds) creds.style.display = 'none';
       const fp = document.getElementById('authForgotPasswordView');
@@ -11947,6 +11950,8 @@
 
     function closeForgotPasswordFlow() {
       clearAuthError();
+      fpVerifiedOtp = '';
+      fpResetToken = '';
       if (fpCountdownTimer) clearInterval(fpCountdownTimer);
       const fp = document.getElementById('authForgotPasswordView');
       if (fp) fp.style.display = 'none';
@@ -12128,6 +12133,7 @@
 
         if (res && res.success) {
           fpVerifiedOtp = otp;
+          fpResetToken = res.reset_token || '';
           showFpStep('NEW_PWD');
           setTimeout(() => {
             const np = document.getElementById('fpInputNewPassword');
@@ -12172,15 +12178,20 @@
         btn.innerHTML = '<span>Saving...</span>';
       }
 
+      const resetIdentifier = (fpPendingIdentifier || document.getElementById('fpInputIdentifier')?.value || '').trim().toLowerCase();
+
       try {
         const res = await apiRequest('/auth/forgot-password/reset', 'POST', {
-          identifier: fpPendingIdentifier,
+          identifier: resetIdentifier,
           otp: fpVerifiedOtp,
+          reset_token: fpResetToken,
           new_password,
           confirm_password
         });
 
         if (res && res.success) {
+          fpVerifiedOtp = '';
+          fpResetToken = '';
           document.getElementById('fpInputNewPassword').value = '';
           document.getElementById('fpInputConfirmPassword').value = '';
           await completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
@@ -14259,6 +14270,7 @@
       if (typeof userGoals !== 'undefined') userGoals = [];
       fpPendingIdentifier = '';
       fpVerifiedOtp = '';
+      fpResetToken = '';
       if (typeof updateSyncBadge === 'function') updateSyncBadge();
       ['authInputName', 'authInputIdentifier', 'fpInputIdentifier', 'authInputPassword', 'authInputConfirmPassword'].forEach(id => {
         const el = document.getElementById(id);

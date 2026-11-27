@@ -700,8 +700,40 @@ def run_tests():
     assert hasattr(otp_service, "_IPv4SMTP") and hasattr(otp_service, "_IPv4SMTP_SSL")
     print("28. SMTP IPv4 Diagnostics & Dispatcher Helpers Verified!")
 
+    # 29. Signed Forgot-Password reset_token + Replay Prevention + Empty Phone NULL Storage
+    r_fp2_s = client.post('/api/v1/auth/forgot-password/send-otp', json={"identifier": pre_email})
+    assert r_fp2_s.status_code == 200
+    fp_conn2 = database.get_db_connection()
+    fp_row2 = fp_conn2.execute("SELECT otp_code FROM users WHERE LOWER(email) = ?", (pre_email,)).fetchone()
+    fp_conn2.close()
+    fp_otp2 = fp_row2["otp_code"]
+    r_fp2_v = client.post('/api/v1/auth/forgot-password/verify-otp', json={"identifier": pre_email, "otp": fp_otp2})
+    assert r_fp2_v.status_code == 200 and r_fp2_v.json.get("reset_token")
+    r_tok = r_fp2_v.json["reset_token"]
+    r_fp2_rst = client.post('/api/v1/auth/forgot-password/reset', json={
+        "identifier": pre_email,
+        "reset_token": r_tok,
+        "new_password": "newpassword999",
+        "confirm_password": "newpassword999"
+    })
+    assert r_fp2_rst.status_code == 200 and r_fp2_rst.json.get("access_token")
+    # Replay of used reset_token must fail after password changed
+    r_fp2_replay = client.post('/api/v1/auth/forgot-password/reset', json={
+        "identifier": pre_email,
+        "reset_token": r_tok,
+        "new_password": "anotherpassword",
+        "confirm_password": "anotherpassword"
+    })
+    assert r_fp2_replay.status_code == 400
+    # Verify phone stored as NULL (None), not empty string "", preventing Postgres UNIQUE collisions
+    p_conn = database.get_db_connection()
+    p_row = p_conn.execute("SELECT phone FROM users WHERE LOWER(email) = ?", (pre_email,)).fetchone()
+    p_conn.close()
+    assert p_row["phone"] is None, f"Expected phone NULL, got {p_row['phone']!r}"
+    print("29. Signed Forgot-Password reset_token, Replay Protection & NULL Phone Storage Verified!")
+
     print("==================================================")
-    print("ALL 28 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
+    print("ALL 29 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")
     print("==================================================")
 
 if __name__ == "__main__":

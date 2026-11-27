@@ -8,16 +8,17 @@
   <meta http-equiv="Expires" content="0">
   <title>Expense Tracker Pro 2.0 — Mobile Finance App</title>
   
-  <!-- PWA & Mobile Meta Tags (Phase 15) -->
+  <!-- PWA & Mobile Meta Tags (Phase 15 + v6.0) -->
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="apple-touch-icon" href="/static/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ExpensePro">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.9">
+  <meta name="app-shell-version" content="v6.0">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2438,6 +2439,261 @@
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
       }
     }
+
+    /* ======================================================== */
+    /* PWA INSTALL BANNER, AUTH CTA & MODAL DIALOGS (v6.0)     */
+    /* ======================================================== */
+    .pwa-install-banner {
+      position: fixed;
+      bottom: 82px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 440px;
+      background: rgba(19, 27, 46, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 18px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      z-index: 10001;
+      animation: slideUpPwa 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideUpPwa {
+      from { opacity: 0; transform: translate(-50%, 20px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    body.theme-light .pwa-install-banner {
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      box-shadow: 0 12px 36px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+    .pwa-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .pwa-banner-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+    .pwa-banner-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .pwa-banner-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    body.theme-light .pwa-banner-title {
+      color: #0F172A;
+    }
+    .pwa-banner-sub {
+      font-size: 11px;
+      color: #94A3B8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    body.theme-light .pwa-banner-sub {
+      color: #64748B;
+    }
+    .pwa-banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .pwa-btn-install {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .pwa-btn-close {
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    body.theme-light .pwa-btn-close {
+      color: #64748B;
+    }
+
+    /* Auth screen PWA button */
+    .auth-pwa-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .auth-pwa-install-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(56, 189, 248, 0.12));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    body.theme-light .auth-pwa-install-btn {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(56, 189, 248, 0.06));
+      border-color: rgba(37, 99, 235, 0.25);
+      color: #0F172A;
+    }
+    .pwa-badge-pill {
+      background: #10B981;
+      color: #FFFFFF;
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+    }
+
+    /* PWA Guide Modal Overlay */
+    .pwa-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10005;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+    .pwa-modal-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-card);
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      border: 1px solid var(--border-card);
+      border-bottom: none;
+      padding: 16px 20px 24px 20px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+      animation: sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pwa-modal-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 auto 14px auto;
+    }
+    body.theme-light .pwa-modal-handle {
+      background: rgba(0, 0, 0, 0.15);
+    }
+    .pwa-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .pwa-guide-platform-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-card-subtle);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .pwa-plat-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 9px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .pwa-plat-tab.active {
+      background: #2563EB;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    }
+    .pwa-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .pwa-step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--color-sapphire);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .pwa-step-info {
+      flex: 1;
+    }
+    .pwa-step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .pwa-step-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -2481,6 +2737,10 @@
             </div>
           </div>
           <div class="header-actions">
+            <!-- PWA Download / Install App Button -->
+            <div class="btn-icon-header" id="btnPwaInstall" onclick="installPwaApp()" title="Download & Install App on Phone" style="display:flex; color:var(--color-sapphire);">
+              <span class="material-icons-round" style="font-size: 20px;">install_mobile</span>
+            </div>
             <!-- Theme Toggle (Midnight Navy / Light Mode) -->
             <div class="btn-icon-header" id="btnThemeToggle" onclick="toggleAppTheme()" title="Switch Theme (Midnight / Light)">
               <span class="material-icons-round" id="themeToggleIcon" style="font-size: 19px;">light_mode</span>
@@ -3055,6 +3315,22 @@
             </div>
           </div>
           <div style="font-size:12px; font-weight:800; color:var(--color-emerald);" id="profileCurrencyDisplay">₹ INR</div>
+        </div>
+
+        <div class="tx-item" id="profilePwaInstallItem" onclick="installPwaApp()" style="cursor:pointer; border-color:rgba(56,189,248,0.25);">
+          <div class="tx-left">
+            <div class="tx-icon-box" style="background:linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);">
+              <span class="material-icons-round">install_mobile</span>
+            </div>
+            <div>
+              <div class="tx-title">Install App on Phone</div>
+              <div class="tx-meta">Add to home screen for instant 0ms access</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:11px; font-weight:800; color:var(--color-sapphire); background:rgba(56,189,248,0.12); padding:3px 8px; border-radius:10px;">Install</span>
+            <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
+          </div>
         </div>
 
         <div class="tx-item" onclick="logoutUser()" style="border-color:rgba(239,68,68,0.3); margin-top:14px; margin-bottom:28px; cursor:pointer;">
@@ -4478,6 +4754,15 @@
         </div>
 
         <div class="auth-card">
+          <!-- PWA Install / Download App CTA on Auth Screen -->
+          <div id="authPwaInstallRow" class="auth-pwa-wrap">
+            <button type="button" class="auth-pwa-install-btn" onclick="installPwaApp()" title="Download & Install App on Phone">
+              <span class="material-icons-round" style="font-size:18px; color:var(--color-sapphire);">install_mobile</span>
+              <span>Install / Download App on Phone</span>
+              <span class="pwa-badge-pill">Free</span>
+            </button>
+          </div>
+
           <!-- Clean Inline Validation Feedback Banner (Shared across Log In, Sign Up & Forgot Password) -->
           <div id="authErrorBanner" class="auth-error-banner" role="alert">
             <span class="material-icons-round" style="font-size:17px; flex-shrink:0;">error_outline</span>
@@ -4746,6 +5031,102 @@
           <span class="auth-trust-item"><span class="material-icons-round">insights</span> Smart Budgets</span>
           <span class="auth-trust-item"><span class="material-icons-round">auto_awesome</span> Finly AI</span>
         </div>
+      </div>
+    </div>
+
+    <!-- PWA Install & Add to Home Screen Floating Banner (v6.0) -->
+    <div id="pwaInstallBanner" class="pwa-install-banner" style="display:none;">
+      <div class="pwa-banner-content">
+        <img src="/static/icons/icon-192.png" alt="ExpensePro App" class="pwa-banner-icon">
+        <div class="pwa-banner-text">
+          <div class="pwa-banner-title">Expense Tracker Pro</div>
+          <div class="pwa-banner-sub">Install app for fast 0ms access & offline mode</div>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" class="pwa-btn-install" onclick="installPwaApp()">
+          <span class="material-icons-round" style="font-size:16px;">download</span>
+          <span>Install</span>
+        </button>
+        <button type="button" class="pwa-btn-close" onclick="dismissPwaBanner()" aria-label="Close">
+          <span class="material-icons-round" style="font-size:18px;">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PWA Guided Install Modal / Bottom Sheet (v6.0) -->
+    <div id="pwaInstallModal" class="pwa-modal-overlay" style="display:none;" onclick="if(event.target===this) closePwaInstallModal();">
+      <div class="pwa-modal-card">
+        <div class="pwa-modal-handle"></div>
+        <div class="pwa-modal-header">
+          <img src="/static/icons/icon-192.png" alt="App Icon" style="width:46px; height:46px; border-radius:13px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+          <div style="flex:1;">
+            <div style="font-size:16px; font-weight:800; color:var(--text-primary);">Install Expense Tracker Pro</div>
+            <div style="font-size:12px; color:var(--text-secondary);">Direct phone installation guide</div>
+          </div>
+          <span class="material-icons-round" onclick="closePwaInstallModal()" style="color:var(--text-muted); cursor:pointer; font-size:22px;">close</span>
+        </div>
+
+        <div class="pwa-guide-platform-tabs">
+          <button type="button" class="pwa-plat-tab active" id="platTabAndroid" onclick="switchPwaPlatformGuide('ANDROID')">
+            <span class="material-icons-round" style="font-size:16px;">android</span> Android / Chrome
+          </button>
+          <button type="button" class="pwa-plat-tab" id="platTabIos" onclick="switchPwaPlatformGuide('IOS')">
+            <span class="material-icons-round" style="font-size:16px;">phone_iphone</span> iPhone / Safari
+          </button>
+        </div>
+
+        <div id="pwaGuideAndroid" style="display:block; padding:10px 4px;">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Tap Chrome's Menu (⋮)</div>
+              <div class="pwa-step-sub">Tap the 3 dots in the top-right corner of Chrome browser.</div>
+            </div>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Tap 'Install App' or 'Add to Home screen'</div>
+              <div class="pwa-step-sub">Select <strong>Install app</strong> from the menu to download directly onto your phone.</div>
+            </div>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Confirm & Open</div>
+              <div class="pwa-step-sub">The app will appear on your home screen and app launcher like a native APK.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="pwaGuideIos" style="display:none; padding:10px 4px;">
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">1</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Tap the Share button (⎋)</div>
+              <div class="pwa-step-sub">In Safari, tap the Share icon at the bottom of the screen.</div>
+            </div>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">2</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Tap 'Add to Home Screen' (+)</div>
+              <div class="pwa-step-sub">Scroll down and tap <strong>Add to Home Screen</strong>.</div>
+            </div>
+          </div>
+          <div class="pwa-step-item">
+            <div class="pwa-step-num">3</div>
+            <div class="pwa-step-info">
+              <div class="pwa-step-title">Tap 'Add' at top-right</div>
+              <div class="pwa-step-sub">Enjoy full-screen, instant 0ms access from your home screen.</div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="auth-cta-btn" onclick="closePwaInstallModal()" style="margin-top:14px; width:100%;">
+          <span>Got It!</span>
+        </button>
       </div>
     </div>
   </div>
@@ -5416,15 +5797,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_5'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_0'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.5-cache') {
-            triggerSwUpgradeReload('v5_5');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.0-cache') {
+            triggerSwUpgradeReload('v6_0');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=5.5').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.0').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -5469,36 +5850,122 @@
       }
     });
 
-    // PWA Install Prompt Listener (Phase 15)
+    // PWA Install Prompt & Standalone Manager (Phase 15 + v6.0)
     let deferredPwaPrompt = null;
+
+    function isRunningStandalone() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+             (window.navigator.standalone === true) ||
+             document.referrer.includes('android-app://');
+    }
+    window.isRunningStandalone = isRunningStandalone;
+
     window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent standard browser infobar from appearing automatically at an awkward moment
       e.preventDefault();
       deferredPwaPrompt = e;
+
+      // If already installed and running standalone, do nothing
+      if (isRunningStandalone()) return;
+
       const banner = document.getElementById('pwaInstallBanner');
       const headerBtn = document.getElementById('btnPwaInstall');
-      if (banner) banner.style.display = 'flex';
+      const authBtn = document.getElementById('authPwaInstallRow');
+      const profileItem = document.getElementById('profilePwaInstallItem');
+
       if (headerBtn) headerBtn.style.display = 'flex';
+      if (authBtn) authBtn.style.display = 'flex';
+      if (profileItem) profileItem.style.display = 'flex';
+      if (banner && sessionStorage.getItem('pwa_banner_dismissed') !== '1') {
+        banner.style.display = 'flex';
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPwaPrompt = null;
+      dismissPwaBanner();
+      const headerBtn = document.getElementById('btnPwaInstall');
+      const authBtn = document.getElementById('authPwaInstallRow');
+      const profileItem = document.getElementById('profilePwaInstallItem');
+      if (headerBtn) headerBtn.style.display = 'none';
+      if (authBtn) authBtn.style.display = 'none';
+      if (profileItem) profileItem.style.display = 'none';
+      showToast('App installed successfully! Opened from Home screen. 📱');
     });
 
     function installPwaApp() {
       triggerHaptic('medium');
+      if (isRunningStandalone()) {
+        showToast('App is already installed & running in standalone mode! 📱');
+        return;
+      }
       if (deferredPwaPrompt) {
         deferredPwaPrompt.prompt();
         deferredPwaPrompt.userChoice.then((choice) => {
-          if (choice.outcome === 'accepted') {
+          if (choice && choice.outcome === 'accepted') {
             dismissPwaBanner();
+            showToast('Downloading & Installing app to your phone... 🚀');
           }
           deferredPwaPrompt = null;
+        }).catch(() => {
+          openPwaInstallModal();
         });
       } else {
-        alert("To install Expense Tracker Pro 2.0:\n• On Android (Chrome): Tap Menu (⋮) → 'Install App' or 'Add to Home screen'\n• On iOS (Safari): Tap Share (⎋) → 'Add to Home Screen'");
+        openPwaInstallModal();
       }
     }
+    window.installPwaApp = installPwaApp;
 
     function dismissPwaBanner() {
       const banner = document.getElementById('pwaInstallBanner');
       if (banner) banner.style.display = 'none';
+      sessionStorage.setItem('pwa_banner_dismissed', '1');
     }
+    window.dismissPwaBanner = dismissPwaBanner;
+
+    function openPwaInstallModal() {
+      const modal = document.getElementById('pwaInstallModal');
+      if (!modal) return;
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      switchPwaPlatformGuide(isIos ? 'IOS' : 'ANDROID');
+      modal.style.display = 'flex';
+    }
+    window.openPwaInstallModal = openPwaInstallModal;
+
+    function closePwaInstallModal() {
+      const modal = document.getElementById('pwaInstallModal');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closePwaInstallModal = closePwaInstallModal;
+
+    function switchPwaPlatformGuide(platform) {
+      const btnAnd = document.getElementById('platTabAndroid');
+      const btnIos = document.getElementById('platTabIos');
+      const gAnd = document.getElementById('pwaGuideAndroid');
+      const gIos = document.getElementById('pwaGuideIos');
+      if (platform === 'IOS') {
+        if (btnIos) btnIos.classList.add('active');
+        if (btnAnd) btnAnd.classList.remove('active');
+        if (gIos) gIos.style.display = 'block';
+        if (gAnd) gAnd.style.display = 'none';
+      } else {
+        if (btnAnd) btnAnd.classList.add('active');
+        if (btnIos) btnIos.classList.remove('active');
+        if (gAnd) gAnd.style.display = 'block';
+        if (gIos) gIos.style.display = 'none';
+      }
+    }
+    window.switchPwaPlatformGuide = switchPwaPlatformGuide;
+
+    // Auto-show install banner on first load if not in standalone mode and not dismissed
+    window.addEventListener('load', () => {
+      if (!isRunningStandalone() && sessionStorage.getItem('pwa_banner_dismissed') !== '1') {
+        setTimeout(() => {
+          const banner = document.getElementById('pwaInstallBanner');
+          if (banner) banner.style.display = 'flex';
+        }, 1200);
+      }
+    });
 
     // Phase 18: Theme Engine & Haptics (Midnight Slate vs Clean Light)
     function toggleAppTheme() {

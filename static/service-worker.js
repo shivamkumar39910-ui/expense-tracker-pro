@@ -1,9 +1,14 @@
-// Service Worker for Expense Tracker Pro 2.0 (0ms Instant App Shell PWA v5.9)
-const CACHE_NAME = 'expense-pro-v5.9-cache';
+// Service Worker for Expense Tracker Pro 2.0 (0ms Instant App Shell PWA v6.0)
+const CACHE_NAME = 'expense-pro-v6.0-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',
-  '/static/icons/icon.svg'
+  '/static/icons/icon.svg',
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png',
+  '/static/icons/icon-144.png',
+  '/static/icons/icon-96.png',
+  '/static/icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -138,8 +143,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/static/icons/icon.svg',
-    badge: '/static/icons/icon.svg',
+    icon: '/static/icons/icon-192.png',
+    badge: '/static/icons/icon-192.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/mobile'

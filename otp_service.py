@@ -271,20 +271,16 @@ def send_smtp_email(recipient_email: str, otp_code: str, user_name: str = "User"
 
 def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User") -> bool:
     """
-    Unified Transactional Email Dispatcher:
+    Unified Transactional Email Dispatcher (Port-443 HTTPS First -> Zero SMTP Timeout Delay):
     1. Optional Native Gmail Webhook (Port 443 Google Apps Script -> full Gmail DMARC/SPF/DKIM pass)
-    2. Direct IPv4 Authenticated Gmail SMTP (465/587 -> authentic From + SPF/DKIM/DMARC pass)
-    3. Resend HTTPS API (multipart plain+HTML)
-    4. Brevo HTTPS API (multipart plain+HTML)
+    2. Resend HTTPS API (DKIM-signed multipart plain+HTML)
+    3. Brevo HTTPS API (multipart plain+HTML fallback)
+    4. Direct IPv4 Authenticated SMTP (fallback when host permits outbound 465/587)
     """
     clean_email = recipient_email.strip().lower()
 
     if os.environ.get("GMAIL_WEBHOOK_URL") or os.environ.get("EMAIL_WEBHOOK_URL"):
         if send_gmail_webhook_email(clean_email, otp_code, user_name):
-            return True
-
-    if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
-        if send_smtp_email(clean_email, otp_code, user_name):
             return True
 
     if os.environ.get("RESEND_API_KEY"):
@@ -293,6 +289,10 @@ def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User")
 
     if os.environ.get("BREVO_API_KEY"):
         if send_brevo_email(clean_email, otp_code, user_name):
+            return True
+
+    if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
+        if send_smtp_email(clean_email, otp_code, user_name):
             return True
 
     print(f"[OTP AUDIT - DISPATCH PENDING] Code generated for {clean_email}: {otp_code}.")

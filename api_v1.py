@@ -606,7 +606,7 @@ def register():
         except Exception:
             pass
         err_str = str(reg_err).lower()
-        if "email" in err_str and ("unique" in err_str or "duplicate" in err_str):
+        if ("email" in err_str or "users_email_key" in err_str) and ("unique" in err_str or "duplicate" in err_str):
             return jsonify({"success": False, "error": "An account with this email already exists. Please Log In."}), 400
         return jsonify({"success": False, "error": f"Could not complete registration ({type(reg_err).__name__}). Please try again."}), 500
     finally:

@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.3">
+  <meta name="app-shell-version" content="v6.4">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5837,15 +5837,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_3'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_4'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.3-cache') {
-            triggerSwUpgradeReload('v6_3');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.4-cache') {
+            triggerSwUpgradeReload('v6_4');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.3').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.4').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -6434,9 +6434,6 @@
           headers,
           body: body ? JSON.stringify(body) : null
         };
-        if (method !== 'GET') {
-          fetchOpts.keepalive = true;
-        }
         const res = await fetch(`${API_BASE}${endpoint}`, fetchOpts);
 
         let data = null;
@@ -9333,7 +9330,7 @@
         fSpeed.innerText = `₹${safeDailyCap.toFixed(1)} ${paceWord}`;
       }
       const fAdvice = document.getElementById('forecastAdviceText');
-      if (fAdvice) fAdvice.innerText = (APP_STATE.forecast.ai_one_liner || '').replace(/^[💡🎉📊🔥⚠️\s]+/, '').trim();
+      if (fAdvice) fAdvice.innerText = ((APP_STATE.forecast && APP_STATE.forecast.ai_one_liner) || '').replace(/^[💡🎉📊🔥⚠️\s]+/, '').trim();
       const fBadge = document.getElementById('forecastRiskBadge');
       const fDot = document.getElementById('forecastRiskDot');
       if (fBadge && fDot) {
@@ -9466,7 +9463,7 @@
       }
 
       // F. Insights Trajectory SVG (SAME FRAME, ZERO MS DIFFERENCE)
-      renderTrajectoryChart(APP_STATE.forecast);
+      if (APP_STATE.forecast) renderTrajectoryChart(APP_STATE.forecast);
 
       // G. Canvases Commit (Analytics Donut, 6M Bar, Insights Daily Bar)
       renderDonutChart(slices, currentMonthExpenses, true);
@@ -11874,17 +11871,24 @@
       updateUserUI();
       if (typeof updateSyncBadge === 'function') updateSyncBadge();
 
-      // 1. Synchronously apply inline bootstrap data if present (0ms instant DOM paint)
-      if (res.bootstrap) {
-        localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
-        applyBootstrapData(res.bootstrap, false);
-        persistUnifiedLocalState();
-      }
-
-      // 2. DISMISS AUTH OVERLAY IMMEDIATELY (0ms instant transition, zero lag!)
+      // 1. DISMISS AUTH OVERLAY IMMEDIATELY (0ms instant transition, zero lag!)
       resetInlineSignupVerification();
       closeAllSheets();
       hideAuthOverlay();
+
+      // Reset any submit button states so they never remain stuck
+      const submitBtn = document.getElementById('authSubmitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = (APP_STATE.authMode === 'LOGIN')
+          ? '<span>Log In</span><span class="material-icons-round" style="font-size:20px;">arrow_forward</span>'
+          : '<span>Sign Up</span><span class="material-icons-round" style="font-size:20px;">person_add</span>';
+      }
+      const fpBtn = document.getElementById('btnFpResetSubmit');
+      if (fpBtn) {
+        fpBtn.disabled = false;
+        fpBtn.innerHTML = '<span>Save & Enter App</span><span class="material-icons-round" style="font-size:18px;">check_circle</span>';
+      }
 
       // Clear password field AFTER overlay is hidden, so user never sees field wipe
       const p1 = document.getElementById('authInputPassword');
@@ -11894,8 +11898,17 @@
         showToast(welcomeMsg, 'success');
       }
 
-      // 3. If bootstrap was absent, hydrate non-blockingly in background (never block modal close)
-      if (!res.bootstrap) {
+      // 2. Safely apply inline bootstrap data if present (0ms instant DOM paint, fully protected)
+      if (res.bootstrap) {
+        try {
+          localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
+          applyBootstrapData(res.bootstrap, false);
+          persistUnifiedLocalState();
+        } catch (bootErr) {
+          console.warn('Bootstrap paint caught error:', bootErr);
+        }
+      } else {
+        // Hydrate non-blockingly in background (never block user flow)
         initializeAppData(true).catch(e => console.warn('Background hydration note:', e));
       }
 
@@ -12422,7 +12435,7 @@
               }
               openSignupOtpFlow(res.identifier || identifier);
             } else {
-              completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
+              await completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
             }
           } else {
             showAuthError(res?.error || 'Registration failed. Please check your details.');
@@ -12455,7 +12468,7 @@
           });
 
           if (res && res.success) {
-            completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
+            await completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
           } else {
             showAuthError(res?.error || 'Invalid email or password.');
           }
@@ -12751,7 +12764,7 @@
             btn.disabled = false;
             btn.innerHTML = origHtml;
           }
-          completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
+          await completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
         } else {
           showAuthError(res?.error || 'Failed to reset password. Please try again.');
         }

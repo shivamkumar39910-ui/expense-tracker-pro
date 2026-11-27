@@ -933,10 +933,12 @@ def _build_llm_system_prompt(
         "4. Strict Math Truth: Every rupee/dollar figure, transaction, balance, budget, or category amount MUST match LEDGER_DATA below accurately. Never fabricate figures.\n"
         f"5. Language rule: {lang_rule}\n"
         "6. App Action Tag (ONLY when the user explicitly asks to add/log an expense/income OR open a screen):\n"
-        "   Append one line at the very end:\n"
+        "   - Supported action types ONLY: `OPEN_QUICK_ENTRY` (to pre-fill a transaction) or `NAVIGATE` (`tab-home|tab-analytics|tab-budgets|tab-history`).\n"
+        "   - NEVER invent unsupported action types like ADD_CATEGORY, and NEVER claim you created/saved a category or transaction in the backend yourself. To create or delete a category, honestly tell the user to tap '+' -> '+ Add' (or 'Manage') under Select Category.\n"
+        "   Append one line at the very end when truly appropriate:\n"
         "   <FINLY_ACTION>{\"label\":\"+ Record ₹150 (Food & Dining • UPI)\",\"type\":\"OPEN_QUICK_ENTRY\",\"amount\":150,\"transaction_type\":\"EXPENSE\",\"category\":\"Food & Dining\",\"subcategory\":\"\",\"account_name\":\"UPI\",\"note\":\"coffee\"}</FINLY_ACTION>\n"
-        "   (or {\"label\":\"Open Analytics\",\"type\":\"NAVIGATE\",\"target\":\"tab-analytics\"} for tab-home|tab-analytics|tab-budgets|tab-history).\n"
-        "   Omit `<FINLY_ACTION>` completely for normal questions or conversations.\n\n"
+        "   (or {\"label\":\"Open Analytics\",\"type\":\"NAVIGATE\",\"target\":\"tab-analytics\"}).\n"
+        "   Omit `<FINLY_ACTION>` completely for normal questions, greetings, or category help.\n\n"
         f"LEDGER_DATA:\n{json.dumps(compact_ctx, ensure_ascii=False)}"
     )
 

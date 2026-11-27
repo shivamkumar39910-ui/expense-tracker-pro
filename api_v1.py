@@ -1709,6 +1709,12 @@ def ai_mentor_chat():
     )
     return jsonify({"success": True, "data": advice}), 200
 
+@api_v1.route('/ai-mentor/diagnostics', methods=['GET'])
+@token_required
+def ai_mentor_diagnostics():
+    """Returns sanitized LLM provider configuration status and last error (no secrets)."""
+    return jsonify({"success": True, "diagnostics": ai_mentor_service.get_ai_diagnostics()}), 200
+
 @api_v1.route('/affordability/check', methods=['POST'])
 @token_required
 def check_affordability():

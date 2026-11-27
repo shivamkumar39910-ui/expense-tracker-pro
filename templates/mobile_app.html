@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.0">
+  <meta name="app-shell-version" content="v5.1">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4971,15 +4971,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_0'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_1'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.0-cache') {
-            triggerSwUpgradeReload('v5_0');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.1-cache') {
+            triggerSwUpgradeReload('v5_1');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=5.0').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=5.1').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -13978,11 +13978,11 @@
       aiConversationHistory.push({ role: 'user', content: text });
       saveAiChatHistoryToStorage();
 
-      // 2. Append ChatGPT-style Animated Typing Indicator
+      // 2. Append ChatGPT-style Animated Typing Indicator (clean dots only, zero thinking text)
       const thinkingBubble = document.createElement('div');
       thinkingBubble.id = 'aiThinkingIndicator';
-      thinkingBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-muted); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:10px 14px; font-size:12px; display:flex; align-items:center; gap:8px;';
-      thinkingBubble.innerHTML = '<div class="ai-typing-dots"><span></span><span></span><span></span></div><span>Finly is thinking...</span>';
+      thinkingBubble.style.cssText = 'background:var(--bg-card-subtle); color:var(--text-muted); border:1px solid var(--border-card); align-self:flex-start; border-radius:14px 14px 14px 4px; padding:12px 14px; font-size:12px; display:flex; align-items:center;';
+      thinkingBubble.innerHTML = '<div class="ai-typing-dots" aria-label="Typing"><span></span><span></span><span></span></div>';
       stream.appendChild(thinkingBubble);
       stream.scrollTop = stream.scrollHeight;
 
@@ -14000,10 +14000,14 @@
           followup_chips: ["Aaj ka kharcha?", "Budget status?"]
         };
 
-        // Update header AI mode pill cleanly (GPT/GEMINI when cloud LLM active, SMART otherwise)
+        // Update header AI mode pill cleanly (AI LIVE when cloud LLM active, SMART otherwise)
         const modePill = document.getElementById('aiEngineStatusPill');
         if (modePill && data.engine_mode) {
-          modePill.innerText = data.engine_mode === 'llm' ? 'AI LIVE' : 'SMART';
+          const isLive = data.engine_mode === 'llm';
+          modePill.innerText = isLive ? 'AI LIVE' : 'SMART';
+          modePill.style.background = isLive ? 'rgba(99,102,241,0.18)' : 'rgba(16,185,129,0.14)';
+          modePill.style.color = isLive ? '#818CF8' : 'var(--color-emerald)';
+          modePill.style.borderColor = isLive ? 'rgba(99,102,241,0.4)' : 'rgba(16,185,129,0.28)';
         }
 
         // 3. Persist assistant response & render sleek bubble

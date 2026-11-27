@@ -514,17 +514,20 @@ def run_tests():
     import re as _re
     today_iso = datetime.today().strftime("%Y-%m-%d")
 
-    # 26a. Natural greeting should be concise English (NOT bloated budget dump, NOT Hindi)
-    r_ai_hi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
-        "message": "hello",
-        "history": [],
-        "client_date": today_iso
-    })
-    assert r_ai_hi.status_code == 200
-    ai_hello = r_ai_hi.json["data"]["reply"]
-    assert not _re.search(r"[\u0900-\u097F]", ai_hello), f"Unexpected Hindi in English hello: {ai_hello}"
-    assert "MTD Total Spend" not in ai_hello
-    print("26a. Natural Greeting Verified:", ai_hello[:60])
+    # 26a. Natural greeting ("hello" and "hello finly") should be concise English (NOT bloated budget dump or dev hint)
+    for g_msg in ("hello", "hello finly"):
+        r_ai_hi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
+            "message": g_msg,
+            "history": [],
+            "client_date": today_iso
+        })
+        assert r_ai_hi.status_code == 200
+        ai_hello = r_ai_hi.json["data"]["reply"]
+        assert not _re.search(r"[\u0900-\u097F]", ai_hello), f"Unexpected Hindi in English hello ({g_msg}): {ai_hello}"
+        assert "MTD Total Spend" not in ai_hello
+        assert "GEMINI_API_KEY" not in ai_hello
+        assert "couldn't map" not in ai_hello.lower()
+    print("26a. Natural Greetings ('hello' & 'hello finly') Verified:", ai_hello[:60])
 
     # 26b. Devanagari Hindi question must respond in Devanagari Hindi with real spend
     r_ai_hindi = client.post('/api/v1/ai-mentor/chat', headers=headers, json={
@@ -578,6 +581,38 @@ def run_tests():
     assert ai_mentor_service._detect_language_mode("aaj kitna kharch hua") == "hinglish"
     assert ai_mentor_service._detect_language_mode("how much did I spend today") == "en"
     print("26e. LLM JSON Parser & 3-Way Language Detection Verified!")
+
+    # 26f. Zero-Thinking Trace Extraction, Action Tag Parsing & Diagnostics Verification
+    gem_reply, had_th = ai_mentor_service._extract_gemini_text({
+        "candidates": [{
+            "content": {
+                "parts": [
+                    {"thought": True, "text": "Step 1: Let me analyze user query internally..."},
+                    {"text": "Hey! Everything is going great. How can I help with your budget today?"}
+                ]
+            }
+        }]
+    })
+    assert had_th is True
+    assert "Step 1" not in gem_reply
+    assert "How can I help with your budget today?" in gem_reply
+
+    parsed_plain = ai_mentor_service._parse_plain_llm_response(
+        '<thinking>internal chain of thought</thinking>\nDone! Ready to record **₹200**.\n'
+        '<FINLY_ACTION>{"label":"+ Record ₹200","type":"OPEN_QUICK_ENTRY","amount":200,"transaction_type":"EXPENSE","category":"Food & Dining","account_name":"UPI"}</FINLY_ACTION>',
+        {},
+        "en",
+        "add 200 coffee upi"
+    )
+    assert parsed_plain is not None
+    assert "internal chain" not in parsed_plain["reply"]
+    assert parsed_plain["action_button"] is not None
+    assert parsed_plain["action_button"]["amount"] == 200
+
+    r_diag = client.get('/api/v1/ai-mentor/diagnostics', headers=headers)
+    assert r_diag.status_code == 200
+    assert isinstance(r_diag.json["diagnostics"]["gemini_key_present"], bool)
+    print("26f. Zero-Thinking Parser, Action Tag & Diagnostics Endpoint Verified!")
 
     print("==================================================")
     print("ALL 26 REST API ENDPOINTS & LOGIC TESTS PASSED (100% SUCCESS)!")

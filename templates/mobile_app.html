@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.3">
+  <meta name="app-shell-version" content="v5.4">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -762,10 +762,12 @@
       backface-visibility: hidden;
     }
 
-    /* Automatically Hide Floating AI Button whenever ANY sheet, modal, or PIN lock is open (O(1) Class Check) */
+    /* Automatically Hide Floating AI Button whenever ANY sheet, modal, Auth screen, or PIN lock is open */
     body.sheet-open #floatingAiBotBtn,
     body.chat-open #floatingAiBotBtn,
     body.pin-locked #floatingAiBotBtn,
+    body.auth-active #floatingAiBotBtn,
+    body:has(.auth-overlay:not(.hidden)) #floatingAiBotBtn,
     #pinLockOverlay:not(.hidden) ~ #floatingAiBotBtn,
     #pinLockOverlay:not(.hidden) ~ * #floatingAiBotBtn,
     #floatingAiBotBtn.hidden-by-sheet {
@@ -1195,7 +1197,7 @@
         radial-gradient(circle at 15% 12%, rgba(59, 130, 246, 0.22) 0%, transparent 45%),
         radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.16) 0%, transparent 48%),
         linear-gradient(180deg, #090D16 0%, #0D1322 100%);
-      z-index: 200;
+      z-index: 950;
       padding: 20px 18px;
       display: flex;
       flex-direction: column;
@@ -5173,15 +5175,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_3'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v5_4'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.3-cache') {
-            triggerSwUpgradeReload('v5_3');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v5.4-cache') {
+            triggerSwUpgradeReload('v5_4');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=5.3').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=5.4').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -10958,7 +10960,10 @@
     // ----------------------------------------------------
     function showAuthOverlay(mode = 'LOGIN') {
       APP_STATE.authMode = mode;
-      document.getElementById('authOverlay').classList.remove('hidden');
+      document.body.classList.add('auth-active');
+      const authOv = document.getElementById('authOverlay');
+      if (authOv) authOv.classList.remove('hidden');
+      if (typeof hideFloatingAiBtn === 'function') hideFloatingAiBtn();
       const creds = document.getElementById('authCredentialsView');
       if (creds) creds.style.display = 'block';
       const fp = document.getElementById('authForgotPasswordView');
@@ -10966,6 +10971,13 @@
       const so = document.getElementById('authSignupOtpView');
       if (so) so.style.display = 'none';
       switchAuthTab(mode);
+    }
+
+    function hideAuthOverlay() {
+      document.body.classList.remove('auth-active');
+      const authOv = document.getElementById('authOverlay');
+      if (authOv) authOv.classList.add('hidden');
+      if (typeof showFloatingAiBtn === 'function') showFloatingAiBtn();
     }
 
     // Password Visibility Switcher
@@ -11201,7 +11213,7 @@
           localStorage.setItem('jwt_access_token', res.access_token);
           localStorage.setItem('user_profile', JSON.stringify(res.user));
 
-          document.getElementById('authOverlay').classList.add('hidden');
+          hideAuthOverlay();
           updateUserUI();
           closeAllSheets();
           renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
@@ -11287,7 +11299,7 @@
               APP_STATE.user = res.user;
               localStorage.setItem('jwt_access_token', res.access_token);
               localStorage.setItem('user_profile', JSON.stringify(res.user));
-              document.getElementById('authOverlay').classList.add('hidden');
+              hideAuthOverlay();
               updateUserUI();
               closeAllSheets();
               renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
@@ -11331,7 +11343,7 @@
             localStorage.setItem('jwt_access_token', res.access_token);
             localStorage.setItem('user_profile', JSON.stringify(res.user));
 
-            document.getElementById('authOverlay').classList.add('hidden');
+            hideAuthOverlay();
             updateUserUI();
             closeAllSheets();
             renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
@@ -11620,7 +11632,7 @@
           localStorage.setItem('jwt_access_token', res.access_token);
           localStorage.setItem('user_profile', JSON.stringify(res.user));
 
-          document.getElementById('authOverlay').classList.add('hidden');
+          hideAuthOverlay();
           updateUserUI();
       closeAllSheets();
           renderDonutChart(ensureBreakdownInitialized(), APP_STATE.categoryTotalExpense, true);
@@ -13701,7 +13713,8 @@
 
     function showFloatingAiBtn() {
       const isPinLocked = document.body.classList.contains('pin-locked') || !document.getElementById('pinLockOverlay')?.classList.contains('hidden');
-      if (isPinLocked) {
+      const isAuthOpen = document.body.classList.contains('auth-active') || !document.getElementById('authOverlay')?.classList.contains('hidden');
+      if (isPinLocked || isAuthOpen) {
         hideFloatingAiBtn();
         return;
       }
@@ -13886,7 +13899,8 @@
     try {
       const sheetClassObserver = new MutationObserver(() => {
         const isPinLocked = document.body.classList.contains('pin-locked') || !document.getElementById('pinLockOverlay')?.classList.contains('hidden');
-        if (isPinLocked) {
+        const isAuthOpen = document.body.classList.contains('auth-active') || !document.getElementById('authOverlay')?.classList.contains('hidden');
+        if (isPinLocked || isAuthOpen) {
           const btn = document.getElementById('floatingAiBotBtn');
           if (btn) btn.style.display = 'none';
           return;
@@ -13905,11 +13919,16 @@
           }
         }
       });
-      window.addEventListener('DOMContentLoaded', () => {
+      const attachSheetObserver = () => {
         document.querySelectorAll('.bottom-sheet, .sheet-backdrop, .auth-overlay').forEach(node => {
           sheetClassObserver.observe(node, { attributes: true, attributeFilter: ['class'] });
         });
-      });
+      };
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', attachSheetObserver);
+      } else {
+        attachSheetObserver();
+      }
     } catch (obsErr) {
       console.warn('Sheet observer notice:', obsErr);
     }

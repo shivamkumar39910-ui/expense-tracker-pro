@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.2">
+  <meta name="app-shell-version" content="v6.3">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5837,15 +5837,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_2'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_3'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.2-cache') {
-            triggerSwUpgradeReload('v6_2');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.3-cache') {
+            triggerSwUpgradeReload('v6_3');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.2').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.3').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -11874,32 +11874,31 @@
       updateUserUI();
       if (typeof updateSyncBadge === 'function') updateSyncBadge();
 
-      const p1 = document.getElementById('authInputPassword');
-      if (p1) p1.value = '';
-
-      // 1. CRITICAL 0ms INSTANT RENDER: Apply and paint all screen data FIRST
-      // before dismissing auth overlay so the user NEVER sees an empty screen or 00 delay!
+      // 1. Synchronously apply inline bootstrap data if present (0ms instant DOM paint)
       if (res.bootstrap) {
         localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
         applyBootstrapData(res.bootstrap, false);
         persistUnifiedLocalState();
-      } else {
-        // Fallback: If inline bootstrap was missing, fetch and render before removing overlay
-        try {
-          await initializeAppData(true);
-        } catch (e) {
-          console.warn('Fallback hydration note:', e);
-        }
       }
 
-      // 2. NOW dismiss auth modal: The DOM is 100% painted with real data! Zero flash, zero 00 state!
+      // 2. DISMISS AUTH OVERLAY IMMEDIATELY (0ms instant transition, zero lag!)
       resetInlineSignupVerification();
       closeAllSheets();
       hideAuthOverlay();
 
+      // Clear password field AFTER overlay is hidden, so user never sees field wipe
+      const p1 = document.getElementById('authInputPassword');
+      if (p1) p1.value = '';
+
       if (typeof showToast === 'function' && welcomeMsg) {
         showToast(welcomeMsg, 'success');
       }
+
+      // 3. If bootstrap was absent, hydrate non-blockingly in background (never block modal close)
+      if (!res.bootstrap) {
+        initializeAppData(true).catch(e => console.warn('Background hydration note:', e));
+      }
+
       return true;
     }
 
@@ -12416,11 +12415,11 @@
           });
 
           if (res && res.success) {
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = origContent;
-            }
             if (res.require_otp) {
+              if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origContent;
+              }
               openSignupOtpFlow(res.identifier || identifier);
             } else {
               completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
@@ -12456,10 +12455,6 @@
           });
 
           if (res && res.success) {
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = origContent;
-            }
             completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
           } else {
             showAuthError(res?.error || 'Invalid email or password.');

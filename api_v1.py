@@ -2666,14 +2666,21 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             "category_budgets": category_budgets
         }
 
-        # 9. Unread notifications count (single lightweight scalar query)
-        cursor.execute("""
-            SELECT COUNT(*) as cnt FROM notifications
-            WHERE user_id = ? AND is_read = 0
-              AND title NOT LIKE '%Cash in Hand%'
-              AND NOT (title LIKE '%Low Balance%' AND title LIKE '%Cash%')
-        """, (user_id,))
-        unread_cnt = int(cursor.fetchone()["cnt"] or 0)
+        # 9. Unread notifications count (single lightweight scalar query, fail-safe)
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt FROM notifications
+                WHERE user_id = ? AND is_read = 0
+                  AND title NOT LIKE ?
+                  AND NOT (title LIKE ? AND title LIKE ?)
+            """, (user_id, '%Cash in Hand%', '%Low Balance%', '%Cash%'))
+            unread_cnt = int(cursor.fetchone()["cnt"] or 0)
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            unread_cnt = 0
 
         # 10. Weekly Daily Trend (Current week Mon - Sun)
         diff_to_monday = today.weekday()

@@ -107,6 +107,9 @@ class PostgresCursorWrapper:
         q = re.sub(r"datetime\(\s*'now'\s*\)", "CURRENT_TIMESTAMP", q, flags=re.IGNORECASE)
         q = re.sub(r"date\(\s*'now'\s*\)", "CURRENT_DATE", q, flags=re.IGNORECASE)
 
+        # Escape literal % for psycopg2 format string safety before converting placeholders
+        q = q.replace("%", "%%")
+
         # Replace '?' with '%s' for psycopg2 parameters
         q = q.replace("?", "%s")
 

@@ -71,15 +71,17 @@ def generate_email_plain(otp_code: str, user_name: str = "User") -> str:
     return (
         f"Hi {safe_name},\n\n"
         f"Your Expense Tracker Pro verification code is: {otp_code}\n\n"
-        "This one-time code is valid for 10 minutes. "
-        "Please enter it in the app to verify your email address.\n\n"
-        "If you did not request this code, you can safely ignore this message.\n\n"
+        "This one-time verification code is valid for 10 minutes.\n"
+        "Please enter this code in the app to complete your verification.\n\n"
+        "For your security, never share this code with anyone.\n"
+        "If you did not request this verification, please disregard this email.\n\n"
         "— Expense Tracker Pro Security Team"
     )
 
 
-def generate_email_html(otp_code: str, user_name: str = "User") -> str:
+def generate_email_html(otp_code: str, user_name: str = "User", recipient_email: str = "") -> str:
     safe_name = (user_name or "User").strip()
+    to_note = f"<p style=\"margin:0 0 16px 0; font-size:12px; color:#64748b;\">This code was requested for <strong>{recipient_email}</strong>.</p>" if recipient_email else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,19 +89,25 @@ def generate_email_html(otp_code: str, user_name: str = "User") -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verification Code</title>
 </head>
-<body style="margin:0; padding:24px 12px; background-color:#f4f6f9; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1e293b;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px; margin:0 auto; background-color:#ffffff; border:1px solid #e2e8f0; border-radius:12px;">
+<body style="margin:0; padding:24px 12px; background-color:#f1f5f9; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px; margin:0 auto; background-color:#ffffff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 4px 16px rgba(15,23,42,0.06);">
     <tr>
       <td style="padding:28px 28px 22px 28px;">
-        <div style="font-size:15px; font-weight:700; color:#1d4ed8; margin-bottom:14px;">Expense Tracker Pro</div>
-        <h1 style="margin:0 0 12px 0; font-size:20px; font-weight:700; color:#0f172a;">Email verification code</h1>
-        <p style="margin:0 0 14px 0; font-size:14px; line-height:1.55; color:#334155;">Hi {safe_name},</p>
-        <p style="margin:0 0 18px 0; font-size:14px; line-height:1.55; color:#334155;">Use the verification code below to confirm your email address. This code expires in <strong>10 minutes</strong>.</p>
-        <div style="background-color:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:16px; text-align:center; margin:0 0 18px 0;">
-          <span style="font-size:30px; font-weight:700; letter-spacing:6px; color:#0f172a; font-family:'Courier New', Courier, monospace;">{otp_code}</span>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="font-size:16px; font-weight:800; color:#2563eb; letter-spacing:-0.3px;">Expense Tracker Pro</span>
         </div>
-        <p style="margin:0 0 8px 0; font-size:12.5px; line-height:1.5; color:#64748b;">For your security, do not share this code with anyone.</p>
-        <p style="margin:0; font-size:12.5px; line-height:1.5; color:#64748b;">If you did not request this verification code, you can safely ignore this email.</p>
+        <h1 style="margin:0 0 12px 0; font-size:20px; font-weight:700; color:#0f172a; line-height:1.3;">Security Verification Code</h1>
+        <p style="margin:0 0 12px 0; font-size:14px; line-height:1.55; color:#334155;">Hi {safe_name},</p>
+        <p style="margin:0 0 16px 0; font-size:14px; line-height:1.55; color:#334155;">Please enter the 6-digit verification code below to verify your identity. This code is valid for <strong>10 minutes</strong>.</p>
+        {to_note}
+        <div style="background-color:#eff6ff; border:1.5px solid #bfdbfe; border-radius:12px; padding:18px; text-align:center; margin:0 0 18px 0;">
+          <span style="font-size:32px; font-weight:800; letter-spacing:8px; color:#1d4ed8; font-family:'Courier New', Courier, monospace;">{otp_code}</span>
+        </div>
+        <p style="margin:0 0 8px 0; font-size:12.5px; line-height:1.5; color:#64748b;">• Do not share this code with anyone. Our team will never ask for your code.</p>
+        <p style="margin:0 0 18px 0; font-size:12.5px; line-height:1.5; color:#64748b;">• If you did not make this request, you can safely ignore this email.</p>
+        <div style="border-top:1px solid #e2e8f0; padding-top:14px; margin-top:6px;">
+          <p style="margin:0; font-size:11.5px; line-height:1.45; color:#94a3b8;">Expense Tracker Pro • Automated Transactional Security Dispatch</p>
+        </div>
       </td>
     </tr>
   </table>
@@ -108,7 +116,7 @@ def generate_email_html(otp_code: str, user_name: str = "User") -> str:
 
 
 def _otp_subject(otp_code: str) -> str:
-    return f"{otp_code} is your Expense Tracker Pro verification code"
+    return f"Your Expense Tracker Pro verification code: {otp_code}"
 
 
 def send_gmail_webhook_email(recipient_email: str, otp_code: str, user_name: str = "User") -> bool:
@@ -168,8 +176,13 @@ def send_brevo_email(recipient_email: str, otp_code: str, user_name: str = "User
             "to": [{"email": recipient_email, "name": (user_name or "User").strip()}],
             "subject": _otp_subject(otp_code),
             "textContent": generate_email_plain(otp_code, user_name),
-            "htmlContent": generate_email_html(otp_code, user_name),
-            "tags": ["transactional", "otp"],
+            "htmlContent": generate_email_html(otp_code, user_name, recipient_email),
+            "tags": ["transactional-otp", "account-verification"],
+            "headers": {
+                "X-Mailin-Tag": "otp-verification",
+                "X-Auto-Response-Suppress": "All",
+                "Auto-Submitted": "auto-generated"
+            }
         }
         req = urllib.request.Request(
             url,
@@ -206,8 +219,15 @@ def send_resend_email(recipient_email: str, otp_code: str, user_name: str = "Use
             "to": [recipient_email],
             "subject": _otp_subject(otp_code),
             "text": generate_email_plain(otp_code, user_name),
-            "html": generate_email_html(otp_code, user_name),
+            "html": generate_email_html(otp_code, user_name, recipient_email),
+            "headers": {
+                "X-Auto-Response-Suppress": "All",
+                "Auto-Submitted": "auto-generated"
+            }
         }
+        reply_addr = (os.environ.get("SMTP_USER") or "").strip()
+        if reply_addr:
+            payload["reply_to"] = reply_addr
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
@@ -246,7 +266,7 @@ def send_smtp_email(recipient_email: str, otp_code: str, user_name: str = "User"
         msg["Reply-To"] = user
 
         msg.attach(MIMEText(generate_email_plain(otp_code, user_name), "plain", "utf-8"))
-        msg.attach(MIMEText(generate_email_html(otp_code, user_name), "html", "utf-8"))
+        msg.attach(MIMEText(generate_email_html(otp_code, user_name, recipient_email), "html", "utf-8"))
 
         try:
             with _IPv4SMTP_SSL(SMTP_HOST, 465, timeout=2.5) as server:
@@ -271,10 +291,10 @@ def send_smtp_email(recipient_email: str, otp_code: str, user_name: str = "User"
 
 def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User") -> bool:
     """
-    Unified Transactional Email Dispatcher (Port-443 HTTPS First -> Zero SMTP Timeout Delay):
+    Unified Transactional Email Dispatcher (High-Reputation HTTPS First):
     1. Optional Native Gmail Webhook (Port 443 Google Apps Script -> full Gmail DMARC/SPF/DKIM pass)
-    2. Resend HTTPS API (DKIM-signed multipart plain+HTML)
-    3. Brevo HTTPS API (multipart plain+HTML fallback)
+    2. Brevo HTTPS API (Port 443 -> Sends with user's verified sender email & anti-spam headers)
+    3. Resend HTTPS API (Port 443 -> DKIM-signed fallback)
     4. Direct IPv4 Authenticated SMTP (fallback when host permits outbound 465/587)
     """
     clean_email = recipient_email.strip().lower()
@@ -283,12 +303,12 @@ def send_email_otp(recipient_email: str, otp_code: str, user_name: str = "User")
         if send_gmail_webhook_email(clean_email, otp_code, user_name):
             return True
 
-    if os.environ.get("RESEND_API_KEY"):
-        if send_resend_email(clean_email, otp_code, user_name):
-            return True
-
     if os.environ.get("BREVO_API_KEY"):
         if send_brevo_email(clean_email, otp_code, user_name):
+            return True
+
+    if os.environ.get("RESEND_API_KEY"):
+        if send_resend_email(clean_email, otp_code, user_name):
             return True
 
     if os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):

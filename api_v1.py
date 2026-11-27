@@ -180,50 +180,51 @@ def debug_smtp_status():
 # 1. Authentication & 2FA OTP Endpoints
 # ==================================================
 
-_EMAIL_OTP_TABLE_ENSURED = False
-_HIDDEN_CAT_TABLES_ENSURED = False
-
 def _ensure_email_otp_table(conn):
-    global _EMAIL_OTP_TABLE_ENSURED
-    if _EMAIL_OTP_TABLE_ENSURED:
-        return
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS email_otp_verifications (
-            email TEXT PRIMARY KEY,
-            otp_code TEXT NOT NULL,
-            otp_expires_at TEXT NOT NULL,
-            verified INTEGER DEFAULT 0,
-            verify_token TEXT,
-            attempts INTEGER DEFAULT 0,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    _EMAIL_OTP_TABLE_ENSURED = True
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS email_otp_verifications (
+                email TEXT PRIMARY KEY,
+                otp_code TEXT NOT NULL,
+                otp_expires_at TEXT NOT NULL,
+                verified INTEGER DEFAULT 0,
+                verify_token TEXT,
+                attempts INTEGER DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
 
 
 def _ensure_hidden_category_tables(conn):
-    global _HIDDEN_CAT_TABLES_ENSURED
-    if _HIDDEN_CAT_TABLES_ENSURED:
-        return
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_hidden_categories (
-            user_id INTEGER NOT NULL,
-            category_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, category_id)
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
-            user_id INTEGER NOT NULL,
-            subcategory_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, subcategory_id)
-        )
-    """)
-    conn.commit()
-    _HIDDEN_CAT_TABLES_ENSURED = True
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_categories (
+                user_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, category_id)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
+                user_id INTEGER NOT NULL,
+                subcategory_id INTEGER NOT NULL,
+                PRIMARY KEY (user_id, subcategory_id)
+            )
+        """)
+        conn.commit()
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
 
 
 def _sync_pg_sequence(conn, table_name: str):
@@ -2429,32 +2430,78 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             "savings_rate_pct": round(sav_rate, 1)
         }
 
-        # 3b. Forecast reusing the SAME pooled connection
-        forecast = forecasting_engine.calculate_month_end_forecast(user_id, conn=conn, use_cache=False)
+        # 3b. Forecast reusing the SAME pooled connection (resilient fallback)
+        try:
+            forecast = forecasting_engine.calculate_month_end_forecast(user_id, conn=conn, use_cache=False)
+        except Exception as fc_err:
+            forecast = {
+                "estimated_month_end": 0.0,
+                "safe_today": 0.0,
+                "ai_one_liner": "Welcome to Expense Tracker Pro!",
+                "ai_control_tip": "Add your first expense to begin tracking.",
+                "top_spending_driver": {"category": "None", "amount": 0.0, "percentage": 0.0},
+                "current_date": today.isoformat(),
+                "days_elapsed": max(1, today.day),
+                "total_days_in_month": calendar.monthrange(year, month)[1],
+                "days_remaining": max(1, calendar.monthrange(year, month)[1] - today.day),
+                "mtd_actual_spend": 0.0,
+                "daily_spending_velocity": 0.0,
+                "baseline_wma_history": 0.0,
+                "unpaid_recurring_bills": 0.0,
+                "projected_month_end_spend": 0.0,
+                "monthly_budget": 0.0,
+                "projected_budget_utilization_pct": 0.0,
+                "risk_status": "SAFE",
+                "risk_reason": "On track",
+                "confidence_level": "LOW",
+                "confidence_score": 0.0,
+                "recommendations": []
+            }
 
-        # 4. Categories & Subcategories (excluding user-deleted/hidden)
-        cursor.execute("""
-            SELECT id, name, type, icon, color_hex, image_url, is_default
-            FROM categories
-            WHERE (user_id IS NULL OR user_id = ?)
-              AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
-            ORDER BY is_default DESC, name ASC
-        """, (user_id, user_id))
-        cats = [dict(c) for c in cursor.fetchall()]
+        # 4. Categories & Subcategories (excluding user-deleted/hidden, self-healing)
+        try:
+            cursor.execute("""
+                SELECT id, name, type, icon, color_hex, image_url, is_default
+                FROM categories
+                WHERE (user_id IS NULL OR user_id = ?)
+                  AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
+                ORDER BY is_default DESC, name ASC
+            """, (user_id, user_id))
+            cats = [dict(c) for c in cursor.fetchall()]
+        except Exception:
+            _ensure_hidden_category_tables(conn)
+            cursor.execute("""
+                SELECT id, name, type, icon, color_hex, image_url, is_default
+                FROM categories
+                WHERE user_id IS NULL OR user_id = ?
+                ORDER BY is_default DESC, name ASC
+            """, (user_id,))
+            cats = [dict(c) for c in cursor.fetchall()]
 
         cat_ids = [c["id"] for c in cats]
         subcats_by_cat = {c["id"]: [] for c in cats}
         if cat_ids:
             placeholders = ",".join("?" for _ in cat_ids)
             params = list(cat_ids) + [user_id]
-            cursor.execute(f"""
-                SELECT id, category_id, name 
-                FROM subcategories 
-                WHERE category_id IN ({placeholders})
-                  AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
-                ORDER BY name ASC
-            """, tuple(params))
-            for s in cursor.fetchall():
+            try:
+                cursor.execute(f"""
+                    SELECT id, category_id, name 
+                    FROM subcategories 
+                    WHERE category_id IN ({placeholders})
+                      AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
+                    ORDER BY name ASC
+                """, tuple(params))
+                sub_rows = cursor.fetchall()
+            except Exception:
+                cursor.execute(f"""
+                    SELECT id, category_id, name 
+                    FROM subcategories 
+                    WHERE category_id IN ({placeholders})
+                    ORDER BY name ASC
+                """, tuple(cat_ids))
+                sub_rows = cursor.fetchall()
+
+            for s in sub_rows:
                 s_dict = dict(s)
                 c_id = s_dict["category_id"]
                 if c_id in subcats_by_cat:
@@ -2469,22 +2516,43 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             "income": [c for c in cats if c["type"] == 'INCOME']
         }
 
-        # 5. Transactions (top 50, includes client_uuid for optimistic deduplication)
-        cursor.execute("""
-            SELECT t.id, t.client_uuid, t.transaction_type, t.amount, t.date, t.note,
-                   t.account_id, t.category_id, t.subcategory_id,
-                   a.name as account_name,
-                   c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
-                   c.image_url as category_image,
-                   s.name as subcategory_name
-            FROM transactions t
-            LEFT JOIN accounts a ON t.account_id = a.id
-            LEFT JOIN categories c ON t.category_id = c.id
-            LEFT JOIN subcategories s ON t.subcategory_id = s.id
-            WHERE t.user_id = ?
-            ORDER BY t.date DESC, t.id DESC LIMIT 50
-        """, (user_id,))
-        tx_rows = [dict(r) for r in cursor.fetchall()]
+        # 5. Transactions (top 50, includes client_uuid for optimistic deduplication, fail-safe)
+        try:
+            cursor.execute("""
+                SELECT t.id, t.client_uuid, t.transaction_type, t.amount, t.date, t.note,
+                       t.account_id, t.category_id, t.subcategory_id,
+                       a.name as account_name,
+                       c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+                       c.image_url as category_image,
+                       s.name as subcategory_name
+                FROM transactions t
+                LEFT JOIN accounts a ON t.account_id = a.id
+                LEFT JOIN categories c ON t.category_id = c.id
+                LEFT JOIN subcategories s ON t.subcategory_id = s.id
+                WHERE t.user_id = ?
+                ORDER BY t.date DESC, t.id DESC LIMIT 50
+            """, (user_id,))
+            tx_rows = [dict(r) for r in cursor.fetchall()]
+        except Exception:
+            try:
+                cursor.execute("""
+                    SELECT t.id, t.client_uuid, t.transaction_type, t.amount, t.date, t.note,
+                           t.account_id, t.category_id, t.subcategory_id,
+                           a.name as account_name,
+                           c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+                           s.name as subcategory_name
+                    FROM transactions t
+                    LEFT JOIN accounts a ON t.account_id = a.id
+                    LEFT JOIN categories c ON t.category_id = c.id
+                    LEFT JOIN subcategories s ON t.subcategory_id = s.id
+                    WHERE t.user_id = ?
+                    ORDER BY t.date DESC, t.id DESC LIMIT 50
+                """, (user_id,))
+                tx_rows = [dict(r) for r in cursor.fetchall()]
+                for tx in tx_rows:
+                    tx["category_image"] = None
+            except Exception:
+                tx_rows = []
         for tx in tx_rows:
             tx["account_name"] = normalize_account_name(tx.get("account_name"))
             if tx.get("target_account_name"):
@@ -2603,7 +2671,10 @@ def _build_bootstrap_payload(user_id: int, conn=None):
             })
 
         # 11. Goals included right in single bootstrap connection
-        goals_list = database.get_financial_goals(user_id, conn=conn)
+        try:
+            goals_list = database.get_financial_goals(user_id, conn=conn)
+        except Exception:
+            goals_list = []
 
         return {
             "currency": curr,

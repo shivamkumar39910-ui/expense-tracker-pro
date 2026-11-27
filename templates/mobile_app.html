@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v5.8">
+  <meta name="app-shell-version" content="v5.9">
 
   <!-- Google Fonts & Material Icons (Non-Render-Blocking for Instant First Paint) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11338,19 +11338,22 @@
       const p1 = document.getElementById('authInputPassword');
       if (p1) p1.value = '';
 
+      // 1. INSTANT ZERO-DELAY TRANSITION (0ms): Dismiss auth modal immediately so user enters home page instantly
+      resetInlineSignupVerification();
+      closeAllSheets();
+      hideAuthOverlay();
+
+      if (typeof showToast === 'function' && welcomeMsg) {
+        showToast(welcomeMsg, 'success');
+      }
+
+      // 2. Apply bootstrap snapshot or hydrate data non-blockingly in background
       if (res.bootstrap) {
         localStorage.setItem('cached_bootstrap', JSON.stringify(res.bootstrap));
         applyBootstrapData(res.bootstrap, false);
         persistUnifiedLocalState();
       } else {
-        await initializeAppData(true);
-      }
-
-      resetInlineSignupVerification();
-      closeAllSheets();
-      hideAuthOverlay();
-      if (typeof showToast === 'function' && welcomeMsg) {
-        showToast(welcomeMsg, 'success');
+        initializeAppData(true).catch(e => console.warn('Background hydration note:', e));
       }
       return true;
     }
@@ -11868,10 +11871,14 @@
           });
 
           if (res && res.success) {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = origContent;
+            }
             if (res.require_otp) {
               openSignupOtpFlow(res.identifier || identifier);
             } else {
-              await completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
+              completeAuthAndEnterApp(res, 'Account created! Welcome, ' + (res.user?.name || 'User') + '!');
             }
           } else {
             showAuthError(res?.error || 'Registration failed. Please check your details.');
@@ -11904,7 +11911,11 @@
           });
 
           if (res && res.success) {
-            await completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = origContent;
+            }
+            completeAuthAndEnterApp(res, 'Welcome back, ' + (res.user?.name || 'User') + '!');
           } else {
             showAuthError(res?.error || 'Invalid email or password.');
           }
@@ -12196,7 +12207,11 @@
           fpResetToken = '';
           document.getElementById('fpInputNewPassword').value = '';
           document.getElementById('fpInputConfirmPassword').value = '';
-          await completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+          completeAuthAndEnterApp(res, 'Password reset successful! Welcome to your dashboard.');
         } else {
           showAuthError(res?.error || 'Failed to reset password. Please try again.');
         }

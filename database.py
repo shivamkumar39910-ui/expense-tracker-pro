@@ -511,42 +511,43 @@ DEFAULT_INCOME_CATEGORIES = [
 
 def seed_default_categories():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # Check if default categories already exist
-    cursor.execute("SELECT count(*) FROM categories WHERE is_default = 1")
-    if cursor.fetchone()[0] > 0:
+        # Check if default categories already exist
+        cursor.execute("SELECT count(*) FROM categories WHERE is_default = 1")
+        if cursor.fetchone()[0] > 0:
+            return
+
+        # Seed Expense Categories
+        for cat in DEFAULT_EXPENSE_CATEGORIES:
+            cursor.execute("""
+                INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
+                VALUES (NULL, ?, 'EXPENSE', ?, ?, 1)
+            """, (cat["name"], cat["icon"], cat["color"]))
+            category_id = cursor.lastrowid
+            for sub in cat["subcategories"]:
+                cursor.execute("""
+                    INSERT INTO subcategories (category_id, name)
+                    VALUES (?, ?)
+                """, (category_id, sub))
+
+        # Seed Income Categories
+        for cat in DEFAULT_INCOME_CATEGORIES:
+            cursor.execute("""
+                INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
+                VALUES (NULL, ?, 'INCOME', ?, ?, 1)
+            """, (cat["name"], cat["icon"], cat["color"]))
+            category_id = cursor.lastrowid
+            for sub in cat["subcategories"]:
+                cursor.execute("""
+                    INSERT INTO subcategories (category_id, name)
+                    VALUES (?, ?)
+                """, (category_id, sub))
+
+        conn.commit()
+    finally:
         conn.close()
-        return
-
-    # Seed Expense Categories
-    for cat in DEFAULT_EXPENSE_CATEGORIES:
-        cursor.execute("""
-            INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
-            VALUES (NULL, ?, 'EXPENSE', ?, ?, 1)
-        """, (cat["name"], cat["icon"], cat["color"]))
-        category_id = cursor.lastrowid
-        for sub in cat["subcategories"]:
-            cursor.execute("""
-                INSERT INTO subcategories (category_id, name)
-                VALUES (?, ?)
-            """, (category_id, sub))
-
-    # Seed Income Categories
-    for cat in DEFAULT_INCOME_CATEGORIES:
-        cursor.execute("""
-            INSERT INTO categories (user_id, name, type, icon, color_hex, is_default)
-            VALUES (NULL, ?, 'INCOME', ?, ?, 1)
-        """, (cat["name"], cat["icon"], cat["color"]))
-        category_id = cursor.lastrowid
-        for sub in cat["subcategories"]:
-            cursor.execute("""
-                INSERT INTO subcategories (category_id, name)
-                VALUES (?, ?)
-            """, (category_id, sub))
-
-    conn.commit()
-    conn.close()
 
 def create_user_category(user_id, name, cat_type="EXPENSE", icon="category", color_hex="#10B981", image_url=None):
     """Inserts a custom category for the user with optional resolved image_url."""
@@ -695,56 +696,52 @@ def delete_user_subcategory(user_id, subcategory_id):
 # ==================================================
 def seed_default_accounts_and_migrate_legacy():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # 1. Migrate legacy account names to standard 3 payment channels (Cash, UPI, Cards)
-    cursor.execute("UPDATE accounts SET name = 'Cash', icon = 'payments' WHERE LOWER(name) LIKE '%cash%'")
-    cursor.execute("UPDATE accounts SET name = 'Cards', icon = 'credit_card', color_hex = '#8B5CF6' WHERE LOWER(name) LIKE '%card%' OR account_type = 'CREDIT_CARD'")
-    cursor.execute("UPDATE accounts SET name = 'UPI', icon = 'qr_code_scanner' WHERE name NOT IN ('Cash', 'Cards')")
+        # 1. Normalize ONLY exact legacy system wallet names (never overwrite user-created custom wallet names!)
+        cursor.execute("UPDATE accounts SET name = 'Cash', icon = 'payments' WHERE LOWER(name) IN ('cash in hand', 'cash wallet')")
+        cursor.execute("UPDATE accounts SET name = 'Cards', icon = 'credit_card', color_hex = '#8B5CF6' WHERE LOWER(name) IN ('credit card', 'debit card', 'card')")
+        cursor.execute("UPDATE accounts SET name = 'UPI', icon = 'qr_code_scanner' WHERE LOWER(name) IN ('main bank', 'bank account', 'upi / online', 'online / bank')")
 
-    # Fetch all registered users
-    cursor.execute("SELECT id FROM users")
-    users = cursor.fetchall()
-
-    for user in users:
-        user_id = user["id"]
-        # Ensure user has default accounts: Cash, UPI, and Cards
-        cursor.execute("SELECT count(*) FROM accounts WHERE user_id = ?", (user_id,))
-        if cursor.fetchone()[0] == 0:
+        # 2. Fast targeted query: ONLY users missing default accounts
+        cursor.execute("""
+            SELECT u.id FROM users u
+            WHERE NOT EXISTS (SELECT 1 FROM accounts a WHERE a.user_id = u.id)
+        """)
+        users_without_accounts = cursor.fetchall()
+        for user in users_without_accounts:
+            user_id = user["id"]
             cursor.execute("""
                 INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
                 VALUES (?, 'Cash', 'CASH', 0.0, 0.0, '#10B981', 'payments')
             """, (user_id,))
-            cash_account_id = cursor.lastrowid
-
             cursor.execute("""
                 INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
                 VALUES (?, 'UPI', 'BANK', 0.0, 0.0, '#3B82F6', 'qr_code_scanner')
             """, (user_id,))
-
             cursor.execute("""
                 INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
                 VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
             """, (user_id,))
-        else:
+
+        # 3. Fast targeted query: ONLY users with unmigrated legacy expenses rows
+        cursor.execute("""
+            SELECT DISTINCT e.user_id FROM expenses e
+            WHERE NOT EXISTS (SELECT 1 FROM transactions t WHERE t.user_id = e.user_id)
+        """)
+        users_to_migrate = cursor.fetchall()
+        for user in users_to_migrate:
+            user_id = user["user_id"]
             cursor.execute("SELECT id FROM accounts WHERE user_id = ? ORDER BY id ASC LIMIT 1", (user_id,))
-            cash_account_id = cursor.fetchone()["id"]
+            acc_row = cursor.fetchone()
+            if not acc_row:
+                continue
+            cash_account_id = acc_row["id"]
 
-            # Ensure 'Cards' account exists for every existing user
-            cursor.execute("SELECT count(*) FROM accounts WHERE user_id = ? AND name = 'Cards'", (user_id,))
-            if cursor.fetchone()[0] == 0:
-                cursor.execute("""
-                    INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, color_hex, icon)
-                    VALUES (?, 'Cards', 'CREDIT_CARD', 0.0, 0.0, '#8B5CF6', 'credit_card')
-                """, (user_id,))
-
-        # Migrate legacy expenses into transactions if not yet migrated
-        cursor.execute("SELECT count(*) FROM transactions WHERE user_id = ?", (user_id,))
-        if cursor.fetchone()[0] == 0:
             cursor.execute("SELECT * FROM expenses WHERE user_id = ?", (user_id,))
             legacy_expenses = cursor.fetchall()
             for exp in legacy_expenses:
-                # Find or map category
                 cat_name = exp["category"].title() if exp["category"] else "Others"
                 sub_name = exp["subcategory"].title() if exp["subcategory"] else "Miscellaneous"
 
@@ -769,13 +766,13 @@ def seed_default_accounts_and_migrate_legacy():
                     ) VALUES (?, ?, 'EXPENSE', ?, ?, ?, ?, ?)
                 """, (user_id, cash_account_id, exp["amount"], exp["date"], f"{cat_name} - {sub_name}", cat_id, sub_id))
 
-                # Update account balance
                 cursor.execute("""
                     UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?
                 """, (exp["amount"], cash_account_id))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+    finally:
+        conn.close()
 
 # ==================================================
 # Core Business Logic & CRUD Operations (v2.0)

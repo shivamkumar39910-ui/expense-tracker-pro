@@ -37,7 +37,11 @@ def api_health():
     }), 200
 
 
-JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "expense_tracker_pro_v2_jwt_secret_2026_super_secure")
+JWT_SECRET = (
+    os.environ.get("JWT_SECRET_KEY")
+    or os.environ.get("SECRET_KEY")
+    or "expense_tracker_pro_v2_jwt_secret_2026_super_secure"
+)
 JWT_ALGORITHM = "HS256"
 
 # ==================================================
@@ -120,7 +124,14 @@ def check_security_rate_limit(action_key: str, max_attempts: int = 5, window_sec
     now = datetime.utcnow().timestamp()
     attempts = FAILED_SECURITY_ATTEMPTS.get(action_key, [])
     recent = [t for t in attempts if now - t < window_seconds]
-    FAILED_SECURITY_ATTEMPTS[action_key] = recent
+    if recent:
+        FAILED_SECURITY_ATTEMPTS[action_key] = recent
+    else:
+        FAILED_SECURITY_ATTEMPTS.pop(action_key, None)
+    if len(FAILED_SECURITY_ATTEMPTS) > 4096:
+        # Prune stale keys to keep memory bounded under high public traffic
+        for k in list(FAILED_SECURITY_ATTEMPTS.keys())[:1024]:
+            FAILED_SECURITY_ATTEMPTS.pop(k, None)
     return len(recent) >= max_attempts
 
 def record_security_failed_attempt(action_key: str):

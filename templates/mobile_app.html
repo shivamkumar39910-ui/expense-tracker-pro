@@ -18,7 +18,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.8">
+  <meta name="description" content="Expense Tracker Pro 2.0 — Smart Personal Finance, Multi-Wallet Ledger, AI Insights, Budget Alerts & Month-End Forecasting App. Install free directly from your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Expense Tracker Pro 2.0 — Smart Finance & AI Insights">
+  <meta property="og:description" content="Track expenses across Cash, UPI & Cards, set smart budgets, forecast month-end spending, and chat with Finly AI. Install free as a mobile app!">
+  <meta property="og:image" content="https://expense-tracker-pro-ecl2.onrender.com/static/icons/icon-512.png">
+  <meta property="og:url" content="https://expense-tracker-pro-ecl2.onrender.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="app-shell-version" content="v6.9">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5353,6 +5360,10 @@
           <span class="material-icons-round" onclick="closePwaInstallModal()" style="color:var(--text-muted); cursor:pointer; font-size:22px;">close</span>
         </div>
 
+        <div id="pwaInAppBrowserNotice" style="display:none; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:10px 12px; margin-bottom:10px; font-size:12px; color:var(--text-primary); line-height:1.45;">
+          <strong>Opened inside LinkedIn / WhatsApp?</strong> Tap <strong>⋮</strong> (or Share) at top-right → choose <strong>"Open in Chrome"</strong> or <strong>"Open in Safari"</strong> first, then install on your home screen.
+        </div>
+
         <div class="pwa-guide-platform-tabs">
           <button type="button" class="pwa-plat-tab active" id="platTabAndroid" onclick="switchPwaPlatformGuide('ANDROID')">
             <span class="material-icons-round" style="font-size:16px;">android</span> Android / Chrome
@@ -6104,15 +6115,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_8'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_9'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.8-cache') {
-            triggerSwUpgradeReload('v6_8');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.9-cache') {
+            triggerSwUpgradeReload('v6_9');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.8').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.9').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -6147,6 +6158,11 @@
             saveNewAppPin();
           }
         });
+      }
+
+      // Pre-warm backend on auth screen so cold starts finish before user submits Login/Sign Up
+      if (!APP_STATE.token || !APP_STATE.user) {
+        try { fetch('/health', { cache: 'no-store' }).catch(() => {}); } catch (e) {}
       }
 
       if (APP_STATE.token && APP_STATE.user) {
@@ -6289,7 +6305,11 @@
     function openPwaInstallModal() {
       const modal = document.getElementById('pwaInstallModal');
       if (!modal) return;
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const ua = navigator.userAgent || '';
+      const isIos = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+      const isInAppWebView = /LinkedInApp|FBAN|FBAV|Instagram|WhatsApp|Line\/|Twitter/i.test(ua);
+      const notice = document.getElementById('pwaInAppBrowserNotice');
+      if (notice) notice.style.display = isInAppWebView ? 'block' : 'none';
       switchPwaPlatformGuide(isIos ? 'IOS' : 'ANDROID');
       modal.style.display = 'flex';
     }
@@ -6751,6 +6771,12 @@
         }
 
         if (!res.ok) {
+          if (res.status === 502 || res.status === 503 || res.status === 504) {
+            return data || {
+              success: false,
+              error: 'Server is waking up. Please wait a few seconds and try again.'
+            };
+          }
           return data || {
             success: false,
             error: `Server returned an error (${res.status}). Please try again.`

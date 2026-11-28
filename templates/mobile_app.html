@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.6">
+  <meta name="app-shell-version" content="v6.7">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -68,21 +68,22 @@
     /* DESIGN SYSTEM: EXECUTIVE FINTECH THEME PALETTES          */
     /* ======================================================== */
     :root {
-      --bg-app: #0B0F19;
-      --bg-card: #131B2E;
-      --bg-card-subtle: #1C263D;
-      --bg-input: #1C263D;
-      --border-card: rgba(255, 255, 255, 0.08);
-      --border-subtle: rgba(255, 255, 255, 0.05);
+      --bg-app: #090E1A;
+      --bg-card: #121B2E;
+      --bg-card-subtle: #1B263F;
+      --bg-input: #1B263F;
+      --border-card: rgba(148, 163, 184, 0.16);
+      --border-subtle: rgba(148, 163, 184, 0.10);
       --text-primary: #F8FAFC;
-      --text-secondary: #94A3B8;
-      --text-muted: #64748B;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
       --color-emerald: #10B981;
       --color-emerald-glow: rgba(16, 185, 129, 0.18);
       --color-sapphire: #38BDF8;
       --color-ruby: #EF4444;
       --color-amber: #F59E0B;
       --color-purple: #8B5CF6;
+      --color-purple-text: #A78BFA;
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
@@ -92,50 +93,68 @@
 
     /* THEME 1: MODERN MIDNIGHT FINTECH (Default Dark Canvas) */
     body:not(.theme-light) {
-      background: #0B0F19 !important;
+      background: #090E1A !important;
       color: #F8FAFC !important;
     }
     body:not(.theme-light) .device-wrapper {
-      --bg-app: #0B0F19 !important;
-      --bg-card: #131B2E !important;
-      --bg-card-subtle: #1C263D !important;
-      --bg-input: #1C263D !important;
-      --border-card: rgba(255, 255, 255, 0.08) !important;
-      --border-subtle: rgba(255, 255, 255, 0.05) !important;
+      --bg-app: #090E1A !important;
+      --bg-card: #121B2E !important;
+      --bg-card-subtle: #1B263F !important;
+      --bg-input: #1B263F !important;
+      --border-card: rgba(148, 163, 184, 0.16) !important;
+      --border-subtle: rgba(148, 163, 184, 0.10) !important;
       --text-primary: #F8FAFC !important;
-      --text-secondary: #94A3B8 !important;
-      --text-muted: #64748B !important;
-      background: #0B0F19 !important;
+      --text-secondary: #CBD5E1 !important;
+      --text-muted: #94A3B8 !important;
+      --color-emerald: #10B981 !important;
+      --color-sapphire: #38BDF8 !important;
+      --color-ruby: #EF4444 !important;
+      --color-amber: #F59E0B !important;
+      --color-purple: #8B5CF6 !important;
+      --color-purple-text: #A78BFA !important;
+      background: #090E1A !important;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px #0F172A, 0 0 0 12px #1E293B !important;
     }
 
     /* THEME 2: CRISP HIGH-CONTRAST LIGHT (Zero Hidden Text) */
     body.theme-light {
-      --bg-app: #F8FAFC !important;
+      --bg-app: #EEF2F7 !important;
       --bg-card: #FFFFFF !important;
       --bg-card-subtle: #F1F5F9 !important;
       --bg-input: #FFFFFF !important;
-      --border-card: #E2E8F0 !important;
+      --border-card: #DCE4EE !important;
       --border-subtle: #CBD5E1 !important;
       --text-primary: #0F172A !important;
       --text-secondary: #475569 !important;
       --text-muted: #64748B !important;
-      background: #F8FAFC !important;
+      --color-emerald: #059669 !important;
+      --color-sapphire: #0284C7 !important;
+      --color-ruby: #DC2626 !important;
+      --color-amber: #D97706 !important;
+      --color-purple: #7C3AED !important;
+      --color-purple-text: #6D28D9 !important;
+      background: #EEF2F7 !important;
       color: #0F172A !important;
     }
     body.theme-light .device-wrapper {
-      --bg-app: #F8FAFC !important;
+      --bg-app: #EEF2F7 !important;
       --bg-card: #FFFFFF !important;
       --bg-card-subtle: #F1F5F9 !important;
       --bg-input: #FFFFFF !important;
-      --border-card: #E2E8F0 !important;
+      --border-card: #DCE4EE !important;
       --border-subtle: #CBD5E1 !important;
       --text-primary: #0F172A !important;
       --text-secondary: #475569 !important;
       --text-muted: #64748B !important;
-      background: #F8FAFC !important;
+      --color-emerald: #059669 !important;
+      --color-sapphire: #0284C7 !important;
+      --color-ruby: #DC2626 !important;
+      --color-amber: #D97706 !important;
+      --color-purple: #7C3AED !important;
+      --color-purple-text: #6D28D9 !important;
+      background: #EEF2F7 !important;
       color: #0F172A !important;
-      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.25), 0 0 0 1px #E2E8F0 !important;
+      box-shadow: 0 25px 60px -15px rgba(100, 116, 139, 0.25), 0 0 0 1px #DCE4EE !important;
     }
 
     /* BASE RESET & MOBILE FRAME */
@@ -199,14 +218,14 @@
         display: none !important;
       }
       .app-screen {
-        padding: 14px 16px 30px 16px !important;
+        padding: 14px 16px 46px 16px !important;
       }
       .mobile-bottom-nav {
         padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px) !important;
         height: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
       }
       .app-screen-viewport {
-        padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
       }
     }
 
@@ -254,7 +273,7 @@
     }
     .app-screen {
       display: none;
-      padding: 16px 20px;
+      padding: 16px 20px 44px 20px;
     }
     .app-screen.active {
       display: block;
@@ -332,7 +351,7 @@
       position: relative;
       margin-bottom: 18px;
       color: var(--text-primary);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
       transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
@@ -857,6 +876,7 @@
     /* 3-Way Segmented Control */
     .segmented-control {
       background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-md);
       padding: 4px;
       display: flex;
@@ -874,6 +894,11 @@
       transition: all 0.2s ease;
       background: transparent;
       border: none;
+    }
+    .segment-btn.active {
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
     }
     .segment-btn.active.expense {
       background: var(--color-ruby) !important;
@@ -1202,6 +1227,128 @@
     .btn-submit-sheet:active {
       transform: scale(0.98);
       opacity: 0.9;
+    }
+    /* Secondary, Outline Accent & Soft Destructive Sheet/Action Buttons (Both Light & Dark Modes) */
+    .btn-secondary-sheet {
+      width: 100%;
+      background: var(--bg-card-subtle);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 700;
+      border: 1.5px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 13px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .btn-secondary-sheet:active { transform: scale(0.98); }
+    body.theme-light .btn-secondary-sheet {
+      background: #F1F5F9 !important;
+      color: #0F172A !important;
+      border-color: #CBD5E1 !important;
+    }
+    .btn-danger-tint-sheet {
+      width: 100%;
+      background: rgba(239, 68, 68, 0.14);
+      color: #FCA5A5;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1.5px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-lg);
+      padding: 13px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn-danger-tint-sheet:active { transform: scale(0.98); }
+    body.theme-light .btn-danger-tint-sheet {
+      background: #FEF2F2 !important;
+      color: #DC2626 !important;
+      border-color: #FECACA !important;
+    }
+    .btn-outline-accent {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(37, 99, 235, 0.16) 100%);
+      color: #38BDF8;
+      border: 1.5px solid rgba(56, 189, 248, 0.38);
+      font-size: 13.5px;
+      font-weight: 800;
+      border-radius: 14px;
+      padding: 13px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+      transition: all 0.18s ease;
+    }
+    .btn-outline-accent:active { transform: scale(0.985); opacity: 0.92; }
+    body.theme-light .btn-outline-accent {
+      background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%) !important;
+      color: #1D4ED8 !important;
+      border: 1.5px solid #93C5FD !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+    }
+    .btn-outline-accent .material-icons-round { color: inherit !important; }
+    .btn-pill-solid {
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #FFFFFF !important;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+    .btn-pill-solid.emerald {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      box-shadow: 0 3px 10px rgba(16, 185, 129, 0.28);
+    }
+    .btn-pill-solid.purple {
+      background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+      box-shadow: 0 3px 10px rgba(124, 58, 237, 0.28);
+    }
+    .btn-pill-soft {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-card);
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: transform 0.1s ease;
+    }
+    .btn-pill-soft.emerald {
+      color: var(--color-emerald);
+      border-color: rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.1);
+    }
+    body.theme-light .btn-pill-soft {
+      background: #F1F5F9 !important;
+      border-color: #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    body.theme-light .btn-pill-soft.emerald {
+      background: #ECFDF5 !important;
+      border-color: #6EE7B7 !important;
+      color: #059669 !important;
     }
 
     /* ======================================================== */
@@ -1629,9 +1776,9 @@
     /* ======================================================== */
     body.theme-light .fintech-card {
       background: #FFFFFF !important;
-      border-color: #E2E8F0 !important;
+      border-color: #DCE4EE !important;
       color: #0F172A !important;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
     }
     body.theme-light .card-net-worth {
       background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
@@ -1752,12 +1899,12 @@
       border: 1px solid #CBD5E1 !important;
     }
     body.theme-light .segment-btn {
-      color: #64748B !important;
+      color: #475569;
     }
     body.theme-light .segment-btn.active {
       background: #FFFFFF !important;
       color: #0F172A !important;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.09) !important;
     }
     body.theme-light .segment-btn.active.expense {
       background: #EF4444 !important;
@@ -1945,57 +2092,123 @@
       font-weight: 700 !important;
     }
 
-    /* Hero AI Prediction Card Theme Rules (Insights Screen Est. Month-END & Details) */
+    /* Hero AI Prediction Card & Insights Screen Executive Theme Rules */
+    .insights-intel-pill {
+      font-size: 9.5px;
+      letter-spacing: 0.7px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    body.theme-light .insights-intel-pill {
+      background: #E0F2FE !important;
+      color: #0369A1 !important;
+      border-color: #BAE6FD !important;
+    }
+    .insights-week-badge {
+      font-size: 10.5px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    body.theme-light .insights-week-badge {
+      background: #E0F2FE !important;
+      color: #0369A1 !important;
+      border-color: #BAE6FD !important;
+    }
+    .insights-legend-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .insights-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
     .hero-prediction-card {
-      background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
-      border: 1px solid #4338CA;
+      background: linear-gradient(145deg, #1E1B4B 0%, #121B33 55%, #0F172A 100%);
+      border: 1px solid rgba(129, 140, 248, 0.38);
       color: #FFFFFF;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     .hero-prediction-card .fc-hero-title {
-      color: #A78BFA;
+      color: #C4B5FD;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      font-size: 11px !important;
     }
     .hero-prediction-card #fcMonthEndProjectedDisplay {
       color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
     }
     .hero-prediction-card .cashflow-box {
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      backdrop-filter: blur(8px);
+    }
+    .hero-prediction-card .cf-label {
+      color: #94A3B8;
+      letter-spacing: 0.5px;
+    }
+    .hero-prediction-card #fcMtdSpend {
+      color: #38BDF8 !important;
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-prediction-card #fcSafeDailyCap {
+      color: #34D399 !important;
+      font-variant-numeric: tabular-nums;
     }
     .hero-prediction-card #fcTopDriverBox {
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.16);
     }
     .hero-prediction-card .fc-driver-name {
       color: #FFFFFF;
     }
     .hero-prediction-card .fc-driver-pct {
-      color: #A78BFA;
+      color: #C4B5FD;
     }
     .hero-prediction-card #fcAiSuggestionBox {
-      background: rgba(139, 92, 246, 0.08);
-      border: 1px solid rgba(139, 92, 246, 0.25);
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.3);
     }
     .hero-prediction-card .fc-spark-icon {
-      color: #A78BFA;
+      color: #C4B5FD;
     }
     .hero-prediction-card #fcAiSuggestionText {
       color: #E2E8F0;
       font-weight: 500;
     }
     .hero-prediction-card #fcViewMoreBtn {
-      color: #A78BFA;
-      background: rgba(139, 92, 246, 0.15);
-      border: 1px solid rgba(139, 92, 246, 0.35);
+      color: #C4B5FD;
+      background: rgba(139, 92, 246, 0.18);
+      border: 1px solid rgba(139, 92, 246, 0.38);
+      transition: transform 0.12s ease, filter 0.15s ease;
     }
+    .hero-prediction-card #fcViewMoreBtn:active { transform: scale(0.96); }
 
     body.theme-light .hero-prediction-card {
-      background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 100%) !important;
+      background: linear-gradient(145deg, #FFFFFF 0%, #EEF2FF 60%, #E0E7FF 100%) !important;
       border: 1.5px solid #C7D2FE !important;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.08) !important;
+      box-shadow: 0 10px 28px rgba(79, 70, 229, 0.10) !important;
       color: #0F172A !important;
     }
     body.theme-light .hero-prediction-card .fc-hero-title {
-      color: #3730A3 !important;
+      color: #4338CA !important;
       font-weight: 800 !important;
     }
     body.theme-light .hero-prediction-card #fcMonthEndProjectedDisplay {
@@ -2005,7 +2218,10 @@
     body.theme-light .hero-prediction-card .cashflow-box {
       background: #FFFFFF !important;
       border: 1px solid #CBD5E1 !important;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+    }
+    body.theme-light .hero-prediction-card .cf-label {
+      color: #64748B !important;
     }
     body.theme-light .hero-prediction-card #fcMtdSpend {
       color: #0284C7 !important;
@@ -2019,7 +2235,7 @@
     body.theme-light #fcTopDriverBox {
       background: #FFFFFF !important;
       border: 1px solid #CBD5E1 !important;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
     }
     body.theme-light .hero-prediction-card .fc-driver-name,
     body.theme-light #fcTopDriverName {
@@ -2037,9 +2253,9 @@
     }
     body.theme-light .hero-prediction-card #fcAiSuggestionBox,
     body.theme-light #fcAiSuggestionBox {
-      background: #EEF2FF !important;
+      background: #F5F7FF !important;
       border: 1.5px solid #C7D2FE !important;
-      box-shadow: 0 1px 4px rgba(99, 102, 241, 0.05) !important;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.06) !important;
     }
     body.theme-light .hero-prediction-card .fc-spark-icon {
       color: #4F46E5 !important;
@@ -2053,13 +2269,23 @@
     body.theme-light #fcViewMoreBtn {
       color: #3730A3 !important;
       background: #E0E7FF !important;
-      border: 1px solid #A5B4FC !important;
+      border: 1.5px solid #A5B4FC !important;
     }
     body.theme-light .hero-prediction-card #fcExplanationText {
       color: #334155 !important;
     }
     body.theme-light #fcSvgGuideLine {
       stroke: rgba(15, 23, 42, 0.35) !important;
+    }
+    body.theme-light #fcSvgBudgetText {
+      fill: #DC2626 !important;
+    }
+    body.theme-light #homeSmartAlertBanner {
+      background: #FEF2F2 !important;
+      border-color: #FECACA !important;
+    }
+    body.theme-light #homeSmartAlertTitle {
+      color: #991B1B !important;
     }
 
     /* Acc-Pill Light Theme High Contrast */
@@ -2192,6 +2418,8 @@
     /* All Solid Buttons, Center FAB & Badges MUST KEEP Crisp White Text in Both Modes */
     .btn-submit-sheet,
     .btn-submit-sheet *,
+    .btn-pill-solid,
+    .btn-pill-solid *,
     .fab-center,
     .fab-center *,
     .auth-tab-btn.active,
@@ -2202,6 +2430,8 @@
     .cat-delete-btn *,
     body.theme-light .btn-submit-sheet,
     body.theme-light .btn-submit-sheet *,
+    body.theme-light .btn-pill-solid,
+    body.theme-light .btn-pill-solid *,
     body.theme-light .fab-center,
     body.theme-light .fab-center *,
     body.theme-light .auth-tab-btn.active,
@@ -2824,7 +3054,7 @@
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="material-icons-round" style="color:var(--color-ruby); font-size:20px;">notification_important</span>
             <div>
-              <div id="homeSmartAlertTitle" style="font-size:12px; font-weight:800; color:#FFF;">Financial Alert</div>
+              <div id="homeSmartAlertTitle" style="font-size:12px; font-weight:800; color:var(--text-primary);">Financial Alert</div>
               <div id="homeSmartAlertMsg" style="font-size:11px; color:var(--text-secondary); max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Notice</div>
             </div>
           </div>
@@ -2972,9 +3202,9 @@
         </div>
 
         <!-- View All Transactions Button -->
-        <div style="padding:14px 0 24px 0; text-align:center;">
-          <button type="button" class="btn-submit-sheet" onclick="switchTab('tab-history')" style="background:var(--bg-card-subtle); color:var(--color-sapphire); border:1.5px solid rgba(59, 130, 246, 0.4); font-size:13px; font-weight:800; border-radius:14px; padding:12px 18px; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:all 0.2s ease;">
-            <span class="material-icons-round" style="font-size:19px; color:var(--color-sapphire);">history</span>
+        <div style="padding:14px 0 28px 0; text-align:center;">
+          <button type="button" class="btn-outline-accent" onclick="switchTab('tab-history')">
+            <span class="material-icons-round" style="font-size:19px;">history</span>
             <span>View All Transactions</span>
           </button>
         </div>
@@ -3047,11 +3277,11 @@
             <span class="material-icons-round">arrow_back</span>
           </div>
           <div style="flex:1;">
-            <div class="user-name" style="font-size:18px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+            <div class="user-name" style="font-size:19px; font-weight:800; color:var(--text-primary); display:flex; align-items:center; gap:7px;">
               <span>Insights</span>
-              <span style="font-size:10px; background:rgba(6,182,212,0.25); color:#06B6D4; border:1px solid rgba(6,182,212,0.4); padding:2px 8px; border-radius:10px; font-weight:800;">INTELLIGENCE</span>
+              <span class="insights-intel-pill">INTELLIGENCE</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">PREDICTIVE INSIGHTS & DAILY EXPENSE INTELLIGENCE</div>
+            <div style="font-size:10.5px; color:var(--text-muted); font-weight:700; letter-spacing:0.4px;">PREDICTIVE FORECAST &amp; DAILY PACING</div>
           </div>
           <div class="btn-icon-header" onclick="refreshForecastData()" title="Recalculate AI Forecast">
             <span class="material-icons-round">refresh</span>
@@ -3059,63 +3289,72 @@
         </div>
 
         <!-- 1. Est. Month-END & Details Card -->
-        <div class="fintech-card hero-prediction-card" style="border-radius:20px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
-          <div style="position:absolute; top:-30px; right:-30px; width:140px; height:140px; background:radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+        <div class="fintech-card hero-prediction-card" style="border-radius:22px; padding:18px; margin-bottom:16px; position:relative; overflow:hidden;">
+          <div style="position:absolute; top:-35px; right:-35px; width:150px; height:150px; background:radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
           
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div class="fc-hero-title" style="font-size:13px; font-weight:800; letter-spacing:0.2px;">Est. Month-END & Details</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div class="fc-hero-title" style="display:flex; align-items:center; gap:5px;">
+              <span class="material-icons-round" style="font-size:15px;">insights</span>
+              <span>Est. Month-End Projection</span>
+            </div>
           </div>
 
-          <div style="font-size:32px; font-weight:800; letter-spacing:-0.5px; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
+          <div style="font-size:34px; font-weight:800; letter-spacing:-0.8px; line-height:1.15; margin-bottom:6px;" id="fcMonthEndProjectedDisplay">₹0.00</div>
           
-          <div style="font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:4px;" id="fcSurplusDisplay">
+          <div style="font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:5px;" id="fcSurplusDisplay">
             <span class="material-icons-round" style="font-size:16px;">trending_down</span>
             <span>Calculating live trajectory...</span>
           </div>
 
           <!-- Current Daily Spending & Safe Daily Spending Grid -->
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-            <div class="cashflow-box" style="padding:10px 12px; border-radius:14px;">
-              <div class="cf-label" style="font-size:10px; text-transform:uppercase; font-weight:700;">CURRENT DAILY SPENDING</div>
-              <div style="font-size:16px; font-weight:800; color:#38BDF8;" id="fcMtdSpend">₹0.00/day</div>
+            <div class="cashflow-box" style="padding:11px 12px; border-radius:14px; margin-bottom:0;">
+              <div class="cf-label" style="font-size:9.5px; text-transform:uppercase; font-weight:800; margin-bottom:4px;">
+                <span class="material-icons-round" style="font-size:13px; color:var(--color-sapphire);">speed</span>
+                <span>Current Pace</span>
+              </div>
+              <div style="font-size:17px; font-weight:800;" id="fcMtdSpend">₹0.00/day</div>
             </div>
-            <div class="cashflow-box" style="padding:10px 12px; border-radius:14px;">
-              <div class="cf-label" style="font-size:10px; text-transform:uppercase; font-weight:700;">SAFE DAILY SPENDING</div>
-              <div style="font-size:16px; font-weight:800; color:#10B981;" id="fcSafeDailyCap">₹0.00/day</div>
+            <div class="cashflow-box" style="padding:11px 12px; border-radius:14px; margin-bottom:0;">
+              <div class="cf-label" style="font-size:9.5px; text-transform:uppercase; font-weight:800; margin-bottom:4px;">
+                <span class="material-icons-round" style="font-size:13px; color:var(--color-emerald);">verified_user</span>
+                <span>Safe Daily Limit</span>
+              </div>
+              <div style="font-size:17px; font-weight:800;" id="fcSafeDailyCap">₹0.00/day</div>
             </div>
           </div>
 
           <!-- Top Spending Category Row -->
-          <div id="fcTopDriverBox" style="border-radius:14px; padding:10px 14px; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <div style="width:30px; height:30px; border-radius:8px; background:rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center;">
-                  <span class="material-icons-round" style="color:#F59E0B; font-size:18px;">category</span>
+          <div id="fcTopDriverBox" style="border-radius:14px; padding:11px 14px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                <div style="width:34px; height:34px; border-radius:10px; background:rgba(245,158,11,0.16); border:1px solid rgba(245,158,11,0.28); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <span class="material-icons-round" style="color:var(--color-amber); font-size:18px;">category</span>
                 </div>
-                <div>
-                  <div class="cf-label" style="font-size:10px; font-weight:700; text-transform:uppercase;">TOP SPENDING CATEGORY</div>
-                  <div class="fc-driver-name" style="font-size:13px; font-weight:800;" id="fcTopDriverName">Food & Dining</div>
+                <div style="min-width:0;">
+                  <div class="cf-label" style="font-size:9.5px; font-weight:800; text-transform:uppercase; margin-bottom:2px;">TOP SPENDING CATEGORY</div>
+                  <div class="fc-driver-name" style="font-size:13.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="fcTopDriverName">Food & Dining</div>
                 </div>
               </div>
-              <div style="text-align:right;">
-                <div style="font-size:14px; font-weight:800; color:#F59E0B;" id="fcTopDriverAmount">₹0.00</div>
+              <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:14.5px; font-weight:800; color:var(--color-amber); font-variant-numeric:tabular-nums;" id="fcTopDriverAmount">₹0.00</div>
                 <div class="fc-driver-pct" style="font-size:10px; font-weight:700;" id="fcTopDriverPct">0% of budget</div>
               </div>
             </div>
           </div>
 
           <!-- AI Suggestion Box (5-10 words, 1-1.5 lines) -->
-          <div id="fcAiSuggestionBox" style="border-radius:14px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+          <div id="fcAiSuggestionBox" style="border-radius:14px; padding:10px 12px; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
             <span class="material-icons-round fc-spark-icon" style="font-size:18px; flex-shrink:0;">auto_awesome</span>
-            <p style="margin:0; font-size:11px; line-height:1.4; font-weight:500;" id="fcAiSuggestionText">
+            <p style="margin:0; font-size:11.5px; line-height:1.4; font-weight:500;" id="fcAiSuggestionText">
               Keep Food & Dining steady at current pace to protect your savings.
             </p>
           </div>
 
           <!-- View More... Button -> Opens AI Chatbot -->
           <div style="display:flex; justify-content:flex-end;">
-            <button type="button" id="fcViewMoreBtn" onclick="openAiChatModal()" style="display:inline-flex; align-items:center; gap:4px; padding:5px 12px; font-size:11px; font-weight:700; border-radius:10px; cursor:pointer;" title="Ask AI Mentor">
-              <span>View more...</span>
+            <button type="button" id="fcViewMoreBtn" onclick="openAiChatModal()" style="display:inline-flex; align-items:center; gap:5px; padding:6px 13px; font-size:11.5px; font-weight:800; border-radius:10px; cursor:pointer;" title="Ask AI Mentor">
+              <span>Ask Finly AI</span>
               <span class="material-icons-round" style="font-size:14px;">chat</span>
             </button>
           </div>
@@ -3125,10 +3364,10 @@
         <div class="fintech-card" style="padding:16px; margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span class="material-icons-round" style="color:#06B6D4; font-size:20px;">bar_chart</span>
-              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">Daily Expense History</div>
+              <span class="material-icons-round" style="color:var(--color-sapphire); font-size:20px;">bar_chart</span>
+              <div style="font-size:13.5px; font-weight:800; color:var(--text-primary);">Daily Expense History</div>
             </div>
-            <div style="font-size:10px; background:rgba(6,182,212,0.15); color:#06B6D4; border:1px solid rgba(6,182,212,0.3); padding:3px 8px; border-radius:10px; font-weight:800;" id="weeklyTotalSpendBadge">₹0.00 This Week</div>
+            <div class="insights-week-badge" id="weeklyTotalSpendBadge">₹0.00 This Week</div>
           </div>
           <div style="width:100%; height:140px;">
             <canvas id="weeklyDailyBarCanvas" width="300" height="140" style="width:100%; height:140px;"></canvas>
@@ -3136,12 +3375,19 @@
         </div>
 
         <!-- 4. Visual Forecast Trajectory Chart -->
-        <div class="fintech-card" style="padding:16px; margin-bottom:18px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET CEILING</div>
-            <div style="font-size:10px; color:var(--text-muted); font-weight:700;">Drag across to inspect</div>
+        <div class="fintech-card" style="padding:16px; margin-bottom:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px;">
+            <div style="font-size:11px; color:var(--text-secondary); font-weight:800; letter-spacing:0.5px;">SPENDING TRAJECTORY VS BUDGET</div>
+            <div style="font-size:10px; color:var(--text-muted); font-weight:700; white-space:nowrap;">Drag to inspect</div>
+          </div>
+          <div class="insights-legend-row">
+            <span class="insights-legend-item"><span style="width:8px; height:8px; border-radius:50%; background:#06B6D4; display:inline-block;"></span> Actual</span>
+            <span class="insights-legend-item"><span style="width:8px; height:8px; border-radius:50%; background:#10B981; display:inline-block;"></span> Projected</span>
+            <span class="insights-legend-item"><span style="width:10px; height:2px; background:#EF4444; display:inline-block;"></span> Budget Limit</span>
           </div>
           <svg viewBox="0 0 300 110" style="width:100%; height:110px; overflow:visible; cursor:crosshair; touch-action:none;" id="fcTrajectorySvg">
+            <line x1="0" y1="95" x2="300" y2="95" stroke="rgba(148,163,184,0.16)" stroke-width="1"/>
+            <line x1="0" y1="55" x2="300" y2="55" stroke="rgba(148,163,184,0.10)" stroke-width="1" stroke-dasharray="2"/>
             <!-- Target Budget Line -->
             <line id="fcSvgBudgetLine" x1="0" y1="20" x2="300" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4"/>
             <text id="fcSvgBudgetText" x="5" y="16" fill="#EF4444" font-size="9" font-weight="700">Budget Limit</text>
@@ -3241,7 +3487,7 @@
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
-            <span id="profileCategoryLimitBadge" style="font-size:11px; font-weight:800; color:#A78BFA; background:rgba(139,92,246,0.12); padding:3px 8px; border-radius:10px;">Configure</span>
+            <span id="profileCategoryLimitBadge" style="font-size:11px; font-weight:800; color:var(--color-purple-text); background:rgba(139,92,246,0.12); padding:3px 8px; border-radius:10px;">Configure</span>
             <span class="material-icons-round" style="color:var(--text-muted);">chevron_right</span>
           </div>
         </div>
@@ -3422,7 +3668,7 @@
       <div class="ai-floating-orb" style="width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #C084FC 0%, #7C3AED 45%, #06B6D4 100%); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(124, 58, 237, 0.5), 0 0 10px rgba(6, 182, 212, 0.4); border:1.8px solid rgba(255, 255, 255, 0.5); position:relative; transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
         <span class="material-icons-round" style="color:#FFF; font-size:18px; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));">auto_awesome</span>
         <!-- Online active indicator dot -->
-        <span style="position:absolute; top:1px; right:1px; width:7px; height:7px; background:#10B981; border:1.5px solid #0F172A; border-radius:50%; box-shadow:0 0 5px #10B981;"></span>
+        <span style="position:absolute; top:1px; right:1px; width:7px; height:7px; background:#10B981; border:1.5px solid var(--bg-app); border-radius:50%; box-shadow:0 0 5px #10B981;"></span>
       </div>
     </div>
 
@@ -3727,7 +3973,7 @@
             <div class="tx-meta" id="accModalTypeBadge">BANK ACCOUNT</div>
           </div>
         </div>
-        <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-emerald); padding:6px 12px; font-size:12px; border-radius:10px;" onclick="triggerAccountReconcile()">
+        <button class="btn-pill-soft emerald" onclick="triggerAccountReconcile()">
           ⚡ Reconcile
         </button>
       </div>
@@ -3748,7 +3994,7 @@
         </div>
 
         <!-- Credit Card Section -->
-        <div id="accModalCreditSection" style="display:none; margin-top:12px; border-top:1px solid #28354D; padding-top:10px;">
+        <div id="accModalCreditSection" style="display:none; margin-top:12px; border-top:1px solid var(--border-card); padding-top:10px;">
           <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary);">
             <span>Credit Limit: <strong id="accModalCreditLimit" style="color:var(--text-primary);">₹0</strong></span>
             <span>Available: <strong id="accModalAvailableCredit" style="color:var(--color-emerald);">₹0</strong></span>
@@ -3806,7 +4052,7 @@
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:10px;">
-        <button class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--color-ruby); border:1px solid var(--border-card);" onclick="deleteActiveTx()">
+        <button class="btn-danger-tint-sheet" style="padding:12px;" onclick="deleteActiveTx()">
           <span class="material-icons-round" style="vertical-align:middle; font-size:18px;">delete</span> Delete
         </button>
         <button class="btn-submit-sheet" onclick="promptEditActiveTx()">
@@ -3894,7 +4140,7 @@
       </div>
 
       <button class="btn-submit-sheet" onclick="submitMonthlyBudgetModal()">Save Monthly Budget</button>
-      <button class="btn-submit-sheet" id="btnDeleteMonthlyBudget" onclick="deleteMonthlyBudget()" style="margin-top:8px; background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.3); display:none;">Delete / Remove Budget</button>
+      <button class="btn-danger-tint-sheet" id="btnDeleteMonthlyBudget" onclick="deleteMonthlyBudget()" style="margin-top:8px; display:none;">Delete / Remove Budget</button>
     </div>
 
     <!-- ============================================== -->
@@ -3958,7 +4204,7 @@
 
         <!-- AI Category Warning Note -->
         <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.25); border-radius:14px; padding:10px 12px; margin-bottom:12px;">
-          <span class="material-icons-round" style="color:#A78BFA; font-size:20px; margin-top:1px;">psychology</span>
+          <span class="material-icons-round" style="color:var(--color-purple-text); font-size:20px; margin-top:1px;">psychology</span>
           <div style="font-size:11px; line-height:1.45; color:var(--text-secondary);">
             <strong style="color:var(--text-primary);">AI Guardrails:</strong> Whenever any category crosses 85% or exceeds limit, you will receive real-time notifications with personalized spending recommendations.
           </div>
@@ -3984,7 +4230,7 @@
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:10px; font-weight:800;" onclick="openNewGoalModal()">
+          <button class="btn-pill-solid emerald" style="padding:7px 12px; border-radius:10px;" onclick="openNewGoalModal()">
             + Set New Goal
           </button>
           <div class="btn-icon-header" onclick="closeSavingsGoalsModal()" style="width:32px; height:32px;">
@@ -4190,7 +4436,7 @@
       </div>
 
       <button type="button" class="btn-submit-sheet" id="btnDeactivatePin" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:10px;" onclick="confirmDeactivateAppPin()">Yes, Deactivate PIN</button>
-      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeDeactivatePinModal()">Keep PIN Active</button>
+      <button type="button" class="btn-secondary-sheet" onclick="closeDeactivatePinModal()">Keep PIN Active</button>
     </div>
 
     <!-- ============================================== -->
@@ -4207,7 +4453,7 @@
         <div class="tx-meta" id="quickConfirmMessage" style="line-height:1.45; font-size:12.5px;">Are you sure?</div>
       </div>
       <button type="button" class="btn-submit-sheet" id="quickConfirmPrimaryBtn" style="background:linear-gradient(135deg, #EF4444 0%, #DC2626 100%); margin-bottom:9px;">Confirm</button>
-      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeConfirmSheet()">Cancel</button>
+      <button type="button" class="btn-secondary-sheet" onclick="closeConfirmSheet()">Cancel</button>
     </div>
 
     <!-- ============================================== -->
@@ -4288,7 +4534,7 @@
             <div class="tx-meta" id="statementPeriodDisplay">Select Period</div>
           </div>
         </div>
-        <button type="button" class="segment-btn" style="background:linear-gradient(135deg, #10B981 0%, #059669 100%); color:#FFF; padding:7px 13px; font-size:12px; font-weight:700; border-radius:10px; border:none; cursor:pointer; display:flex; align-items:center; gap:5px;" onclick="printFinancialStatement()">
+        <button type="button" class="btn-pill-solid emerald" style="padding:7px 13px; font-size:12px; border-radius:10px;" onclick="printFinancialStatement()">
           <span class="material-icons-round" style="font-size:15px;">print</span>
           <span>Print / PDF</span>
         </button>
@@ -4359,7 +4605,7 @@
         <div id="stmtTopExpensesList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
-      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="closeStatementModal()">Close Statement</button>
+      <button type="button" class="btn-secondary-sheet" onclick="closeStatementModal()">Close Statement</button>
     </div>
 
     <!-- ============================================== -->
@@ -4418,7 +4664,7 @@
         <div style="margin-bottom:10px;">
           <span class="material-icons-round" style="font-size:44px; color:var(--color-sapphire);">add_a_photo</span>
         </div>
-        <div style="font-size:14px; font-weight:700; color:#FFF; margin-bottom:4px;">Capture or Upload Receipt</div>
+        <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Capture or Upload Receipt</div>
         <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Snap bill, food invoice, or fuel receipt</div>
         
         <button type="button" class="btn-submit-sheet" style="margin:0 auto; max-width:200px; padding:10px;" onclick="document.getElementById('receiptFileInput').click()">
@@ -4429,20 +4675,20 @@
       <!-- Quick Demo Presets -->
       <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">Instant 1-Tap Simulation Presets</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('starbucks')">
-          <span style="font-weight:700; color:#FFF; font-size:12px;">☕ Starbucks Coffee</span>
+        <button type="button" class="btn-pill-soft" style="padding:10px; text-align:left; align-items:flex-start; flex-direction:column; gap:2px; border-radius:12px;" onclick="triggerSampleReceiptScan('starbucks')">
+          <span style="font-weight:700; color:var(--text-primary); font-size:12px;">☕ Starbucks Coffee</span>
           <span style="font-size:10px; color:var(--color-emerald);">Rs. 651.00 • Dining</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('shell_fuel')">
-          <span style="font-weight:700; color:#FFF; font-size:12px;">⛽ Shell Petrol</span>
+        <button type="button" class="btn-pill-soft" style="padding:10px; text-align:left; align-items:flex-start; flex-direction:column; gap:2px; border-radius:12px;" onclick="triggerSampleReceiptScan('shell_fuel')">
+          <span style="font-weight:700; color:var(--text-primary); font-size:12px;">⛽ Shell Petrol</span>
           <span style="font-size:10px; color:var(--color-sapphire);">Rs. 2,969.70 • Fuel</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('apollo_pharmacy')">
-          <span style="font-weight:700; color:#FFF; font-size:12px;">💊 Apollo Pharmacy</span>
+        <button type="button" class="btn-pill-soft" style="padding:10px; text-align:left; align-items:flex-start; flex-direction:column; gap:2px; border-radius:12px;" onclick="triggerSampleReceiptScan('apollo_pharmacy')">
+          <span style="font-weight:700; color:var(--text-primary); font-size:12px;">💊 Apollo Pharmacy</span>
           <span style="font-size:10px; color:var(--color-ruby);">Rs. 635.00 • Health</span>
         </button>
-        <button type="button" class="segment-btn" style="padding:10px; text-align:left; display:flex; flex-direction:column; gap:2px; height:auto; background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card);" onclick="triggerSampleReceiptScan('blinkit_grocery')">
-          <span style="font-weight:700; color:#FFF; font-size:12px;">🛒 Blinkit Grocery</span>
+        <button type="button" class="btn-pill-soft" style="padding:10px; text-align:left; align-items:flex-start; flex-direction:column; gap:2px; border-radius:12px;" onclick="triggerSampleReceiptScan('blinkit_grocery')">
+          <span style="font-weight:700; color:var(--text-primary); font-size:12px;">🛒 Blinkit Grocery</span>
           <span style="font-size:10px; color:var(--color-amber);">Rs. 488.00 • Quick</span>
         </button>
       </div>
@@ -4450,7 +4696,7 @@
       <!-- Raw Text / SMS Paste Input -->
       <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px;">OR PASTE INVOICE / BANK SMS TEXT</div>
       <textarea id="rawReceiptTextInput" class="form-input-pill" style="height:68px; border-radius:12px; resize:none; padding:8px 12px; font-size:11px; margin-bottom:10px;" placeholder="Paste bank debit SMS or bill text here..."></textarea>
-      <button type="button" class="btn-submit-sheet" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:10px;" onclick="scanRawReceiptText()">
+      <button type="button" class="btn-secondary-sheet" style="padding:10px;" onclick="scanRawReceiptText()">
         ⚡ Parse Text & Auto-Fill
       </button>
 
@@ -4548,7 +4794,7 @@
           <span class="material-icons-round" style="font-size:16px;">warning</span>
           <span>Potential Duplicate Warning</span>
         </div>
-        <div id="smsDuplicateMsg" style="font-size:11px; color:#FFF; margin-top:4px;"></div>
+        <div id="smsDuplicateMsg" style="font-size:11px; color:var(--text-primary); margin-top:4px;"></div>
       </div>
 
       <!-- Review Card -->
@@ -4861,7 +5107,7 @@
                 <span id="inlineOtpCountdownWrap" style="font-size:11px; color:var(--text-muted);">
                   Resend in <strong id="inlineOtpCountdownVal">30s</strong>
                 </span>
-                <button type="button" id="btnInlineOtpResend" onclick="sendInlineSignupOtp(true)" style="display:none; background:transparent; border:none; color:#60A5FA; font-size:11px; font-weight:800; cursor:pointer; padding:0;">
+                <button type="button" id="btnInlineOtpResend" onclick="sendInlineSignupOtp(true)" style="display:none; background:transparent; border:none; color:var(--color-sapphire); font-size:11px; font-weight:800; cursor:pointer; padding:0;">
                   Resend OTP
                 </button>
               </div>
@@ -4893,7 +5139,7 @@
 
             <!-- Forgot Password Link (Only for Login) -->
             <div id="authForgotPwdRow" style="text-align:right; margin-top:-2px; margin-bottom:14px;">
-              <button type="button" onclick="openForgotPasswordFlow()" style="background:transparent; border:none; color:#60A5FA; font-size:12px; font-weight:700; cursor:pointer; padding:2px 0; text-decoration:none;">
+              <button type="button" onclick="openForgotPasswordFlow()" style="background:transparent; border:none; color:var(--color-sapphire); font-size:12px; font-weight:700; cursor:pointer; padding:2px 0; text-decoration:none;">
                 Forgot Password?
               </button>
             </div>
@@ -5848,15 +6094,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_6'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_7'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.6-cache') {
-            triggerSwUpgradeReload('v6_6');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.7-cache') {
+            triggerSwUpgradeReload('v6_7');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.6').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.7').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -6261,43 +6507,47 @@
       box.style.background = res.bg;
       box.style.borderColor = res.border;
       
-      const balColor = res.balance_after >= 0 ? '#FFF' : 'var(--color-ruby)';
+      const isLight = APP_STATE.appTheme === 'theme-light';
+      const balColor = res.balance_after >= 0 ? 'var(--text-primary)' : 'var(--color-ruby)';
       const balSign = res.balance_after >= 0 ? '' : '-';
+      const metricBg = isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.25)';
+      const metricBorder = isLight ? '1px solid rgba(15,23,42,0.08)' : '1px solid rgba(255,255,255,0.06)';
+      const adviceBg = isLight ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.2)';
 
       box.innerHTML = `
         <!-- Status Banner -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div style="display:flex; align-items:center; gap:7px;">
             <span class="material-icons-round" style="color:${res.color}; font-size:20px;">${res.icon}</span>
-            <span style="font-size:13px; font-weight:800; color:#FFF;">${res.headline}</span>
+            <span style="font-size:13px; font-weight:800; color:var(--text-primary);">${res.headline}</span>
           </div>
-          <span style="font-size:10px; font-weight:800; color:${res.color}; background:rgba(0,0,0,0.25); border:1px solid ${res.border}; padding:3px 8px; border-radius:8px;">${res.verdict}</span>
+          <span style="font-size:10px; font-weight:800; color:${res.color}; background:${metricBg}; border:1px solid ${res.border}; padding:3px 8px; border-radius:8px;">${res.verdict}</span>
         </div>
 
         <!-- Plain English Explanation -->
-        <p style="font-size:11px; color:#E2E8F0; line-height:1.45; margin:0 0 12px 0;">
+        <p style="font-size:11px; color:var(--text-secondary); line-height:1.45; margin:0 0 12px 0;">
           ${res.explanation}
         </p>
 
         <!-- 3 Quick Metrics -->
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;">
-          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+          <div style="background:${metricBg}; border:${metricBorder}; padding:8px; border-radius:10px; text-align:center;">
             <div style="font-size:9px; color:var(--text-muted); font-weight:700;">BALANCE AFTER</div>
             <div style="font-size:12px; font-weight:800; color:${balColor}; margin-top:2px;">${balSign}₹${Math.abs(res.balance_after || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
           </div>
-          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+          <div style="background:${metricBg}; border:${metricBorder}; padding:8px; border-radius:10px; text-align:center;">
             <div style="font-size:9px; color:var(--text-muted); font-weight:700;">DAILY SAFE CAP</div>
             <div style="font-size:12px; font-weight:800; color:var(--color-emerald); margin-top:2px;">₹${(res.new_daily_safe_cap || 0).toFixed(0)}/day</div>
           </div>
-          <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:10px; text-align:center;">
+          <div style="background:${metricBg}; border:${metricBorder}; padding:8px; border-radius:10px; text-align:center;">
             <div style="font-size:9px; color:var(--text-muted); font-weight:700;">MAX SAFE SPEND</div>
-            <div style="font-size:12px; font-weight:800; color:#38BDF8; margin-top:2px;">₹${(res.max_safe_purchase || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+            <div style="font-size:12px; font-weight:800; color:var(--color-sapphire); margin-top:2px;">₹${(res.max_safe_purchase || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
           </div>
         </div>
 
         ${res.advice ? `
-        <div style="font-size:11px; color:#CBD5E1; font-weight:600; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:8px; display:flex; align-items:center; gap:6px;">
-          <span class="material-icons-round" style="color:#F59E0B; font-size:15px; flex-shrink:0;">lightbulb</span>
+        <div style="font-size:11px; color:var(--text-secondary); font-weight:600; background:${adviceBg}; border:${metricBorder}; padding:8px 10px; border-radius:8px; display:flex; align-items:center; gap:6px;">
+          <span class="material-icons-round" style="color:var(--color-amber); font-size:15px; flex-shrink:0;">lightbulb</span>
           <span>${res.advice}</span>
         </div>
         ` : ''}
@@ -7246,7 +7496,7 @@
             surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${overrunPct}% over budget)</span>`;
           }
         } else {
-          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#38BDF8;">info</span><span style="color:#38BDF8;">No monthly budget ceiling configured</span>`;
+          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:var(--color-sapphire);">info</span><span style="color:var(--color-sapphire);">No monthly budget ceiling configured</span>`;
         }
       }
 
@@ -7332,20 +7582,20 @@
       cats.slice(0, 4).forEach(c => {
         const div = document.createElement('div');
         div.className = 'tx-item';
-        div.style.background = '#141F36';
-        div.style.border = '1px solid #233354';
+        div.style.background = 'var(--bg-card-subtle)';
+        div.style.border = '1px solid var(--border-card)';
         div.style.padding = '10px 14px';
         div.style.borderRadius = '14px';
         div.innerHTML = `
           <div class="tx-left">
             <div class="tx-icon-box" style="background:#3B82F6; width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">category</span></div>
             <div>
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">${c.category}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${c.category}</div>
               <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">MTD: ₹${c.mtd_spend.toLocaleString('en-IN')} ➔ Projected: ₹${c.projected_month_end.toLocaleString('en-IN')} (${c.pct_of_projected_total}%)</div>
             </div>
           </div>
           <div style="text-align:right;">
-            <span style="font-size:10px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:6px; color:#A78BFA; font-weight:700;">${c.confidence}</span>
+            <span style="font-size:10px; background:rgba(139,92,246,0.12); padding:2px 6px; border-radius:6px; color:var(--color-purple-text); font-weight:700;">${c.confidence}</span>
           </div>
         `;
         container.appendChild(div);
@@ -7367,20 +7617,20 @@
       bills.forEach(b => {
         const div = document.createElement('div');
         div.className = 'tx-item';
-        div.style.background = '#141F36';
-        div.style.border = '1px solid #233354';
+        div.style.background = 'var(--bg-card-subtle)';
+        div.style.border = '1px solid var(--border-card)';
         div.style.padding = '10px 14px';
         div.style.borderRadius = '14px';
         div.innerHTML = `
           <div class="tx-left">
             <div class="tx-icon-box" style="background:var(--color-amber); width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">event</span></div>
             <div>
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF;">${b.title}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${b.title}</div>
               <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Due: ${b.due_date || 'Upcoming'}</div>
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:13px; font-weight:800; color:#FFF;">₹${b.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+            <div style="font-size:13px; font-weight:800; color:var(--text-primary);">₹${b.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
             <span style="font-size:9px; color:var(--color-amber); font-weight:700;">COMMITTED</span>
           </div>
         `;
@@ -7399,8 +7649,8 @@
       recs.forEach(r => {
         const div = document.createElement('div');
         div.className = 'tx-item';
-        div.style.background = '#141F36';
-        div.style.border = '1px solid #233354';
+        div.style.background = 'var(--bg-card-subtle)';
+        div.style.border = '1px solid var(--border-card)';
         div.style.padding = '12px 14px';
         div.style.borderRadius = '16px';
         div.style.cursor = 'pointer';
@@ -7420,9 +7670,9 @@
           <div class="tx-left" style="align-items:flex-start;">
             <div class="tx-icon-box" style="background:${iconBg}; margin-top:2px;"><span class="material-icons-round">${icon}</span></div>
             <div style="flex:1;">
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:#FFF; margin-bottom:2px;">${r.title}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:2px;">${r.title}</div>
               <div class="tx-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.4;">${r.explanation}</div>
-              <div style="font-size:11px; color:#38BDF8; font-weight:700;">💡 Action: ${r.suggested_action}</div>
+              <div style="font-size:11px; color:var(--color-sapphire); font-weight:700;">💡 Action: ${r.suggested_action}</div>
             </div>
           </div>
         `;
@@ -7517,7 +7767,10 @@
         calloutY = Math.max(26, Math.min(94, calloutY));
 
         callout.setAttribute('transform', `translate(${clampedX}, ${calloutY})`);
-        rect.setAttribute('fill', isProjected ? '#10B981' : '#06B6D4');
+        const isLightSvg = APP_STATE.appTheme === 'theme-light';
+        rect.setAttribute('fill', isProjected ? (isLightSvg ? '#047857' : '#10B981') : (isLightSvg ? '#0369A1' : '#06B6D4'));
+        rect.setAttribute('stroke', isLightSvg ? 'rgba(15,23,42,0.12)' : 'rgba(0,0,0,0.28)');
+        txt.setAttribute('fill', isLightSvg ? '#FFFFFF' : '#030712');
       }
 
       const defaultText = `Day ${day}: ₹${Math.round(mtd).toLocaleString('en-IN')} Spent`;
@@ -8046,10 +8299,10 @@
               ${g.remaining_amount > 0 ? `₹${(g.remaining_amount || 0).toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
+              <button class="btn-pill-solid emerald" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
                 + Deposit
               </button>
-              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:5px 12px; font-size:11px; border-radius:8px;" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
+              <button class="btn-pill-soft" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
                 ↑ Withdraw
               </button>
               <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteGoal('${g.id}')" title="Delete Goal">
@@ -8141,10 +8394,10 @@
               ${g.remaining_amount > 0 ? `₹${(g.remaining_amount || 0).toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="segment-btn" style="background:var(--color-emerald); color:#FFF; padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
+              <button class="btn-pill-solid emerald" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
                 + Deposit
               </button>
-              <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--text-primary); border:1px solid var(--border-card); padding:6px 12px; font-size:11px; border-radius:8px; font-weight:700;" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
+              <button class="btn-pill-soft" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
                 ↑ Withdraw
               </button>
               <button class="btn-icon-header" style="width:30px; height:30px;" onclick="deleteGoal('${g.id}')" title="Delete Goal">
@@ -9110,7 +9363,8 @@
       const chartHeight = h - paddingBottom;
       const trackHeight = chartHeight - paddingTop;
       const barGroupWidth = w / weekDays.length;
-      const barWidth = Math.max(16, Math.min(30, barGroupWidth - 12));
+      const barWidth = Math.max(14, Math.min(22, barGroupWidth - 16));
+      const isLightWk = (APP_STATE.appTheme === 'theme-light');
 
       weekDays.forEach((d, idx) => {
         const groupX = idx * barGroupWidth;
@@ -9118,8 +9372,8 @@
         const expAmount = parseFloat(d.expenses) || 0;
 
         // Elegant background capsule track for every day
-        ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
-        drawPill(ctx, barX, paddingTop, barWidth, trackHeight, barWidth / 2);
+        ctx.fillStyle = isLightWk ? 'rgba(15, 23, 42, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+        drawPill(ctx, barX, paddingTop, barWidth, trackHeight, Math.min(8, barWidth / 2));
 
         if (expAmount > 0) {
           const expenseHeight = Math.max(10, Math.min(trackHeight, (expAmount / maxVal) * trackHeight));
@@ -9128,41 +9382,41 @@
           // Vibrant rounded pill bar
           const barGrad = ctx.createLinearGradient(barX, expenseY, barX, chartHeight);
           if (d.is_today) {
-            barGrad.addColorStop(0, '#38BDF8');
-            barGrad.addColorStop(1, '#2563EB');
+            barGrad.addColorStop(0, isLightWk ? '#0284C7' : '#38BDF8');
+            barGrad.addColorStop(1, isLightWk ? '#1D4ED8' : '#2563EB');
           } else {
-            barGrad.addColorStop(0, (APP_STATE.appTheme === 'theme-light') ? '#3B82F6' : '#60A5FA');
-            barGrad.addColorStop(1, (APP_STATE.appTheme === 'theme-light') ? '#1D4ED8' : '#2563EB');
+            barGrad.addColorStop(0, isLightWk ? '#3B82F6' : '#60A5FA');
+            barGrad.addColorStop(1, isLightWk ? '#1D4ED8' : '#2563EB');
           }
           ctx.fillStyle = barGrad;
-          drawPill(ctx, barX, expenseY, barWidth, expenseHeight, barWidth / 2);
+          drawPill(ctx, barX, expenseY, barWidth, expenseHeight, Math.min(8, barWidth / 2, expenseHeight / 2));
 
           // Amount text on top
-          ctx.fillStyle = d.is_today ? '#38BDF8' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#F1F5F9');
+          ctx.fillStyle = d.is_today ? (isLightWk ? '#0369A1' : '#38BDF8') : (isLightWk ? '#0F172A' : '#F1F5F9');
           ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
           ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), Math.max(14, expenseY - 5));
         } else {
           // Subtle clean muted ₹0 label
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(100, 116, 139, 0.65)' : 'rgba(148, 163, 184, 0.55)';
-          ctx.font = '500 9px sans-serif';
+          ctx.fillStyle = isLightWk ? '#94A3B8' : 'rgba(148, 163, 184, 0.65)';
+          ctx.font = '600 9px sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('₹0', barX + (barWidth / 2), chartHeight - 6);
         }
 
         // Day label below
         if (d.is_today) {
-          const pillW = barWidth + 8;
-          const pillH = 16;
-          const pillX = barX - 4;
-          const pillY = h - 18;
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
-          drawPill(ctx, pillX, pillY, pillW, pillH, 8);
-          ctx.fillStyle = '#38BDF8';
+          const pillW = barWidth + 12;
+          const pillH = 17;
+          const pillX = barX - 6;
+          const pillY = h - 19;
+          ctx.fillStyle = isLightWk ? 'rgba(2, 132, 199, 0.14)' : 'rgba(56, 189, 248, 0.2)';
+          drawPill(ctx, pillX, pillY, pillW, pillH, 8.5);
+          ctx.fillStyle = isLightWk ? '#0369A1' : '#38BDF8';
           ctx.font = 'bold 10px sans-serif';
         } else {
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#64748B' : '#94A3B8';
+          ctx.fillStyle = isLightWk ? '#475569' : '#94A3B8';
           ctx.font = '600 10px sans-serif';
         }
         ctx.textAlign = 'center';
@@ -9448,7 +9702,7 @@
             surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#EF4444;">trending_up</span><span style="color:#EF4444;">Projected Overrun: -₹${overrun.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${overrunPct}% over budget)</span>`;
           }
         } else {
-          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:#38BDF8;">info</span><span style="color:#38BDF8;">No monthly budget ceiling configured</span>`;
+          surplusEl.innerHTML = `<span class="material-icons-round" style="font-size:16px; color:var(--color-sapphire);">info</span><span style="color:var(--color-sapphire);">No monthly budget ceiling configured</span>`;
         }
       }
       const mtdEl = document.getElementById('fcMtdSpend');
@@ -9649,14 +9903,16 @@
           drawPill(ctx, barX, expenseY, barWidth, expenseHeight, barWidth / 2);
 
           // Amount on top of bar
-          ctx.fillStyle = isCurMonth ? '#C084FC' : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#F1F5F9');
+          ctx.fillStyle = isCurMonth
+            ? ((APP_STATE.appTheme === 'theme-light') ? '#6D28D9' : '#C084FC')
+            : ((APP_STATE.appTheme === 'theme-light') ? '#0F172A' : '#F1F5F9');
           ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = 'center';
           const displayAmt = expAmount >= 1000 ? (expAmount / 1000).toFixed(1) + 'k' : Math.round(expAmount);
           ctx.fillText(`₹${displayAmt}`, barX + (barWidth / 2), Math.max(14, expenseY - 5));
         } else {
           // Subtle clean muted ₹0 label
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(100, 116, 139, 0.65)' : 'rgba(148, 163, 184, 0.55)';
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#94A3B8' : 'rgba(148, 163, 184, 0.65)';
           ctx.font = '500 9px sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('₹0', barX + (barWidth / 2), chartHeight - 6);
@@ -9671,12 +9927,12 @@
           const pillH = 16;
           const pillX = barX - 4;
           const pillY = h - 18;
-          ctx.fillStyle = 'rgba(168, 85, 247, 0.2)';
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? 'rgba(109, 40, 217, 0.14)' : 'rgba(168, 85, 247, 0.2)';
           drawPill(ctx, pillX, pillY, pillW, pillH, 8);
-          ctx.fillStyle = '#C084FC';
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#6D28D9' : '#C084FC';
           ctx.font = 'bold 10px sans-serif';
         } else {
-          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#64748B' : '#94A3B8';
+          ctx.fillStyle = (APP_STATE.appTheme === 'theme-light') ? '#475569' : '#94A3B8';
           ctx.font = '600 10px sans-serif';
         }
         ctx.textAlign = 'center';
@@ -12907,7 +13163,7 @@
         container.innerHTML = '';
         const accounts = (APP_STATE && Array.isArray(APP_STATE.accounts)) ? APP_STATE.accounts : [];
         if (accounts.length === 0) {
-          container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px; background:rgba(255,255,255,0.02); border-radius:10px; text-align:center;">No accounts registered. Tap + Add Account to create one.</div>';
+          container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:12px; background:var(--bg-card-subtle); border:1px solid var(--border-card); border-radius:10px; text-align:center;">No accounts registered. Tap + Add Account to create one.</div>';
           return;
         }
         accounts.forEach(acc => {
@@ -12925,7 +13181,7 @@
               </div>
             </div>
             <div class="tx-right">
-              <div class="tx-amount" style="color:#FFF;">₹${bal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+              <div class="tx-amount" style="color:var(--text-primary);">₹${bal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
             </div>
           `;
           container.appendChild(div);
@@ -13049,10 +13305,10 @@
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <div style="text-align:right;">
-              <div class="tx-amount" style="font-size:14px; color:#FFF;">₹${bill.amount.toLocaleString('en-IN')}</div>
+              <div class="tx-amount" style="font-size:14px; color:var(--text-primary);">₹${bill.amount.toLocaleString('en-IN')}</div>
               <div class="tx-meta">${bill.frequency}</div>
             </div>
-            <button class="segment-btn" style="background:var(--bg-card-subtle); color:var(--color-emerald); padding:6px 10px; font-size:11px; border-radius:8px;" onclick="payRecurringBill(${bill.id})">
+            <button class="btn-pill-soft emerald" onclick="payRecurringBill(${bill.id})">
               ⚡ Pay
             </button>
             <span class="material-icons-round" style="color:var(--text-muted); font-size:18px; cursor:pointer;" onclick="deleteRecurringBill(${bill.id})">
@@ -14430,7 +14686,7 @@
         container.innerHTML = `
           <div style="text-align:center; padding:30px 10px; color:var(--text-muted);">
             <span class="material-icons-round" style="font-size:40px; color:var(--color-emerald); margin-bottom:8px;">check_circle</span>
-            <div style="font-size:14px; font-weight:700; color:#FFF;">All Caught Up!</div>
+            <div style="font-size:14px; font-weight:700; color:var(--text-primary);">All Caught Up!</div>
             <div style="font-size:11px; margin-top:4px;">No critical budget or bill alerts at this time.</div>
           </div>
         `;
@@ -14441,7 +14697,7 @@
         const item = document.createElement('div');
         item.className = 'tx-item';
         item.style.alignItems = 'flex-start';
-        item.style.background = '#131B2E';
+        item.style.background = 'var(--bg-card-subtle)';
         item.style.borderRadius = '12px';
         item.style.padding = '12px';
 
@@ -14452,12 +14708,12 @@
               <span class="material-icons-round">notification_important</span>
             </div>
             <div>
-              <div style="font-size:13px; font-weight:800; color:#FFF;">${a.title}</div>
+              <div style="font-size:13px; font-weight:800; color:var(--text-primary);">${a.title}</div>
               <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${a.message}</div>
               ${a.supporting_metric ? `<div style="font-size:10px; font-weight:700; color:${color}; margin-top:4px;">${a.supporting_metric}</div>` : ''}
             </div>
           </div>
-          <button class="segment-btn" onclick="dismissSmartAlert(${a.id})" style="padding:4px 8px; font-size:10px; flex-shrink:0;">Dismiss</button>
+          <button class="btn-pill-soft" onclick="dismissSmartAlert(${a.id})" style="padding:4px 8px; font-size:10px; flex-shrink:0;">Dismiss</button>
         `;
         container.appendChild(item);
       });
@@ -14717,7 +14973,7 @@
           item.style.borderRadius = '10px';
           item.style.padding = '10px 12px';
 
-          const tag = day.is_today ? '<span style="font-size:10px; background:var(--color-sapphire); color:#FFF; padding:2px 6px; border-radius:4px; margin-left:6px;">TODAY</span>' : '';
+          const tag = day.is_today ? '<span style="font-size:10px; background:#2563EB; color:#FFF; padding:2px 6px; border-radius:4px; margin-left:6px;">TODAY</span>' : '';
           const out = day.total_outflow > 0 ? `<div style="font-size:11px; color:var(--color-ruby);">-₹${day.total_outflow.toFixed(2)}</div>` : '';
           const inc = day.total_inflow > 0 ? `<div style="font-size:11px; color:var(--color-emerald);">+₹${day.total_inflow.toFixed(2)}</div>` : '';
 
@@ -14772,7 +15028,7 @@
             dupContainer.innerHTML = '';
             s.duplicate_warnings.forEach(w => {
               const div = document.createElement('div');
-              div.style = 'background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.35); border-radius:10px; padding:10px; font-size:11px; color:#FFF; margin-bottom:6px;';
+              div.style = 'background:rgba(239, 68, 68, 0.14); border:1px solid rgba(239, 68, 68, 0.35); border-radius:10px; padding:10px; font-size:11px; color:var(--text-primary); margin-bottom:6px;';
               div.innerText = `⚠️ ${w.warning}`;
               dupContainer.appendChild(div);
             });
@@ -14791,15 +15047,15 @@
           candRes.candidates.forEach(c => {
             const item = document.createElement('div');
             item.className = 'tx-item';
-            item.style.background = '#131B2E';
+            item.style.background = 'var(--bg-card-subtle)';
             item.style.borderRadius = '10px';
             item.style.padding = '10px 12px';
             item.innerHTML = `
               <div>
-                <div style="font-size:13px; font-weight:800; color:#FFF;">${c.title}</div>
+                <div style="font-size:13px; font-weight:800; color:var(--text-primary);">${c.title}</div>
                 <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${c.reason}</div>
               </div>
-              <button class="segment-btn" onclick="convertSubCandidate('${c.title.replace(/'/g, "\\'")}', ${c.amount})" style="padding:6px 10px; font-size:11px; background:var(--color-purple); color:#FFF; font-weight:700;">
+              <button class="btn-pill-solid purple" onclick="convertSubCandidate('${c.title.replace(/'/g, "\\'")}', ${c.amount})">
                 + Track Bill
               </button>
             `;
@@ -15009,7 +15265,7 @@
           const chipBtn = document.createElement('button');
           chipBtn.type = 'button';
           chipBtn.className = 'acc-pill ai-followup-chip';
-          chipBtn.style.cssText = 'font-size:11px; padding:5px 10px; border-radius:12px; cursor:pointer; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); color:#A78BFA; font-weight:700;';
+          chipBtn.style.cssText = 'font-size:11px; padding:5px 10px; border-radius:12px; cursor:pointer; background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.25); color:var(--color-purple-text); font-weight:700;';
           chipBtn.innerText = chipText;
           chipBtn.onclick = () => sendQuickPrompt(chipText);
           chipsRow.appendChild(chipBtn);

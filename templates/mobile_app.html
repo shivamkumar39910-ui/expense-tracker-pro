@@ -6853,6 +6853,17 @@
         applySecuritySettingsState(b.security, isBackground);
       }
 
+      // 12b. INSTANT BUDGET & FORECAST CARDS — zero-delay pre-render from cached data
+      // syncBudgetAndProfileUI reads APP_STATE.budgets directly (already set above in step 10)
+      // updateForecastUI reads b.forecast directly — both run BEFORE commitAllScreensAtomic
+      // so Monthly Budget Progress and Est. Month-End show instantly from cache on every open
+      try {
+        if (typeof syncBudgetAndProfileUI === 'function') syncBudgetAndProfileUI();
+      } catch (e) { console.warn('syncBudgetAndProfileUI pre-render:', e); }
+      try {
+        if (b.forecast && typeof updateForecastUI === 'function') updateForecastUI(b.forecast);
+      } catch (e) { console.warn('updateForecastUI pre-render:', e); }
+
       // 13. ULTRA-FAST 0ms ATOMIC MULTI-SCREEN COMMIT
       // Commits Home, Budgets, Insights Trajectory, Donut, 6M History, and Profile simultaneously
       commitAllScreensAtomic();

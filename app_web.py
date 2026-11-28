@@ -41,6 +41,8 @@ def api_forecast_alias():
 app.secret_key = os.environ.get("SECRET_KEY", "expense_tracker_secure_production_secret_key_2026")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024  # 6 MB upload/payload DoS shield
 
 @app.after_request
 def add_security_headers(response):
@@ -49,6 +51,9 @@ def add_security_headers(response):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(self), geolocation=(), microphone=(self)"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+    if (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true"):
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if request.path == "/static/service-worker.js":
         response.headers["Cache-Control"] = "no-cache, must-revalidate"
     elif request.path in ["/", "/mobile", "/app"] or request.path.startswith("/api/"):
@@ -163,10 +168,20 @@ except Exception as e:
 
 @app.errorhandler(404)
 def not_found(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"success": False, "error": "API endpoint not found"}), 404
     return render_template("base.html"), 404
+
+@app.errorhandler(413)
+def payload_too_large(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"success": False, "error": "Payload or file exceeds maximum allowed size (6 MB)."}), 413
+    return "Request payload exceeds the 6 MB maximum size limit.", 413
 
 @app.errorhandler(500)
 def server_error(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"success": False, "error": "An internal server error occurred. Please try again later."}), 500
     return "An internal server error occurred. Please try again later.", 500
 
 # ==================================================

@@ -4,6 +4,7 @@ import time
 import re
 import csv
 import io
+import hmac
 import secrets
 import jwt
 import calendar
@@ -145,6 +146,15 @@ def clear_security_failed_attempts(action_key: str):
 
 def _is_production_env() -> bool:
     return (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+
+def _get_client_ip() -> str:
+    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "unknown").split(",")[0].strip()
+
+def _csv_safe(val) -> str:
+    s = "" if val is None else str(val)
+    if s and s[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
 
 @api_v1.route('/debug/smtp-status', methods=['GET'])
 def debug_smtp_status():
@@ -338,8 +348,14 @@ def signup_send_otp():
     if not email or not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
         return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
 
+    client_ip = _get_client_ip()
+    if check_security_rate_limit(f"signup_ip:{client_ip}", max_attempts=25, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many verification requests from this network. Please wait a few minutes."}), 429
+
     if check_security_rate_limit(f"signup_send:{email}", max_attempts=8, window_seconds=600):
         return jsonify({"success": False, "error": "Too many OTP requests. Please wait a few minutes and try again."}), 429
+
+    record_security_failed_attempt(f"signup_ip:{client_ip}")
 
     conn = database.get_db_connection()
     try:
@@ -414,7 +430,7 @@ def signup_verify_otp():
             except Exception:
                 pass
 
-        if str(row["otp_code"]) != otp:
+        if not hmac.compare_digest(str(row["otp_code"] or "").strip(), otp):
             record_security_failed_attempt(f"signup_verify:{email}")
             return jsonify({"success": False, "error": "Invalid verification code. Please check and try again."}), 400
 
@@ -665,6 +681,11 @@ def resend_otp():
     if not identifier:
         return jsonify({"success": False, "error": "Identifier is required"}), 400
 
+    client_ip = _get_client_ip()
+    if check_security_rate_limit(f"resend_ip:{client_ip}", max_attempts=25, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many requests from this network. Please wait a few minutes."}), 429
+    record_security_failed_attempt(f"resend_ip:{client_ip}")
+
     if check_security_rate_limit(f"resend_otp:{identifier}", max_attempts=8, window_seconds=600):
         return jsonify({"success": False, "error": "Too many OTP resend requests. Please wait a few minutes."}), 429
     record_security_failed_attempt(f"resend_otp:{identifier}")
@@ -713,6 +734,11 @@ def forgot_password_send_otp():
 
     if not identifier:
         return jsonify({"success": False, "error": "Email address is required"}), 400
+
+    client_ip = _get_client_ip()
+    if check_security_rate_limit(f"fp_ip:{client_ip}", max_attempts=25, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many recovery requests from this network. Please wait a few minutes."}), 429
+    record_security_failed_attempt(f"fp_ip:{client_ip}")
 
     if check_security_rate_limit(f"fp_send:{identifier}", max_attempts=8, window_seconds=600):
         return jsonify({"success": False, "error": "Too many recovery requests. Please wait a few minutes."}), 429
@@ -781,7 +807,7 @@ def forgot_password_verify_otp():
                 pass
 
         stored_otp = str(user_dict.get("otp_code") or "").strip()
-        if stored_otp != otp:
+        if not stored_otp or not hmac.compare_digest(stored_otp, otp):
             record_security_failed_attempt(f"fp_otp:{user_dict['id']}")
             return jsonify({"success": False, "error": "Invalid verification code. Please check and try again."}), 400
 
@@ -840,6 +866,9 @@ def forgot_password_reset():
 
         user_dict = dict(user)
 
+        if check_security_rate_limit(f"fp_otp:{user_dict['id']}", max_attempts=5, window_seconds=900):
+            return jsonify({"success": False, "error": "Too many failed attempts. Security lockout active for 15 minutes."}), 429
+
         token_authorized = False
         if reset_token:
             try:
@@ -848,7 +877,7 @@ def forgot_password_reset():
                 if (
                     rp.get("purpose") == "forgot_password_reset"
                     and rp.get("sub") == str(user_dict["id"])
-                    and rp.get("pwd_fp") == cur_fp
+                    and hmac.compare_digest(str(rp.get("pwd_fp") or ""), cur_fp)
                 ):
                     token_authorized = True
             except Exception:
@@ -856,7 +885,7 @@ def forgot_password_reset():
 
         stored_otp = str(user_dict.get("otp_code") or "").strip()
         otp_authorized = False
-        if otp and stored_otp and stored_otp == otp:
+        if otp and stored_otp and hmac.compare_digest(stored_otp, otp):
             exp_str = user_dict.get("otp_expires_at")
             if exp_str:
                 try:
@@ -869,8 +898,10 @@ def forgot_password_reset():
                 otp_authorized = True
 
         if not token_authorized and not otp_authorized:
+            record_security_failed_attempt(f"fp_otp:{user_dict['id']}")
             return jsonify({"success": False, "error": "Verification expired or invalid. Please request a fresh code."}), 400
 
+        clear_security_failed_attempts(f"fp_otp:{user_dict['id']}")
         hashed_pwd = generate_password_hash(new_password, method="pbkdf2:sha256:150000")
         cursor.execute("""
             UPDATE users SET password = ?, otp_code = NULL, otp_expires_at = NULL, is_verified = 1 WHERE id = ?
@@ -937,7 +968,8 @@ def verify_registration_otp():
             except Exception:
                 pass
 
-        if str(user.get("otp_code") or "").strip() != otp:
+        stored_reg_otp = str(user.get("otp_code") or "").strip()
+        if not stored_reg_otp or not hmac.compare_digest(stored_reg_otp, otp):
             record_security_failed_attempt(f"otp_reg:{user['id']}")
             return jsonify({"success": False, "error": "Invalid OTP code. Please check and re-enter."}), 400
 
@@ -981,6 +1013,10 @@ def login():
     if not identifier or not password:
         return jsonify({"success": False, "error": "Email and password are required"}), 400
 
+    client_ip = _get_client_ip()
+    if check_security_rate_limit(f"login_ip:{client_ip}", max_attempts=40, window_seconds=900):
+        return jsonify({"success": False, "error": "Too many login attempts from this network. Please wait 15 minutes."}), 429
+
     if check_security_rate_limit(f"login:{identifier}", max_attempts=15, window_seconds=900):
         return jsonify({"success": False, "error": "Too many failed login attempts. Please wait 15 minutes or reset your password."}), 429
 
@@ -993,9 +1029,11 @@ def login():
 
         if not user or not user["password"] or not check_password_hash(user["password"], password):
             record_security_failed_attempt(f"login:{identifier}")
+            record_security_failed_attempt(f"login_ip:{client_ip}")
             return jsonify({"success": False, "error": "Invalid email or password"}), 401
 
         clear_security_failed_attempts(f"login:{identifier}")
+        clear_security_failed_attempts(f"login_ip:{client_ip}")
         user_dict = dict(user)
         require_2fa = data.get("require_2fa", False)
 
@@ -1086,7 +1124,8 @@ def login_verify_otp():
             except Exception:
                 pass
 
-        if str(user.get("login_otp_code") or "").strip() != otp:
+        stored_login_otp = str(user.get("login_otp_code") or "").strip()
+        if not stored_login_otp or not hmac.compare_digest(stored_login_otp, otp):
             record_security_failed_attempt(f"otp_login:{user['id']}")
             return jsonify({"success": False, "error": "Invalid 2FA OTP code"}), 400
 
@@ -1125,24 +1164,36 @@ def get_current_user_profile():
 def update_user_profile():
     user_id = request.user["id"]
     conn = database.get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    if request.method in ['PUT', 'POST']:
-        data = request.get_json() or {}
-        name = (data.get("name") or "").strip()
-        phone = (data.get("phone") or "").strip()
+        if request.method in ['PUT', 'POST']:
+            data = request.get_json() or {}
+            name = (data.get("name") or "").strip()
+            phone = (data.get("phone") or "").strip()
 
-        if not name:
-            conn.close()
-            return jsonify({"success": False, "error": "Full Name is required"}), 400
+            if not name:
+                return jsonify({"success": False, "error": "Full Name is required"}), 400
+            if len(name) > 100:
+                return jsonify({"success": False, "error": "Name must be 100 characters or fewer"}), 400
 
-        cursor.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?", (name, phone or None, user_id))
-        conn.commit()
+            clean_phone = phone or None
+            if clean_phone:
+                cursor.execute("SELECT id FROM users WHERE phone = ? AND id != ?", (clean_phone, user_id))
+                if cursor.fetchone():
+                    return jsonify({"success": False, "error": "This phone number is already linked to another account."}), 400
 
-    cursor.execute("SELECT id, name, email, phone, currency_symbol, currency_code FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    user_data = dict(row) if row else {"id": user_id, "name": request.user.get("name")}
-    conn.close()
+            cursor.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?", (name, clean_phone, user_id))
+            conn.commit()
+
+        cursor.execute("SELECT id, name, email, phone, currency_symbol, currency_code FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        user_data = dict(row) if row else {"id": user_id, "name": request.user.get("name")}
+    except Exception:
+        conn.rollback()
+        return jsonify({"success": False, "error": "Could not update profile. Please verify your details."}), 400
+    finally:
+        conn.close()
 
     return jsonify({
         "success": True,
@@ -1209,20 +1260,22 @@ def get_account_statement(acc_id):
 
     # Fetch recent transactions for this account
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT t.id, t.transaction_type, t.amount, t.date, t.note,
-               c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
-               a.name as account_name, ta.name as target_account_name
-        FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
-        LEFT JOIN accounts a ON t.account_id = a.id
-        LEFT JOIN accounts ta ON t.target_account_id = ta.id
-        WHERE t.user_id = ? AND (t.account_id = ? OR t.target_account_id = ?)
-        ORDER BY t.date DESC, t.id DESC LIMIT 30
-    """, (user_id, acc_id, acc_id))
-    txs = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT t.id, t.transaction_type, t.amount, t.date, t.note,
+                   c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+                   a.name as account_name, ta.name as target_account_name
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts ta ON t.target_account_id = ta.id
+            WHERE t.user_id = ? AND (t.account_id = ? OR t.target_account_id = ?)
+            ORDER BY t.date DESC, t.id DESC LIMIT 30
+        """, (user_id, acc_id, acc_id))
+        txs = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
 
     detail["transactions"] = txs
     return jsonify({"success": True, "account": detail}), 200
@@ -1232,18 +1285,34 @@ def get_account_statement(acc_id):
 def update_account(acc_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
+    new_name = data.get("name")
+    if new_name is not None:
+        new_name = str(new_name).strip()
+        if not new_name or len(new_name) > 80:
+            return jsonify({"success": False, "error": "Account name must be 1 to 80 characters"}), 400
+    credit_limit = data.get("credit_limit")
+    if credit_limit is not None:
+        try:
+            credit_limit = round(float(credit_limit), 2)
+            if credit_limit < 0:
+                return jsonify({"success": False, "error": "Credit limit cannot be negative"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid credit limit value"}), 400
+
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE accounts
-        SET name = COALESCE(?, name),
-            color_hex = COALESCE(?, color_hex),
-            icon = COALESCE(?, icon),
-            credit_limit = COALESCE(?, credit_limit)
-        WHERE id = ? AND user_id = ?
-    """, (data.get("name"), data.get("color_hex"), data.get("icon"), data.get("credit_limit"), acc_id, user_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE accounts
+            SET name = COALESCE(?, name),
+                color_hex = COALESCE(?, color_hex),
+                icon = COALESCE(?, icon),
+                credit_limit = COALESCE(?, credit_limit)
+            WHERE id = ? AND user_id = ?
+        """, (new_name, data.get("color_hex"), data.get("icon"), credit_limit, acc_id, user_id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({"success": True, "message": "Account updated successfully"}), 200
 
 @api_v1.route('/accounts/<int:acc_id>/reconcile', methods=['POST'])
@@ -1254,6 +1323,10 @@ def reconcile_account(acc_id):
     actual_bal = data.get("actual_balance")
     if actual_bal is None:
         return jsonify({"success": False, "error": "Actual balance is required"}), 400
+    try:
+        actual_bal = float(actual_bal)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Actual balance must be a valid number"}), 400
 
     result = database.reconcile_account_balance(user_id, acc_id, actual_bal)
     if not result:
@@ -1498,10 +1571,12 @@ def get_transactions():
     params.extend([limit, offset])
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    transactions = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        transactions = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
 
     for tx in transactions:
         tx["account_name"] = normalize_account_name(tx.get("account_name"))
@@ -1522,7 +1597,7 @@ def create_transaction():
         tx_id = database.record_transaction(
             user_id=user_id,
             account_id=data.get("account_id"),
-            transaction_type=data.get("transaction_type", "EXPENSE").upper(),
+            transaction_type=str(data.get("transaction_type") or "EXPENSE").upper(),
             amount=data.get("amount"),
             date=data.get("date", date.today().strftime("%Y-%m-%d")),
             target_account_id=data.get("target_account_id"),
@@ -1540,10 +1615,10 @@ def create_transaction():
             "transaction_id": tx_id,
             "transaction": {"id": tx_id, "client_uuid": client_uuid}
         }), 201
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         return jsonify({"success": False, "error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to record transaction: {str(e)}"}), 500
+    except Exception:
+        return jsonify({"success": False, "error": "Failed to record transaction. Please check inputs and try again."}), 500
 
 @api_v1.route('/transactions/<int:tx_id>', methods=['DELETE'])
 @token_required
@@ -1560,20 +1635,22 @@ def delete_transaction(tx_id):
 def get_transaction_detail(tx_id):
     user_id = request.user["id"]
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT t.*, a.name as account_name, ta.name as target_account_name,
-               c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
-               c.image_url as category_image, s.name as subcategory_name
-        FROM transactions t
-        LEFT JOIN accounts a ON t.account_id = a.id
-        LEFT JOIN accounts ta ON t.target_account_id = ta.id
-        LEFT JOIN categories c ON t.category_id = c.id
-        LEFT JOIN subcategories s ON t.subcategory_id = s.id
-        WHERE t.id = ? AND t.user_id = ?
-    """, (tx_id, user_id))
-    tx = cursor.fetchone()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT t.*, a.name as account_name, ta.name as target_account_name,
+                   c.name as category_name, c.icon as category_icon, c.color_hex as category_color,
+                   c.image_url as category_image, s.name as subcategory_name
+            FROM transactions t
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts ta ON t.target_account_id = ta.id
+            LEFT JOIN categories c ON t.category_id = c.id
+            LEFT JOIN subcategories s ON t.subcategory_id = s.id
+            WHERE t.id = ? AND t.user_id = ?
+        """, (tx_id, user_id))
+        tx = cursor.fetchone()
+    finally:
+        conn.close()
     if not tx:
         return jsonify({"success": False, "error": "Transaction not found"}), 404
     tx_dict = _enrich_tx_visual(dict(tx))
@@ -1585,28 +1662,28 @@ def update_transaction(tx_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
 
-    # Atomically reverse previous transaction and insert new one
     try:
-        success = database.delete_user_transaction(user_id, tx_id)
-        if not success:
-            return jsonify({"success": False, "error": "Transaction not found"}), 404
-
-        new_tx_id = database.record_transaction(
+        updated_id = database.update_user_transaction(
             user_id=user_id,
+            transaction_id=tx_id,
             account_id=data.get("account_id"),
-            transaction_type=data.get("transaction_type", "EXPENSE").upper(),
+            transaction_type=str(data.get("transaction_type") or "EXPENSE").upper(),
             amount=data.get("amount"),
-            date=data.get("date"),
+            date=data.get("date") or date.today().strftime("%Y-%m-%d"),
             target_account_id=data.get("target_account_id"),
             category_id=data.get("category_id"),
             subcategory_id=data.get("subcategory_id"),
             note=data.get("note"),
             tag=data.get("tag")
         )
+        if not updated_id:
+            return jsonify({"success": False, "error": "Transaction not found"}), 404
         forecasting_engine.invalidate_forecast_cache(user_id)
-        return jsonify({"success": True, "message": "Transaction updated successfully", "transaction_id": new_tx_id}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to update transaction: {str(e)}"}), 500
+        return jsonify({"success": True, "message": "Transaction updated successfully", "transaction_id": updated_id}), 200
+    except (ValueError, TypeError) as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception:
+        return jsonify({"success": False, "error": "Failed to update transaction."}), 500
 
 # ==================================================
 # 5. Budgets Endpoints
@@ -1873,23 +1950,25 @@ def get_recurring_bills():
     include_inactive = request.args.get("include_inactive", "false").lower() == "true"
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    query = """
-        SELECT r.*, a.name as account_name, a.color_hex as account_color,
-               c.name as category_name, c.icon as category_icon, c.color_hex as category_color
-        FROM recurring_bills r
-        LEFT JOIN accounts a ON r.account_id = a.id
-        LEFT JOIN categories c ON r.category_id = c.id
-        WHERE r.user_id = ?
-    """
-    params = [user_id]
-    if not include_inactive:
-        query += " AND r.is_active = 1"
-    query += " ORDER BY r.next_due_date ASC, r.due_day ASC"
+    try:
+        cursor = conn.cursor()
+        query = """
+            SELECT r.*, a.name as account_name, a.color_hex as account_color,
+                   c.name as category_name, c.icon as category_icon, c.color_hex as category_color
+            FROM recurring_bills r
+            LEFT JOIN accounts a ON r.account_id = a.id
+            LEFT JOIN categories c ON r.category_id = c.id
+            WHERE r.user_id = ?
+        """
+        params = [user_id]
+        if not include_inactive:
+            query += " AND r.is_active = 1"
+        query += " ORDER BY r.next_due_date ASC, r.due_day ASC"
 
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
 
     bills = []
     for r in rows:
@@ -1925,8 +2004,13 @@ def create_recurring_bill():
     user_id = request.user["id"]
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
-    amount = round(float(data.get("amount", 0.0)), 2)
-    frequency = data.get("frequency", "MONTHLY").upper()
+    try:
+        amount = round(float(data.get("amount", 0.0)), 2)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid bill amount"}), 400
+    frequency = (data.get("frequency") or "MONTHLY").upper()
+    if frequency not in ("WEEKLY", "MONTHLY", "YEARLY"):
+        return jsonify({"success": False, "error": "Invalid frequency (use WEEKLY, MONTHLY, or YEARLY)"}), 400
     account_id = data.get("account_id")
     category_id = data.get("category_id")
 
@@ -1934,25 +2018,33 @@ def create_recurring_bill():
         return jsonify({"success": False, "error": "Title and positive amount required"}), 400
 
     specified_date = data.get("next_due_date")
-    if specified_date:
-        next_date = str(specified_date)[:10]
-        try:
-            due_day = datetime.strptime(next_date, "%Y-%m-%d").day
-        except Exception:
-            due_day = int(data.get("due_day", date.today().day))
-    else:
-        due_day = int(data.get("due_day", date.today().day))
-        next_date = date.today().replace(day=min(due_day, 28)).strftime("%Y-%m-%d")
+    try:
+        if specified_date:
+            next_date = str(specified_date)[:10]
+            try:
+                due_day = datetime.strptime(next_date, "%Y-%m-%d").day
+            except Exception:
+                due_day = max(1, min(31, int(data.get("due_day", date.today().day))))
+        else:
+            due_day = max(1, min(31, int(data.get("due_day", date.today().day))))
+            next_date = date.today().replace(day=min(due_day, 28)).strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid due_day"}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO recurring_bills (user_id, account_id, category_id, title, amount, frequency, due_day, next_due_date, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    """, (user_id, account_id, category_id, title, amount, frequency, due_day, next_date))
-    bill_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO recurring_bills (user_id, account_id, category_id, title, amount, frequency, due_day, next_due_date, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        """, (user_id, account_id, category_id, title, amount, frequency, due_day, next_date))
+        bill_id = cursor.lastrowid
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
     return jsonify({
         "success": True,
@@ -1967,29 +2059,40 @@ def update_recurring_bill(bill_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
-    bill = cursor.fetchone()
-    if not bill:
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
+        bill = cursor.fetchone()
+        if not bill:
+            return jsonify({"success": False, "error": "Recurring bill not found"}), 404
+
+        b = dict(bill)
+        title = str(data.get("title", b["title"]) or "").strip()
+        try:
+            amount = round(float(data.get("amount", b["amount"])), 2)
+            is_active = int(data.get("is_active", b["is_active"]))
+        except (ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid amount or status"}), 400
+        if not title or amount <= 0:
+            return jsonify({"success": False, "error": "Title and positive amount required"}), 400
+        frequency = str(data.get("frequency", b["frequency"]) or "MONTHLY").upper()
+        if frequency not in ("WEEKLY", "MONTHLY", "YEARLY"):
+            return jsonify({"success": False, "error": "Invalid frequency"}), 400
+        next_due_date = data.get("next_due_date", b["next_due_date"])
+        account_id = data.get("account_id", b["account_id"])
+        category_id = data.get("category_id", b["category_id"])
+
+        cursor.execute("""
+            UPDATE recurring_bills
+            SET title = ?, amount = ?, frequency = ?, next_due_date = ?, account_id = ?, category_id = ?, is_active = ?
+            WHERE id = ? AND user_id = ?
+        """, (title, amount, frequency, next_due_date, account_id, category_id, is_active, bill_id, user_id))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        return jsonify({"success": False, "error": "Recurring bill not found"}), 404
-
-    b = dict(bill)
-    title = data.get("title", b["title"]).strip()
-    amount = round(float(data.get("amount", b["amount"])), 2)
-    frequency = data.get("frequency", b["frequency"]).upper()
-    next_due_date = data.get("next_due_date", b["next_due_date"])
-    account_id = data.get("account_id", b["account_id"])
-    category_id = data.get("category_id", b["category_id"])
-    is_active = int(data.get("is_active", b["is_active"]))
-
-    cursor.execute("""
-        UPDATE recurring_bills
-        SET title = ?, amount = ?, frequency = ?, next_due_date = ?, account_id = ?, category_id = ?, is_active = ?
-        WHERE id = ? AND user_id = ?
-    """, (title, amount, frequency, next_due_date, account_id, category_id, is_active, bill_id, user_id))
-    conn.commit()
-    conn.close()
 
     return jsonify({"success": True, "message": "Recurring bill updated"}), 200
 
@@ -2003,37 +2106,41 @@ def pay_recurring_bill(bill_id):
     """
     user_id = request.user["id"]
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
-    bill = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
+        bill = cursor.fetchone()
 
-    if not bill:
+        if not bill:
+            return jsonify({"success": False, "error": "Recurring bill not found"}), 404
+
+        b = dict(bill)
+        acc_id = b["account_id"]
+        if not acc_id:
+            accs = database.get_user_accounts(user_id)
+            acc_id = accs[0]["id"] if accs else 1
+
+        # Record the expense transaction
+        tx_id = database.record_transaction(
+            user_id=user_id,
+            account_id=acc_id,
+            transaction_type='EXPENSE',
+            amount=b["amount"],
+            date=date.today().strftime("%Y-%m-%d"),
+            category_id=b["category_id"],
+            note=f"Recurring Bill: {b['title']}",
+            tag="#recurring"
+        )
+
+        # Advance next_due_date to next cycle
+        new_due_date = calculate_next_recurrence_date(b["next_due_date"], b["frequency"], b["due_day"])
+        cursor.execute("UPDATE recurring_bills SET next_due_date = ?, auto_paid = 1 WHERE id = ? AND user_id = ?", (new_due_date, bill_id, user_id))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        return jsonify({"success": False, "error": "Recurring bill not found"}), 404
-
-    b = dict(bill)
-    acc_id = b["account_id"]
-    if not acc_id:
-        accs = database.get_user_accounts(user_id)
-        acc_id = accs[0]["id"] if accs else 1
-
-    # Record the expense transaction
-    tx_id = database.record_transaction(
-        user_id=user_id,
-        account_id=acc_id,
-        transaction_type='EXPENSE',
-        amount=b["amount"],
-        date=date.today().strftime("%Y-%m-%d"),
-        category_id=b["category_id"],
-        note=f"Recurring Bill: {b['title']}",
-        tag="#recurring"
-    )
-
-    # Advance next_due_date to next cycle
-    new_due_date = calculate_next_recurrence_date(b["next_due_date"], b["frequency"], b["due_day"])
-    cursor.execute("UPDATE recurring_bills SET next_due_date = ?, auto_paid = 1 WHERE id = ?", (new_due_date, bill_id))
-    conn.commit()
-    conn.close()
 
     return jsonify({
         "success": True,
@@ -2047,10 +2154,12 @@ def pay_recurring_bill(bill_id):
 def delete_recurring_bill(bill_id):
     user_id = request.user["id"]
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM recurring_bills WHERE id = ? AND user_id = ?", (bill_id, user_id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({"success": True, "message": "Recurring bill deleted"}), 200
 
 # ==================================================
@@ -2150,6 +2259,9 @@ def get_historical_trends():
 @token_required
 def ai_mentor_chat():
     user_id = request.user["id"]
+    if check_security_rate_limit(f"ai_chat:{user_id}", max_attempts=35, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many AI requests in a short window. Please wait a few minutes."}), 429
+    record_security_failed_attempt(f"ai_chat:{user_id}")
     data = request.get_json() or {}
     prompt_msg = data.get("message") or data.get("prompt")
     history = data.get("history") if isinstance(data.get("history"), list) else []
@@ -2836,15 +2948,18 @@ def handle_goals():
 
     data = request.get_json() or {}
     title = (data.get("title") or "").strip()
-    target = float(data.get("target_amount", 0.0))
-    current = float(data.get("current_amount", 0.0))
+    try:
+        target = float(data.get("target_amount", 0.0))
+        current = float(data.get("current_amount", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Target and current amounts must be valid numbers"}), 400
     start_date = data.get("start_date") or date.today().strftime("%Y-%m-%d")
     target_date = data.get("target_date")
     color_hex = data.get("color_hex", "#10B981")
     icon = data.get("icon", "savings")
 
-    if not title or target <= 0:
-        return jsonify({"success": False, "error": "Goal title and positive target required"}), 400
+    if not title or target <= 0 or current < 0:
+        return jsonify({"success": False, "error": "Goal title, positive target, and non-negative current amount required"}), 400
 
     goal_id = database.create_financial_goal(
         user_id=user_id,
@@ -2866,7 +2981,10 @@ def handle_goals():
 def deposit_goal(goal_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
-    amount = float(data.get("amount", 0.0))
+    try:
+        amount = float(data.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid deposit amount"}), 400
     payment_method = (data.get("payment_method") or "UPI").strip()
     note = data.get("note")
 
@@ -2888,7 +3006,10 @@ def deposit_goal(goal_id):
 def withdraw_goal(goal_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
-    amount = float(data.get("amount", 0.0))
+    try:
+        amount = float(data.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid withdrawal amount"}), 400
     payment_method = (data.get("payment_method") or "Cash").strip()
     note = data.get("note")
 
@@ -2910,7 +3031,10 @@ def withdraw_goal(goal_id):
 def contribute_goal(goal_id):
     user_id = request.user["id"]
     data = request.get_json() or {}
-    amount = float(data.get("amount", 0.0))
+    try:
+        amount = float(data.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid deposit amount"}), 400
     payment_method = data.get("payment_method") or "UPI"
     note = data.get("note") or "Quick deposit"
 
@@ -2945,12 +3069,17 @@ def get_notifications():
     
     # Non-blocking predictive health audit with 5-minute cooldown
     now_ts = datetime.utcnow().timestamp()
+    if len(_last_predictive_check) > 2048:
+        _last_predictive_check.clear()
     if user_id not in _last_predictive_check or (now_ts - _last_predictive_check[user_id]) > 300:
         _last_predictive_check[user_id] = now_ts
         threading.Thread(target=database.generate_predictive_notifications, args=(user_id,), daemon=True).start()
     
     unread_only = request.args.get("unread_only", "false").lower() == "true"
-    limit = int(request.args.get("limit", 30))
+    try:
+        limit = max(1, min(100, int(request.args.get("limit", 30))))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "limit must be an integer"}), 400
     data = database.get_user_notifications(user_id, limit=limit, unread_only=unread_only)
     return jsonify({
         "success": True,
@@ -3347,15 +3476,15 @@ def export_transactions_csv():
     for r in rows:
         writer.writerow([
             r["id"],
-            r["date"],
-            r["transaction_type"],
-            r["account_name"] or "",
-            r["target_account_name"] or "",
-            r["category_name"] or "",
-            r["subcategory_name"] or "",
+            _csv_safe(r["date"]),
+            _csv_safe(r["transaction_type"]),
+            _csv_safe(r["account_name"] or ""),
+            _csv_safe(r["target_account_name"] or ""),
+            _csv_safe(r["category_name"] or ""),
+            _csv_safe(r["subcategory_name"] or ""),
             f"{r['amount']:.2f}",
-            r["note"] or "",
-            r["tag"] or ""
+            _csv_safe(r["note"] or ""),
+            _csv_safe(r["tag"] or "")
         ])
 
     csv_data = output.getvalue()
@@ -3592,7 +3721,13 @@ def scan_receipt_endpoint():
     if 'receipt_image' in request.files:
         file = request.files['receipt_image']
         if file and file.filename:
-            image_bytes = file.read()
+            allowed_exts = {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.heic', '.bmp'}
+            ext = os.path.splitext(file.filename)[1].lower()
+            if ext and ext not in allowed_exts:
+                return jsonify({"success": False, "error": "Unsupported file type. Please upload an image file (PNG, JPG, WEBP)."}), 400
+            image_bytes = file.read(5 * 1024 * 1024 + 1)
+            if len(image_bytes) > 5 * 1024 * 1024:
+                return jsonify({"success": False, "error": "Receipt image exceeds 5 MB maximum size."}), 413
             if not raw_text:
                 extracted_text, err = ocr_service.extract_text_from_image(image_bytes, file.filename)
                 if err or not extracted_text:
@@ -3619,13 +3754,15 @@ def scan_receipt_endpoint():
 
     # Match category in user's categories
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM categories WHERE (user_id = ? OR user_id IS NULL) AND LOWER(name) = LOWER(?) LIMIT 1",
-                   (user_id, r["category_name"]))
-    cat_row = cursor.fetchone()
-    cat_id = cat_row["id"] if cat_row else 1
-    cat_name = cat_row["name"] if cat_row else r["category_name"]
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM categories WHERE (user_id = ? OR user_id IS NULL) AND LOWER(name) = LOWER(?) LIMIT 1",
+                       (user_id, r["category_name"]))
+        cat_row = cursor.fetchone()
+        cat_id = cat_row["id"] if cat_row else 1
+        cat_name = cat_row["name"] if cat_row else r["category_name"]
+    finally:
+        conn.close()
 
     return jsonify({
         "success": True,
@@ -3840,6 +3977,12 @@ def convert_subscription_candidate_endpoint():
 
     if not title or amount is None:
         return jsonify({"success": False, "error": "Title and amount are required."}), 400
+    try:
+        amount = round(float(amount), 2)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid amount"}), 400
+    if amount <= 0:
+        return jsonify({"success": False, "error": "Amount must be positive"}), 400
 
     frequency = data.get("frequency", "MONTHLY").upper()
     due_date = data.get("due_date", date.today().strftime("%Y-%m-%d"))

@@ -25,7 +25,7 @@
   <meta property="og:image" content="https://expense-tracker-pro-ecl2.onrender.com/static/icons/icon-512.png">
   <meta property="og:url" content="https://expense-tracker-pro-ecl2.onrender.com/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="app-shell-version" content="v6.9">
+  <meta name="app-shell-version" content="v7.0">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -6115,15 +6115,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_9'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v7_0'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.9-cache') {
-            triggerSwUpgradeReload('v6_9');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v7.0-cache') {
+            triggerSwUpgradeReload('v7_0');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.9').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=7.0').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -6747,55 +6747,70 @@
         };
       }
 
-      try {
-        const fetchOpts = {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : null
-        };
-        const res = await fetch(`${API_BASE}${endpoint}`, fetchOpts);
-
-        let data = null;
+      const isRetryableWakeup = (method === 'GET') || /^\/auth\/(login|signup\/send-otp|forgot-password\/send-otp)/.test(endpoint);
+      let attempt = 0;
+      while (attempt < 2) {
         try {
-          data = await res.json();
-        } catch (parseErr) {
-          data = null;
-        }
+          const fetchOpts = {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+          };
+          const res = await fetch(`${API_BASE}${endpoint}`, fetchOpts);
 
-        if (res.status === 401) {
-          if (isPublicAuthEndpoint) {
-            return data || { success: false, error: 'Invalid credentials or verification code.' };
+          let data = null;
+          try {
+            data = await res.json();
+          } catch (parseErr) {
+            data = null;
           }
-          logoutUser();
-          return null;
-        }
 
-        if (!res.ok) {
-          if (res.status === 502 || res.status === 503 || res.status === 504) {
+          if (res.status === 401) {
+            if (isPublicAuthEndpoint) {
+              return data || { success: false, error: 'Invalid credentials or verification code.' };
+            }
+            logoutUser();
+            return null;
+          }
+
+          if ((res.status === 502 || res.status === 503 || res.status === 504) && isRetryableWakeup && attempt === 0) {
+            attempt++;
+            await new Promise(r => setTimeout(r, 1600));
+            continue;
+          }
+
+          if (!res.ok) {
+            if (res.status === 502 || res.status === 503 || res.status === 504) {
+              return data || {
+                success: false,
+                error: 'Server is waking up. Please wait a few seconds and try again.'
+              };
+            }
             return data || {
               success: false,
-              error: 'Server is waking up. Please wait a few seconds and try again.'
+              error: `Server returned an error (${res.status}). Please try again.`
             };
           }
-          return data || {
-            success: false,
-            error: `Server returned an error (${res.status}). Please try again.`
-          };
-        }
 
-        return data;
-      } catch (err) {
-        console.warn('API Network Issue:', err);
-        if (isOfflineQueueEligible) {
-          return handleOfflineRequest(endpoint, method, body);
+          return data;
+        } catch (err) {
+          if (isRetryableWakeup && navigator.onLine && attempt === 0) {
+            attempt++;
+            await new Promise(r => setTimeout(r, 1600));
+            continue;
+          }
+          console.warn('API Network Issue:', err);
+          if (isOfflineQueueEligible) {
+            return handleOfflineRequest(endpoint, method, body);
+          }
+          if (method !== 'GET') {
+            return {
+              success: false,
+              error: 'Connection interrupted. Please check your internet and try again.'
+            };
+          }
+          return null;
         }
-        if (method !== 'GET') {
-          return {
-            success: false,
-            error: 'Connection interrupted. Please check your internet and try again.'
-          };
-        }
-        return null;
       }
     }
 

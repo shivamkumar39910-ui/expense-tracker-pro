@@ -14,8 +14,13 @@ def create_database():
     if db_engine.is_postgres():
         import db_migration
         conn = db_engine.get_db_connection()
-        db_migration.create_postgres_schema(conn)
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM pg_indexes WHERE indexname = 'idx_transactions_user_type_date' LIMIT 1")
+            if not cursor.fetchone():
+                db_migration.create_postgres_schema(conn)
+        finally:
+            conn.close()
         return
 
     conn = db_engine._get_sqlite_connection()
@@ -934,6 +939,9 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
        TRANSFERS DO NOT COUNT AS EXPENSES.
     4. Client UUID ensures idempotent offline-first sync.
     """
+    t_type = str(transaction_type or "").upper().strip()
+    if t_type not in ('EXPENSE', 'INCOME', 'TRANSFER'):
+        raise ValueError("Invalid transaction type.")
     amount = round(float(amount), 2)
     if amount <= 0:
         raise ValueError("Transaction amount must be positive.")
@@ -949,6 +957,39 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
             if existing_row:
                 return existing_row["id"]
 
+        # Enforce strict cross-user ownership checks on accounts & categories (IDOR prevention)
+        cursor.execute(
+            "SELECT id FROM accounts WHERE id = ? AND user_id = ? AND is_active = 1",
+            (account_id, user_id)
+        )
+        if not cursor.fetchone():
+            raise ValueError("Invalid or unauthorized payment account.")
+
+        if t_type == 'TRANSFER':
+            if not target_account_id or target_account_id == account_id:
+                raise ValueError("Valid distinct destination account required for transfer.")
+            cursor.execute(
+                "SELECT id FROM accounts WHERE id = ? AND user_id = ? AND is_active = 1",
+                (target_account_id, user_id)
+            )
+            if not cursor.fetchone():
+                raise ValueError("Invalid or unauthorized destination account.")
+
+        if category_id:
+            cursor.execute(
+                "SELECT id FROM categories WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+                (category_id, user_id)
+            )
+            if not cursor.fetchone():
+                raise ValueError("Invalid or unauthorized category.")
+            if subcategory_id:
+                cursor.execute(
+                    "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
+                    (subcategory_id, category_id)
+                )
+                if not cursor.fetchone():
+                    subcategory_id = None
+
         # 1. Insert into transactions table
         cursor.execute("""
             INSERT INTO transactions (
@@ -956,11 +997,11 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
                 transaction_type, amount, date, note, tag, is_recurring, client_uuid
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (user_id, account_id, target_account_id, category_id, subcategory_id,
-              transaction_type, amount, date, note, tag, is_recurring, client_uuid))
+              t_type, amount, date, note, tag, is_recurring, client_uuid))
         tx_id = cursor.lastrowid
 
         # 2. Update Account Balances
-        if transaction_type == 'EXPENSE':
+        if t_type == 'EXPENSE':
             cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
             # Keep legacy expenses table updated in sync for backwards compatibility
@@ -970,13 +1011,11 @@ def record_transaction(user_id, account_id, transaction_type, amount, date,
             cursor.execute("INSERT INTO expenses (user_id, date, category, subcategory, amount) VALUES (?, ?, ?, ?, ?)",
                            (user_id, date, cat_name, note or "", amount))
 
-        elif transaction_type == 'INCOME':
+        elif t_type == 'INCOME':
             cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
 
-        elif transaction_type == 'TRANSFER':
-            if not target_account_id or target_account_id == account_id:
-                raise ValueError("Valid distinct destination account required for transfer.")
+        elif t_type == 'TRANSFER':
             cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?",
                            (amount, account_id, user_id))
             cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?",
@@ -1008,13 +1047,13 @@ def delete_user_transaction(user_id, transaction_id):
 
         # Reverse balance change
         if t_type == 'EXPENSE':
-            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (amount, acc_id, user_id))
         elif t_type == 'INCOME':
-            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (amount, acc_id, user_id))
         elif t_type == 'TRANSFER':
-            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ?", (amount, acc_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (amount, acc_id, user_id))
             if target_id:
-                cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ?", (amount, target_id))
+                cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (amount, target_id, user_id))
 
         cursor.execute("DELETE FROM transactions WHERE id = ? AND user_id = ?", (transaction_id, user_id))
         conn.commit()
@@ -1022,6 +1061,93 @@ def delete_user_transaction(user_id, transaction_id):
     except Exception as e:
         conn.rollback()
         raise e
+    finally:
+        conn.close()
+
+def update_user_transaction(user_id, transaction_id, account_id, transaction_type, amount, date,
+                            target_account_id=None, category_id=None, subcategory_id=None,
+                            note=None, tag=None):
+    """Atomically validates inputs, reverses prior balance impact, updates row, and applies new balance."""
+    t_type = str(transaction_type or "").upper().strip()
+    if t_type not in ('EXPENSE', 'INCOME', 'TRANSFER'):
+        raise ValueError("Invalid transaction type.")
+    amount = round(float(amount), 2)
+    if amount <= 0:
+        raise ValueError("Transaction amount must be positive.")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM transactions WHERE id = ? AND user_id = ?", (transaction_id, user_id))
+        old_tx = cursor.fetchone()
+        if not old_tx:
+            return None
+
+        # Ownership validation BEFORE mutating anything
+        cursor.execute(
+            "SELECT id FROM accounts WHERE id = ? AND user_id = ? AND is_active = 1",
+            (account_id, user_id)
+        )
+        if not cursor.fetchone():
+            raise ValueError("Invalid or unauthorized payment account.")
+
+        if t_type == 'TRANSFER':
+            if not target_account_id or target_account_id == account_id:
+                raise ValueError("Valid distinct destination account required for transfer.")
+            cursor.execute(
+                "SELECT id FROM accounts WHERE id = ? AND user_id = ? AND is_active = 1",
+                (target_account_id, user_id)
+            )
+            if not cursor.fetchone():
+                raise ValueError("Invalid or unauthorized destination account.")
+        else:
+            target_account_id = None
+
+        if category_id:
+            cursor.execute(
+                "SELECT id FROM categories WHERE id = ? AND (user_id = ? OR user_id IS NULL)",
+                (category_id, user_id)
+            )
+            if not cursor.fetchone():
+                raise ValueError("Invalid or unauthorized category.")
+
+        # 1. Reverse old balance change
+        old_amt = old_tx["amount"]
+        old_type = old_tx["transaction_type"]
+        old_acc = old_tx["account_id"]
+        old_tgt = old_tx["target_account_id"]
+        if old_type == 'EXPENSE':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (old_amt, old_acc, user_id))
+        elif old_type == 'INCOME':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (old_amt, old_acc, user_id))
+        elif old_type == 'TRANSFER':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (old_amt, old_acc, user_id))
+            if old_tgt:
+                cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (old_amt, old_tgt, user_id))
+
+        # 2. Update row in-place preserving ID
+        cursor.execute("""
+            UPDATE transactions
+            SET account_id = ?, target_account_id = ?, category_id = ?, subcategory_id = ?,
+                transaction_type = ?, amount = ?, date = ?, note = ?, tag = ?
+            WHERE id = ? AND user_id = ?
+        """, (account_id, target_account_id, category_id, subcategory_id,
+              t_type, amount, date, note, tag, transaction_id, user_id))
+
+        # 3. Apply new balance change
+        if t_type == 'EXPENSE':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (amount, account_id, user_id))
+        elif t_type == 'INCOME':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (amount, account_id, user_id))
+        elif t_type == 'TRANSFER':
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ? AND user_id = ?", (amount, account_id, user_id))
+            cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance + ?, 2) WHERE id = ? AND user_id = ?", (amount, target_account_id, user_id))
+
+        conn.commit()
+        return transaction_id
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -1754,7 +1880,7 @@ def disable_user_app_pin(user_id):
         conn.close()
 
 def verify_user_app_pin(user_id, pin_code):
-    import hashlib
+    import hashlib, hmac
     pin_hash = hashlib.sha256(str(pin_code).strip().encode()).hexdigest()
     conn = get_db_connection()
     try:
@@ -1765,7 +1891,7 @@ def verify_user_app_pin(user_id, pin_code):
         conn.close()
     if not row or not row["app_pin"]:
         return False
-    return row["app_pin"] == pin_hash
+    return hmac.compare_digest(str(row["app_pin"]), pin_hash)
 
 def get_user_security_settings(user_id):
     conn = get_db_connection()

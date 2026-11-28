@@ -1,5 +1,5 @@
-// Service Worker for Expense Tracker Pro 2.0 (0ms Instant App Shell PWA v6.9)
-const CACHE_NAME = 'expense-pro-v6.9-cache';
+// Service Worker for Expense Tracker Pro 2.0 (0ms Instant App Shell PWA v7.0)
+const CACHE_NAME = 'expense-pro-v7.0-cache';
 const STATIC_ASSETS = [
   '/mobile',
   '/static/manifest.json',

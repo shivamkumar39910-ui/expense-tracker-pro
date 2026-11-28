@@ -1,0 +1,16 @@
+name: Keep Render App Awake
+
+on:
+  schedule:
+    # Ping /health every 12 minutes so Render Free tier stays warm during public traffic
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Expense Tracker Pro /health
+        run: |
+          curl -fsS --retry 2 --retry-delay 5 --max-time 25 "https://expense-tracker-pro-ecl2.onrender.com/health"
+          echo ""

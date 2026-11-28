@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.5">
+  <meta name="app-shell-version" content="v6.6">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5804,6 +5804,17 @@
           if (cachedCats) APP_STATE.categories = JSON.parse(cachedCats);
           const cachedAccs = localStorage.getItem('cached_accounts');
           if (cachedAccs) { APP_STATE.accounts = JSON.parse(cachedAccs); renderAccountPillsAndNetWorth(); }
+          const cachedDashRaw = localStorage.getItem('cached_dashboard');
+          if (cachedDashRaw) {
+            const d = JSON.parse(cachedDashRaw);
+            const expTotal = (d.cashflow && d.cashflow.expenses !== undefined) ? d.cashflow.expenses : (d.forecast ? d.forecast.mtd_actual_spend : 0);
+            if (expTotal !== undefined) {
+              APP_STATE.categoryTotalExpense = parseFloat(expTotal) || 0;
+              setMaskableText('homeTotalExpenseDisplay', `₹${APP_STATE.categoryTotalExpense.toLocaleString('en-IN', {minimumFractionDigits: 2})}`);
+            }
+            if (d.forecast) APP_STATE.forecast = d.forecast;
+            if (Array.isArray(d.recent_transactions)) renderRecentTx(d.recent_transactions);
+          }
           const cachedGoalsRaw = localStorage.getItem('cached_goals');
           if (cachedGoalsRaw) {
             userGoals = JSON.parse(cachedGoalsRaw);
@@ -5837,15 +5848,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_5'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_6'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.5-cache') {
-            triggerSwUpgradeReload('v6_5');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.6-cache') {
+            triggerSwUpgradeReload('v6_6');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.5').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.6').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -7141,6 +7152,7 @@
       }
 
       // Quiet non-blocking background loads for secondary tabs
+      persistUnifiedLocalState();
       loadRecurringBills().catch(console.error);
       loadNotifications().catch(console.error);
       loadGoals().catch(console.error);
@@ -7751,6 +7763,19 @@
     // ----------------------------------------------------
     let userNotifications = [];
 
+    function updateNotificationBadge(unreadCount) {
+      const count = parseInt(unreadCount, 10) || 0;
+      const badge = document.getElementById('notifBadge');
+      if (!badge) return;
+      if (count > 0) {
+        badge.innerText = count > 9 ? '9+' : String(count);
+        badge.style.display = 'flex';
+      } else {
+        badge.innerText = '0';
+        badge.style.display = 'none';
+      }
+    }
+
     async function loadNotifications() {
       const res = await apiRequest('/notifications');
       if (res && res.success) {
@@ -7762,15 +7787,7 @@
         const validUnreadCount = userNotifications.filter(n => !n.is_read).length;
 
         // Update Bell Badge
-        const badge = document.getElementById('notifBadge');
-        if (badge) {
-          if (validUnreadCount > 0) {
-            badge.innerText = validUnreadCount > 9 ? '9+' : validUnreadCount;
-            badge.style.display = 'flex';
-          } else {
-            badge.style.display = 'none';
-          }
-        }
+        updateNotificationBadge(validUnreadCount);
 
         // Render Notifications Drawer List
         renderNotificationsList(userNotifications);

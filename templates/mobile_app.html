@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.4">
+  <meta name="app-shell-version" content="v6.5">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -5837,15 +5837,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_4'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_5'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.4-cache') {
-            triggerSwUpgradeReload('v6_4');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.5-cache') {
+            triggerSwUpgradeReload('v6_5');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.4').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.5').then(reg => {
           reg.update();
         }).catch(() => {});
       }

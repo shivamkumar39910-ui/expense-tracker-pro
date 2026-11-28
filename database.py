@@ -391,6 +391,7 @@ def create_database():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(user_id, transaction_type);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_user_type_date ON transactions(user_id, transaction_type, date);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_budgets_user_period ON budgets(user_id, month, year);")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_overall ON budgets (user_id, month, year) WHERE category_id IS NULL;")
     cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_cat ON budgets (user_id, category_id, month, year) WHERE category_id IS NOT NULL;")
@@ -804,67 +805,74 @@ def create_user_default_data(user_id, conn=None):
 
 def get_user_accounts(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon, is_active
-        FROM accounts
-        WHERE user_id = ? AND is_active = 1
-        ORDER BY id ASC
-    """, (user_id,))
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon, is_active
+            FROM accounts
+            WHERE user_id = ? AND is_active = 1
+            ORDER BY id ASC
+        """, (user_id,))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
 
 def add_user_account(user_id, name, account_type, initial_balance=0.0, credit_limit=0.0, color_hex='#4F46E5', icon='account_balance'):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (user_id, name, account_type, initial_balance, initial_balance, credit_limit, color_hex, icon))
-    account_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return account_id
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO accounts (user_id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, name, account_type, initial_balance, initial_balance, credit_limit, color_hex, icon))
+        account_id = cursor.lastrowid
+        conn.commit()
+        return account_id
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 def get_account_detail(user_id, account_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon, is_active, created_at
-        FROM accounts
-        WHERE id = ? AND user_id = ?
-    """, (account_id, user_id))
-    acc = cursor.fetchone()
-    if not acc:
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, account_type, initial_balance, current_balance, credit_limit, color_hex, icon, is_active, created_at
+            FROM accounts
+            WHERE id = ? AND user_id = ?
+        """, (account_id, user_id))
+        acc = cursor.fetchone()
+        if not acc:
+            return None
+        acc_data = dict(acc)
+
+        # Calculate Total Inflow into this account
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0.0) as total_in
+            FROM transactions
+            WHERE user_id = ? AND (
+                (transaction_type = 'INCOME' AND account_id = ?) OR
+                (transaction_type = 'TRANSFER' AND target_account_id = ?)
+            )
+        """, (user_id, account_id, account_id))
+        acc_data["total_inflow"] = float(cursor.fetchone()["total_in"])
+
+        # Calculate Total Outflow from this account
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0.0) as total_out
+            FROM transactions
+            WHERE user_id = ? AND (
+                (transaction_type = 'EXPENSE' AND account_id = ?) OR
+                (transaction_type = 'TRANSFER' AND account_id = ?)
+            )
+        """, (user_id, account_id, account_id))
+        acc_data["total_outflow"] = float(cursor.fetchone()["total_out"])
+
+        return acc_data
+    finally:
         conn.close()
-        return None
-    acc_data = dict(acc)
-
-    # Calculate Total Inflow into this account
-    cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0.0) as total_in
-        FROM transactions
-        WHERE user_id = ? AND (
-            (transaction_type = 'INCOME' AND account_id = ?) OR
-            (transaction_type = 'TRANSFER' AND target_account_id = ?)
-        )
-    """, (user_id, account_id, account_id))
-    acc_data["total_inflow"] = float(cursor.fetchone()["total_in"])
-
-    # Calculate Total Outflow from this account
-    cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0.0) as total_out
-        FROM transactions
-        WHERE user_id = ? AND (
-            (transaction_type = 'EXPENSE' AND account_id = ?) OR
-            (transaction_type = 'TRANSFER' AND account_id = ?)
-        )
-    """, (user_id, account_id, account_id))
-    acc_data["total_outflow"] = float(cursor.fetchone()["total_out"])
-
-    conn.close()
-    return acc_data
 
 def reconcile_account_balance(user_id, account_id, actual_balance):
     """
@@ -872,17 +880,18 @@ def reconcile_account_balance(user_id, account_id, actual_balance):
     Creates an adjustment transaction so transaction ledger and balances remain 100% consistent.
     """
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT current_balance, name FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id))
-    acc = cursor.fetchone()
-    if not acc:
-        conn.close()
-        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT current_balance, name FROM accounts WHERE id = ? AND user_id = ?", (account_id, user_id))
+        acc = cursor.fetchone()
+        if not acc:
+            return None
 
-    cur_bal = float(acc["current_balance"])
-    actual_balance = float(actual_balance)
-    diff = round(actual_balance - cur_bal, 2)
-    conn.close()
+        cur_bal = float(acc["current_balance"])
+        actual_balance = float(actual_balance)
+        diff = round(actual_balance - cur_bal, 2)
+    finally:
+        conn.close()
 
     if diff == 0:
         return {"status": "unchanged", "difference": 0.0, "new_balance": cur_bal}
@@ -1010,7 +1019,7 @@ def delete_user_transaction(user_id, transaction_id):
             if target_id:
                 cursor.execute("UPDATE accounts SET current_balance = ROUND(current_balance - ?, 2) WHERE id = ?", (amount, target_id))
 
-        cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
+        cursor.execute("DELETE FROM transactions WHERE id = ? AND user_id = ?", (transaction_id, user_id))
         conn.commit()
         return True
     except Exception as e:
@@ -1049,19 +1058,21 @@ def get_monthly_cashflow_summary(user_id, month, year):
     TRANSFERS ARE STRICTLY EXCLUDED.
     """
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # Format month pattern: YYYY-MM%
-    month_str = f"{year:04d}-{month:02d}%"
+        # Format month pattern: YYYY-MM%
+        month_str = f"{year:04d}-{month:02d}%"
 
-    cursor.execute("""
-        SELECT transaction_type, SUM(amount) as total
-        FROM transactions
-        WHERE user_id = ? AND date LIKE ?
-        GROUP BY transaction_type
-    """, (user_id, month_str))
-    rows = cursor.fetchall()
-    conn.close()
+        cursor.execute("""
+            SELECT transaction_type, SUM(amount) as total
+            FROM transactions
+            WHERE user_id = ? AND date LIKE ?
+            GROUP BY transaction_type
+        """, (user_id, month_str))
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
 
     income = 0.0
     expenses = 0.0
@@ -1166,91 +1177,97 @@ def create_notification(user_id, notif_type, title, message, category_id=None, a
 
 def get_user_notifications(user_id, limit=30, unread_only=False):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    # Permanently purge nuisance 'Cash in Hand' low balance notifications
     try:
-        cursor.execute("DELETE FROM notifications WHERE user_id = ? AND (title LIKE '%Cash in Hand%' OR (title LIKE '%Low Balance%' AND title LIKE '%Cash%'))", (user_id,))
+        cursor = conn.cursor()
+        # Permanently purge nuisance 'Cash in Hand' low balance notifications
+        try:
+            cursor.execute("DELETE FROM notifications WHERE user_id = ? AND (title LIKE '%Cash in Hand%' OR (title LIKE '%Low Balance%' AND title LIKE '%Cash%'))", (user_id,))
 
-        # Purge stale budget notifications if overall budget or category budget was deleted
-        today_n = date.today()
-        # 1. If overall budget is 0 or deleted, purge overall budget overrun notifications
-        cursor.execute("""
-            SELECT 1 FROM budgets 
-            WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0) AND amount > 0
-            LIMIT 1
-        """, (user_id, today_n.month, today_n.year))
-        if not cursor.fetchone():
+            # Purge stale budget notifications if overall budget or category budget was deleted
+            today_n = date.today()
+            # 1. If overall budget is 0 or deleted, purge overall budget overrun notifications
             cursor.execute("""
-                DELETE FROM notifications 
-                WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
-            """, (user_id,))
+                SELECT 1 FROM budgets 
+                WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0) AND amount > 0
+                LIMIT 1
+            """, (user_id, today_n.month, today_n.year))
+            if not cursor.fetchone():
+                cursor.execute("""
+                    DELETE FROM notifications 
+                    WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
+                """, (user_id,))
 
-        # 2. If category limit was deleted, purge notifications for that category
-        cursor.execute("""
-            SELECT category_id FROM budgets 
-            WHERE user_id = ? AND month = ? AND year = ? AND category_id IS NOT NULL AND category_id > 0 AND amount > 0
-        """, (user_id, today_n.month, today_n.year))
-        active_c_ids = [r["category_id"] for r in cursor.fetchall()]
-        if active_c_ids:
-            c_placeholders = ",".join(["?"] * len(active_c_ids))
-            cursor.execute(f"""
-                DELETE FROM notifications 
-                WHERE user_id = ? AND category_id IS NOT NULL 
-                  AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
-                  AND category_id NOT IN ({c_placeholders})
-            """, [user_id, *active_c_ids])
-        else:
+            # 2. If category limit was deleted, purge notifications for that category
             cursor.execute("""
-                DELETE FROM notifications 
-                WHERE user_id = ? AND category_id IS NOT NULL 
-                  AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
-            """, (user_id,))
+                SELECT category_id FROM budgets 
+                WHERE user_id = ? AND month = ? AND year = ? AND category_id IS NOT NULL AND category_id > 0 AND amount > 0
+            """, (user_id, today_n.month, today_n.year))
+            active_c_ids = [r["category_id"] for r in cursor.fetchall()]
+            if active_c_ids:
+                c_placeholders = ",".join(["?"] * len(active_c_ids))
+                cursor.execute(f"""
+                    DELETE FROM notifications 
+                    WHERE user_id = ? AND category_id IS NOT NULL 
+                      AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
+                      AND category_id NOT IN ({c_placeholders})
+                """, [user_id, *active_c_ids])
+            else:
+                cursor.execute("""
+                    DELETE FROM notifications 
+                    WHERE user_id = ? AND category_id IS NOT NULL 
+                      AND (title LIKE '%Budget%' OR title LIKE '%Limit%')
+                """, (user_id,))
 
-        conn.commit()
-    except Exception:
-        pass
+            conn.commit()
+        except Exception:
+            pass
 
-    query = """
-        SELECT n.*, c.name as category_name, c.icon as category_icon, c.color_hex as category_color
-        FROM notifications n
-        LEFT JOIN categories c ON n.category_id = c.id
-        WHERE n.user_id = ?
-    """
-    params = [user_id]
-    if unread_only:
-        query += " AND n.is_read = 0"
-    query += " ORDER BY n.id DESC LIMIT ?"
-    params.append(limit)
+        query = """
+            SELECT n.*, c.name as category_name, c.icon as category_icon, c.color_hex as category_color
+            FROM notifications n
+            LEFT JOIN categories c ON n.category_id = c.id
+            WHERE n.user_id = ?
+        """
+        params = [user_id]
+        if unread_only:
+            query += " AND n.is_read = 0"
+        query += " ORDER BY n.id DESC LIMIT ?"
+        params.append(limit)
 
-    cursor.execute(query, params)
-    rows = [dict(r) for r in cursor.fetchall()]
+        cursor.execute(query, params)
+        rows = [dict(r) for r in cursor.fetchall()]
 
-    cursor.execute("SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = 0", (user_id,))
-    unread_cnt = cursor.fetchone()["cnt"]
+        cursor.execute("SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = 0", (user_id,))
+        unread_cnt = cursor.fetchone()["cnt"]
 
-    conn.close()
-    return {
-        "notifications": rows,
-        "unread_count": unread_cnt
-    }
+        return {
+            "notifications": rows,
+            "unread_count": unread_cnt
+        }
+    finally:
+        conn.close()
 
 def mark_notification_read(user_id, notif_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?", (notif_id, user_id))
-    affected = cursor.rowcount
-    conn.commit()
-    conn.close()
-    return affected > 0
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?", (notif_id, user_id))
+        affected = cursor.rowcount
+        conn.commit()
+        return affected > 0
+    finally:
+        conn.close()
 
 def mark_all_notifications_read(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ?", (user_id,))
-    affected = cursor.rowcount
-    conn.commit()
-    conn.close()
-    return affected
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ?", (user_id,))
+        affected = cursor.rowcount
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
 
 def generate_predictive_notifications(user_id):
     """
@@ -1578,36 +1595,39 @@ def withdraw_from_goal(user_id, goal_id, amount, payment_method='Cash', note=Non
     ISOLATION GUARANTEE: Does NOT touch transactions table or Total Expenses.
     """
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
-    goal = cursor.fetchone()
-    if not goal:
+        cursor.execute("SELECT * FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
+        goal = cursor.fetchone()
+        if not goal:
+            return None, "Goal not found"
+
+        curr_amount = float(goal["current_amount"] or 0)
+        if amount > curr_amount:
+            return None, f"Withdrawal amount (₹{amount:,.2f}) cannot exceed current savings balance (₹{curr_amount:,.2f})"
+
+        new_curr = max(0.0, round(curr_amount - amount, 2))
+        target = float(goal["target_amount"] or 0)
+        is_completed = 1 if (new_curr >= target and target > 0) else 0
+
+        cursor.execute("""
+            UPDATE financial_goals 
+            SET current_amount = ?, is_completed = ?
+            WHERE id = ? AND user_id = ?
+        """, (new_curr, is_completed, goal_id, user_id))
+
+        cursor.execute("""
+            INSERT INTO goal_transactions (goal_id, user_id, type, amount, payment_method, note)
+            VALUES (?, ?, 'WITHDRAWAL', ?, ?, ?)
+        """, (goal_id, user_id, amount, payment_method or 'Cash', note or f"Withdrawal from {goal['title']}"))
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-        return None, "Goal not found"
-
-    curr_amount = float(goal["current_amount"] or 0)
-    if amount > curr_amount:
-        conn.close()
-        return None, f"Withdrawal amount (₹{amount:,.2f}) cannot exceed current savings balance (₹{curr_amount:,.2f})"
-
-    new_curr = max(0.0, round(curr_amount - amount, 2))
-    target = float(goal["target_amount"] or 0)
-    is_completed = 1 if (new_curr >= target and target > 0) else 0
-
-    cursor.execute("""
-        UPDATE financial_goals 
-        SET current_amount = ?, is_completed = ?
-        WHERE id = ? AND user_id = ?
-    """, (new_curr, is_completed, goal_id, user_id))
-
-    cursor.execute("""
-        INSERT INTO goal_transactions (goal_id, user_id, type, amount, payment_method, note)
-        VALUES (?, ?, 'WITHDRAWAL', ?, ?, ?)
-    """, (goal_id, user_id, amount, payment_method or 'Cash', note or f"Withdrawal from {goal['title']}"))
-
-    conn.commit()
-    conn.close()
 
     return {
         "id": goal_id,
@@ -1628,34 +1648,40 @@ def contribute_to_goal(user_id, goal_id, amount, account_id=None):
 
 def get_goal_transactions(user_id, goal_id=None, limit=50):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    query = """
-        SELECT gt.*, fg.title as goal_title 
-        FROM goal_transactions gt
-        JOIN financial_goals fg ON gt.goal_id = fg.id
-        WHERE gt.user_id = ?
-    """
-    params = [user_id]
-    if goal_id:
-        query += " AND gt.goal_id = ?"
-        params.append(goal_id)
-    query += " ORDER BY gt.id DESC LIMIT ?"
-    params.append(limit)
+    try:
+        cursor = conn.cursor()
+        query = """
+            SELECT gt.*, fg.title as goal_title 
+            FROM goal_transactions gt
+            JOIN financial_goals fg ON gt.goal_id = fg.id
+            WHERE gt.user_id = ?
+        """
+        params = [user_id]
+        if goal_id:
+            query += " AND gt.goal_id = ?"
+            params.append(goal_id)
+        query += " ORDER BY gt.id DESC LIMIT ?"
+        params.append(limit)
 
-    cursor.execute(query, params)
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
+        cursor.execute(query, params)
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
 
 def delete_financial_goal(user_id, goal_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM goal_transactions WHERE goal_id = ? AND user_id = ?", (goal_id, user_id))
-    cursor.execute("DELETE FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
-    affected = cursor.rowcount
-    conn.commit()
-    conn.close()
-    return affected > 0
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM goal_transactions WHERE goal_id = ? AND user_id = ?", (goal_id, user_id))
+        cursor.execute("DELETE FROM financial_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
+        affected = cursor.rowcount
+        conn.commit()
+        return affected > 0
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 # ==================================================
 # Phase 12: Offline Cache & Sync Queue Architecture
@@ -1711,39 +1737,47 @@ def set_user_app_pin(user_id, pin_code, enable=True):
     import hashlib
     pin_hash = hashlib.sha256(str(pin_code).strip().encode()).hexdigest()
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET app_pin = ?, is_pin_enabled = ? WHERE id = ?", (pin_hash, 1 if enable else 0, user_id))
-    conn.commit()
-    conn.close()
-    return True
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET app_pin = ?, is_pin_enabled = ? WHERE id = ?", (pin_hash, 1 if enable else 0, user_id))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 
 def disable_user_app_pin(user_id):
     """Completely deactivates and clears the user's 4-digit App Security PIN."""
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET app_pin = NULL, is_pin_enabled = 0 WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
-    return True
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET app_pin = NULL, is_pin_enabled = 0 WHERE id = ?", (user_id,))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 
 def verify_user_app_pin(user_id, pin_code):
     import hashlib
     pin_hash = hashlib.sha256(str(pin_code).strip().encode()).hexdigest()
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT app_pin, is_pin_enabled FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT app_pin, is_pin_enabled FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+    finally:
+        conn.close()
     if not row or not row["app_pin"]:
         return False
     return row["app_pin"] == pin_hash
 
 def get_user_security_settings(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT is_pin_enabled, privacy_mode, app_pin FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_pin_enabled, privacy_mode, app_pin FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+    finally:
+        conn.close()
     if not row:
         return {"has_pin": False, "is_pin_enabled": False, "privacy_mode": False, "pin_hash": ""}
     return {
@@ -1755,23 +1789,24 @@ def get_user_security_settings(user_id):
 
 def update_user_security_settings(user_id, is_pin_enabled=None, privacy_mode=None):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    updates = []
-    params = []
-    if is_pin_enabled is not None:
-        updates.append("is_pin_enabled = ?")
-        params.append(1 if is_pin_enabled else 0)
-    if privacy_mode is not None:
-        updates.append("privacy_mode = ?")
-        params.append(1 if privacy_mode else 0)
-    if not updates:
-        conn.close()
+    try:
+        cursor = conn.cursor()
+        updates = []
+        params = []
+        if is_pin_enabled is not None:
+            updates.append("is_pin_enabled = ?")
+            params.append(1 if is_pin_enabled else 0)
+        if privacy_mode is not None:
+            updates.append("privacy_mode = ?")
+            params.append(1 if privacy_mode else 0)
+        if not updates:
+            return True
+        params.append(user_id)
+        cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
+        conn.commit()
         return True
-    params.append(user_id)
-    cursor.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", params)
-    conn.commit()
-    conn.close()
-    return True
+    finally:
+        conn.close()
 
 # ==================================================
 # Phase 16: Multi-Currency & Localization Engine
@@ -1803,10 +1838,12 @@ CURRENCY_RATES_TO_INR = {
 
 def get_user_currency(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT currency_code, currency_symbol FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT currency_code, currency_symbol FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+    finally:
+        conn.close()
     if row and row["currency_code"]:
         return {
             "code": row["currency_code"],
@@ -1818,11 +1855,13 @@ def set_user_currency(user_id, currency_code):
     code = currency_code.upper().strip()
     symbol = CURRENCY_SYMBOL_MAP.get(code, "₹")
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET currency_code = ?, currency_symbol = ? WHERE id = ?", (code, symbol, user_id))
-    conn.commit()
-    conn.close()
-    return {"code": code, "symbol": symbol}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET currency_code = ?, currency_symbol = ? WHERE id = ?", (code, symbol, user_id))
+        conn.commit()
+        return {"code": code, "symbol": symbol}
+    finally:
+        conn.close()
 
 # ==================================================
 # Phase 14: Data Export & Reports Engine
@@ -1888,30 +1927,34 @@ def save_push_subscription(user_id, endpoint, p256dh=None, auth=None):
 
 def delete_push_subscription(user_id, endpoint):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?", (user_id, endpoint))
-    conn.commit()
-    conn.close()
-    return True
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?", (user_id, endpoint))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 
 def get_user_notification_preferences(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
-    row = cursor.fetchone()
-    if not row:
-        try:
-            cursor.execute("""
-                INSERT INTO notification_preferences 
-                (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off) 
-                VALUES (?, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-            """, (user_id,))
-            conn.commit()
-        except Exception:
-            pass
+    try:
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
-    conn.close()
+        if not row:
+            try:
+                cursor.execute("""
+                    INSERT INTO notification_preferences 
+                    (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off) 
+                    VALUES (?, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+                """, (user_id,))
+                conn.commit()
+            except Exception:
+                pass
+            cursor.execute("SELECT * FROM notification_preferences WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+    finally:
+        conn.close()
     d = dict(row) if row else {}
     defaults = {
         "budget_80": 1, "budget_100": 1, "bill_due": 1, "security_alerts": 1,
@@ -1931,46 +1974,49 @@ def update_user_notification_preferences(user_id, budget_80=None, budget_100=Non
     curr.update(kwargs)
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO notification_preferences 
-        (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_id) DO UPDATE SET
-            budget_80 = excluded.budget_80,
-            budget_100 = excluded.budget_100,
-            bill_due = excluded.bill_due,
-            security_alerts = excluded.security_alerts,
-            forecast = excluded.forecast,
-            goals = excluded.goals,
-            weekly_summary = excluded.weekly_summary,
-            unusual_spending = excluded.unusual_spending,
-            all_off = excluded.all_off,
-            updated_at = CURRENT_TIMESTAMP
-    """, (
-        user_id,
-        int(curr.get("budget_80", 1)),
-        int(curr.get("budget_100", 1)),
-        int(curr.get("bill_due", 1)),
-        int(curr.get("security_alerts", 1)),
-        int(curr.get("forecast", 1)),
-        int(curr.get("goals", 1)),
-        int(curr.get("weekly_summary", 1)),
-        int(curr.get("unusual_spending", 1)),
-        int(curr.get("all_off", 0))
-    ))
-    conn.commit()
-    conn.close()
-    return True
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO notification_preferences 
+            (user_id, budget_80, budget_100, bill_due, security_alerts, forecast, goals, weekly_summary, unusual_spending, all_off, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                budget_80 = excluded.budget_80,
+                budget_100 = excluded.budget_100,
+                bill_due = excluded.bill_due,
+                security_alerts = excluded.security_alerts,
+                forecast = excluded.forecast,
+                goals = excluded.goals,
+                weekly_summary = excluded.weekly_summary,
+                unusual_spending = excluded.unusual_spending,
+                all_off = excluded.all_off,
+                updated_at = CURRENT_TIMESTAMP
+        """, (
+            user_id,
+            int(curr.get("budget_80", 1)),
+            int(curr.get("budget_100", 1)),
+            int(curr.get("bill_due", 1)),
+            int(curr.get("security_alerts", 1)),
+            int(curr.get("forecast", 1)),
+            int(curr.get("goals", 1)),
+            int(curr.get("weekly_summary", 1)),
+            int(curr.get("unusual_spending", 1)),
+            int(curr.get("all_off", 0))
+        ))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 
 
 def get_active_push_subscriptions(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?", (user_id,))
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?", (user_id,))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
 
 # ==================================================
 # Application Entry Point

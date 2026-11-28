@@ -80,8 +80,11 @@ def generate_email_plain(otp_code: str, user_name: str = "User") -> str:
 
 
 def generate_email_html(otp_code: str, user_name: str = "User", recipient_email: str = "") -> str:
-    safe_name = (user_name or "User").strip()
-    to_note = f"<p style=\"margin:0 0 16px 0; font-size:12px; color:#64748b;\">This code was requested for <strong>{recipient_email}</strong>.</p>" if recipient_email else ""
+    import html
+    safe_name = html.escape((user_name or "User").strip())
+    safe_otp = html.escape(str(otp_code or "").strip())
+    safe_email = html.escape((recipient_email or "").strip())
+    to_note = f"<p style=\"margin:0 0 16px 0; font-size:12px; color:#64748b;\">This code was requested for <strong>{safe_email}</strong>.</p>" if safe_email else ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,7 +104,7 @@ def generate_email_html(otp_code: str, user_name: str = "User", recipient_email:
         <p style="margin:0 0 16px 0; font-size:14px; line-height:1.55; color:#334155;">Please enter the 6-digit verification code below to verify your identity. This code is valid for <strong>10 minutes</strong>.</p>
         {to_note}
         <div style="background-color:#eff6ff; border:1.5px solid #bfdbfe; border-radius:12px; padding:18px; text-align:center; margin:0 0 18px 0;">
-          <span style="font-size:32px; font-weight:800; letter-spacing:8px; color:#1d4ed8; font-family:'Courier New', Courier, monospace;">{otp_code}</span>
+          <span style="font-size:32px; font-weight:800; letter-spacing:8px; color:#1d4ed8; font-family:'Courier New', Courier, monospace;">{safe_otp}</span>
         </div>
         <p style="margin:0 0 8px 0; font-size:12.5px; line-height:1.5; color:#64748b;">• Do not share this code with anyone. Our team will never ask for your code.</p>
         <p style="margin:0 0 18px 0; font-size:12.5px; line-height:1.5; color:#64748b;">• If you did not make this request, you can safely ignore this email.</p>
@@ -133,7 +136,7 @@ def send_gmail_webhook_email(recipient_email: str, otp_code: str, user_name: str
             "to": recipient_email,
             "subject": _otp_subject(otp_code),
             "text": generate_email_plain(otp_code, user_name),
-            "html": generate_email_html(otp_code, user_name),
+            "html": generate_email_html(otp_code, user_name, recipient_email=recipient_email),
             "otp": otp_code,
             "name": user_name,
         }

@@ -11,7 +11,7 @@ Features:
 import os
 import json
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List
 
 # Baseline fallback rates to INR (used if external API is unreachable)
@@ -42,24 +42,24 @@ CURRENCY_METADATA = [
 # Cache storage
 _FX_CACHE = {
     "rates": BASELINE_RATES_TO_INR.copy(),
-    "last_updated": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+    "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
     "source": "baseline"
 }
-_CACHE_EXPIRY = datetime.utcnow()
+_CACHE_EXPIRY = datetime.now(timezone.utc).replace(tzinfo=None)
 
 FX_API_PROVIDER_URL = os.environ.get("FX_API_URL", "https://open.er-api.com/v6/latest/USD")
 FX_API_KEY = os.environ.get("FX_API_KEY")
 
-def fetch_live_fx_rates(timeout_seconds: int = 5) -> Dict[str, Any]:
+def fetch_live_fx_rates(timeout_seconds: float = 2.5) -> Dict[str, Any]:
     """
     Fetches live exchange rates from configured provider with timeout & rate limit protection.
-    Falls back gracefully to cached values on any error.
+    Falls back gracefully to cached values on any error and avoids repeated blocking retries.
     """
     global _FX_CACHE, _CACHE_EXPIRY
 
-    now = datetime.utcnow()
-    # If cache is still warm (less than 1 hour old), return cached values
-    if now < _CACHE_EXPIRY and _FX_CACHE.get("source") == "live_api":
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    # If cache is still warm (including brief failure backoff), return cached values immediately
+    if now < _CACHE_EXPIRY:
         return _FX_CACHE
 
     try:
@@ -96,8 +96,9 @@ def fetch_live_fx_rates(timeout_seconds: int = 5) -> Dict[str, Any]:
                 _CACHE_EXPIRY = now + timedelta(hours=1)
                 return _FX_CACHE
     except Exception as e:
-        # Fallback to current cache gracefully
+        # Fallback to current cache gracefully & back off retries for 5 minutes
         _FX_CACHE["fallback_notice"] = f"Using cached rates due to network/provider timeout ({str(e)})"
+        _CACHE_EXPIRY = now + timedelta(minutes=5)
 
     return _FX_CACHE
 

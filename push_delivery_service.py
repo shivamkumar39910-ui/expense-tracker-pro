@@ -89,7 +89,7 @@ def send_financial_notification(
         # 2. Store in In-App Notifications table
         cursor.execute("""
             INSERT INTO notifications (user_id, type, title, message, action_route, is_read, created_at)
-            VALUES (?, ?, ?, ?, ?, 0, datetime('now'))
+            VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
         """, (user_id, severity, title, message, action_url))
         conn.commit()
 
@@ -97,7 +97,7 @@ def send_financial_notification(
         try:
             cursor.execute("""
                 INSERT INTO financial_alerts (user_id, alert_type, severity, title, message, supporting_metric, is_read, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, 0, datetime('now'))
+                VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
             """, (user_id, alert_type, severity, title, message, supporting_metric))
             conn.commit()
         except Exception:

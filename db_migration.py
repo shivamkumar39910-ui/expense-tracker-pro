@@ -271,6 +271,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_user ON categories(user_id, type);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(user_id, transaction_type);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_type_date ON transactions(user_id, transaction_type, date);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_uuid ON transactions(user_id, client_uuid) WHERE client_uuid IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_budgets_user_period ON budgets(user_id, month, year);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_unique_overall ON budgets (user_id, month, year) WHERE category_id IS NULL;

@@ -9,7 +9,7 @@ import jwt
 import calendar
 from datetime import datetime, timedelta, date
 from functools import wraps
-from flask import Blueprint, request, jsonify, g, Response
+from flask import Blueprint, request, jsonify, g, Response, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import database
 import forecasting_engine
@@ -81,20 +81,29 @@ def token_required(f):
             return jsonify({"success": False, "error": "Authorization token is missing or malformed"}), 401
         
         token = auth_header.split(" ")[1]
+        conn = None
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
             user_id = int(payload.get("sub"))
             conn = database.get_db_connection()
-            user = conn.execute("SELECT id, name, email, phone, currency_symbol, is_verified FROM users WHERE id = ?", (user_id,)).fetchone()
-            conn.close()
-            if not user:
-                return jsonify({"success": False, "error": "User does not exist"}), 401
-            g.user = dict(user)
-            request.user = dict(user)
+            user = conn.execute(
+                "SELECT id, name, email, phone, currency_symbol, is_verified FROM users WHERE id = ?",
+                (user_id,)
+            ).fetchone()
         except jwt.ExpiredSignatureError:
             return jsonify({"success": False, "error": "Session token has expired. Please log in again."}), 401
+        except (jwt.InvalidTokenError, ValueError, TypeError):
+            return jsonify({"success": False, "error": "Invalid authentication token"}), 401
         except Exception as e:
-            return jsonify({"success": False, "error": f"Invalid authentication token: {str(e)}"}), 401
+            return jsonify({"success": False, "error": f"Authentication verification failed ({type(e).__name__})"}), 401
+        finally:
+            if conn:
+                conn.close()
+
+        if not user:
+            return jsonify({"success": False, "error": "User does not exist"}), 401
+        g.user = dict(user)
+        request.user = dict(user)
 
         return f(*args, **kwargs)
     return decorated
@@ -123,19 +132,26 @@ def record_security_failed_attempt(action_key: str):
 def clear_security_failed_attempts(action_key: str):
     FAILED_SECURITY_ATTEMPTS.pop(action_key, None)
 
+def _is_production_env() -> bool:
+    return (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
+
 @api_v1.route('/debug/smtp-status', methods=['GET'])
 def debug_smtp_status():
     import socket
     from otp_service import SMTP_HOST, _IPv4SMTP, _IPv4SMTP_SSL
 
+    client_ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "unknown").split(",")[0].strip()
+    if check_security_rate_limit(f"debug_smtp:{client_ip}", max_attempts=20, window_seconds=300):
+        return jsonify({"success": False, "error": "Too many status requests. Please wait."}), 429
+    record_security_failed_attempt(f"debug_smtp:{client_ip}")
+
     user = os.environ.get("SMTP_USER", "").strip()
     pwd = os.environ.get("SMTP_PASSWORD", "").replace(" ", "").strip()
+    is_prod = _is_production_env() and not current_app.config.get("TESTING")
 
     status_report = {
         "has_smtp_user": bool(user),
-        "smtp_user": user if user else None,
         "has_smtp_password": bool(pwd),
-        "password_length": len(pwd),
         "has_gmail_webhook": bool((os.environ.get("GMAIL_WEBHOOK_URL") or os.environ.get("EMAIL_WEBHOOK_URL") or "").strip()),
         "has_resend_key": bool((os.environ.get("RESEND_API_KEY") or "").strip()),
         "has_brevo_key": bool((os.environ.get("BREVO_API_KEY") or "").strip()),
@@ -144,13 +160,17 @@ def debug_smtp_status():
         "port_587_ipv4": "NOT_TESTED",
         "connection_test": "NOT_TESTED"
     }
+    if not is_prod and user:
+        status_report["smtp_user"] = user
+        status_report["password_length"] = len(pwd)
 
     try:
-        status_report["ipv4_resolved"] = [
+        resolved = [
             info[4][0] for info in socket.getaddrinfo(SMTP_HOST, 465, socket.AF_INET, socket.SOCK_STREAM)
         ]
+        status_report["ipv4_resolved"] = ["resolved"] if is_prod and resolved else resolved
     except Exception as e:
-        status_report["ipv4_resolved"] = [f"DNS_ERROR: {e}"]
+        status_report["ipv4_resolved"] = ["DNS_ERROR"] if is_prod else [f"DNS_ERROR: {e}"]
 
     if user and pwd:
         try:
@@ -345,7 +365,6 @@ def signup_send_otp():
         "email": email
     }
     is_prod = (os.environ.get("FLASK_ENV") == "production") or (os.environ.get("RENDER") == "true")
-    from flask import current_app
     if not is_prod or current_app.config.get("TESTING"):
         res_payload["otp_code"] = otp
     return jsonify(res_payload), 200
@@ -635,6 +654,10 @@ def resend_otp():
     if not identifier:
         return jsonify({"success": False, "error": "Identifier is required"}), 400
 
+    if check_security_rate_limit(f"resend_otp:{identifier}", max_attempts=8, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many OTP resend requests. Please wait a few minutes."}), 429
+    record_security_failed_attempt(f"resend_otp:{identifier}")
+
     conn = database.get_db_connection()
     try:
         cursor = conn.cursor()
@@ -659,7 +682,6 @@ def resend_otp():
         "success": True,
         "message": "A fresh 6-digit verification code has been dispatched."
     }
-    from flask import current_app
     if current_app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "testing":
         res_payload["otp_code"] = otp
 
@@ -680,6 +702,10 @@ def forgot_password_send_otp():
 
     if not identifier:
         return jsonify({"success": False, "error": "Email address is required"}), 400
+
+    if check_security_rate_limit(f"fp_send:{identifier}", max_attempts=8, window_seconds=600):
+        return jsonify({"success": False, "error": "Too many recovery requests. Please wait a few minutes."}), 429
+    record_security_failed_attempt(f"fp_send:{identifier}")
 
     conn = database.get_db_connection()
     try:
@@ -818,7 +844,18 @@ def forgot_password_reset():
                 token_authorized = False
 
         stored_otp = str(user_dict.get("otp_code") or "").strip()
-        otp_authorized = bool(otp and stored_otp and stored_otp == otp)
+        otp_authorized = False
+        if otp and stored_otp and stored_otp == otp:
+            exp_str = user_dict.get("otp_expires_at")
+            if exp_str:
+                try:
+                    exp_dt = datetime.strptime(str(exp_str)[:19], "%Y-%m-%d %H:%M:%S")
+                    if datetime.utcnow() <= exp_dt:
+                        otp_authorized = True
+                except Exception:
+                    otp_authorized = False
+            else:
+                otp_authorized = True
 
         if not token_authorized and not otp_authorized:
             return jsonify({"success": False, "error": "Verification expired or invalid. Please request a fresh code."}), 400
@@ -933,6 +970,9 @@ def login():
     if not identifier or not password:
         return jsonify({"success": False, "error": "Email and password are required"}), 400
 
+    if check_security_rate_limit(f"login:{identifier}", max_attempts=15, window_seconds=900):
+        return jsonify({"success": False, "error": "Too many failed login attempts. Please wait 15 minutes or reset your password."}), 429
+
     conn = database.get_db_connection()
     try:
         cursor = conn.cursor()
@@ -941,8 +981,10 @@ def login():
         )
 
         if not user or not user["password"] or not check_password_hash(user["password"], password):
+            record_security_failed_attempt(f"login:{identifier}")
             return jsonify({"success": False, "error": "Invalid email or password"}), 401
 
+        clear_security_failed_attempts(f"login:{identifier}")
         user_dict = dict(user)
         require_2fa = data.get("require_2fa", False)
 
@@ -956,15 +998,17 @@ def login():
             conn.commit()
 
             otp_service.dispatch_otp(identifier, otp, user_dict.get("name", "User"))
-            print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
 
-            return jsonify({
+            res_2fa = {
                 "success": True,
                 "require_otp": True,
                 "message": "Login 2FA OTP sent to your registered contact.",
-                "identifier": identifier,
-                "otp_code": otp
-            }), 200
+                "identifier": identifier
+            }
+            if not _is_production_env() or current_app.config.get("TESTING"):
+                print(f"[SECURITY 2FA] Login OTP for user {identifier}: {otp}")
+                res_2fa["otp_code"] = otp
+            return jsonify(res_2fa), 200
 
         access_token, refresh_token = generate_tokens(user_dict["id"])
         bootstrap = _safe_bootstrap_payload(user_dict["id"], conn=conn)
@@ -1113,13 +1157,19 @@ def create_account():
     user_id = request.user["id"]
     data = request.get_json() or {}
     name = (data.get("name") or "").strip()
-    account_type = data.get("account_type", "BANK").upper()
-    initial_balance = round(float(data.get("initial_balance", 0.0)), 2)
+    account_type = (data.get("account_type") or "BANK").upper()
+    try:
+        initial_balance = round(float(data.get("initial_balance", 0.0)), 2)
+        credit_limit = round(float(data.get("credit_limit", 0.0)), 2)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Initial balance and credit limit must be valid numbers"}), 400
     color_hex = data.get("color_hex", "#4F46E5")
     icon = data.get("icon", "account_balance")
 
     if not name:
         return jsonify({"success": False, "error": "Account name is required"}), 400
+    if len(name) > 80:
+        return jsonify({"success": False, "error": "Account name must be 80 characters or fewer"}), 400
     if account_type not in ['CASH', 'BANK', 'CREDIT_CARD', 'SAVINGS', 'OTHER']:
         return jsonify({"success": False, "error": "Invalid account type"}), 400
 
@@ -1128,7 +1178,7 @@ def create_account():
         name=name,
         account_type=account_type,
         initial_balance=initial_balance,
-        credit_limit=round(float(data.get("credit_limit", 0.0)), 2),
+        credit_limit=credit_limit,
         color_hex=color_hex,
         icon=icon
     )
@@ -1232,57 +1282,43 @@ def _enrich_tx_visual(tx: dict) -> dict:
 def get_categories():
     user_id = request.user["id"]
     conn = database.get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_hidden_categories (
-            user_id INTEGER NOT NULL,
-            category_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, category_id)
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_hidden_subcategories (
-            user_id INTEGER NOT NULL,
-            subcategory_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, subcategory_id)
-        )
-    """)
+        # Fetch Categories (System defaults + user custom, excluding user-deleted)
+        cursor.execute("""
+            SELECT id, name, type, icon, color_hex, image_url, is_default
+            FROM categories
+            WHERE (user_id IS NULL OR user_id = ?)
+              AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
+            ORDER BY is_default DESC, name ASC
+        """, (user_id, user_id))
+        cats = [dict(c) for c in cursor.fetchall()]
 
-    # Fetch Categories (System defaults + user custom, excluding user-deleted)
-    cursor.execute("""
-        SELECT id, name, type, icon, color_hex, image_url, is_default
-        FROM categories
-        WHERE (user_id IS NULL OR user_id = ?)
-          AND id NOT IN (SELECT category_id FROM user_hidden_categories WHERE user_id = ?)
-        ORDER BY is_default DESC, name ASC
-    """, (user_id, user_id))
-    cats = [dict(c) for c in cursor.fetchall()]
+        # High-performance batch fetch for subcategories (1 single query instead of 16 queries)
+        cat_ids = [c["id"] for c in cats]
+        subcats_by_cat = {c["id"]: [] for c in cats}
+        if cat_ids:
+            placeholders = ",".join("?" for _ in cat_ids)
+            params = list(cat_ids) + [user_id]
+            cursor.execute(f"""
+                SELECT id, category_id, name 
+                FROM subcategories 
+                WHERE category_id IN ({placeholders})
+                  AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
+                ORDER BY name ASC
+            """, tuple(params))
+            for s in cursor.fetchall():
+                s_dict = dict(s)
+                c_id = s_dict["category_id"]
+                if c_id in subcats_by_cat:
+                    subcats_by_cat[c_id].append({"id": s_dict["id"], "name": s_dict["name"]})
 
-    # High-performance batch fetch for subcategories (1 single query instead of 16 queries)
-    cat_ids = [c["id"] for c in cats]
-    subcats_by_cat = {c["id"]: [] for c in cats}
-    if cat_ids:
-        placeholders = ",".join("?" for _ in cat_ids)
-        params = list(cat_ids) + [user_id]
-        cursor.execute(f"""
-            SELECT id, category_id, name 
-            FROM subcategories 
-            WHERE category_id IN ({placeholders})
-              AND id NOT IN (SELECT subcategory_id FROM user_hidden_subcategories WHERE user_id = ?)
-            ORDER BY name ASC
-        """, tuple(params))
-        for s in cursor.fetchall():
-            s_dict = dict(s)
-            c_id = s_dict["category_id"]
-            if c_id in subcats_by_cat:
-                subcats_by_cat[c_id].append({"id": s_dict["id"], "name": s_dict["name"]})
-
-    for cat in cats:
-        cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
-        _enrich_category_visual(cat)
-
-    conn.close()
+        for cat in cats:
+            cat["subcategories"] = subcats_by_cat.get(cat["id"], [])
+            _enrich_category_visual(cat)
+    finally:
+        conn.close()
 
     expenses = [c for c in cats if c["type"] == 'EXPENSE']
     incomes = [c for c in cats if c["type"] == 'INCOME']
@@ -1404,8 +1440,11 @@ def get_transactions():
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
     search = request.args.get("search")
-    limit = int(request.args.get("limit", 50))
-    offset = int(request.args.get("offset", 0))
+    try:
+        limit = max(1, min(200, int(request.args.get("limit", 50))))
+        offset = max(0, int(request.args.get("offset", 0)))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "limit and offset must be valid integers"}), 400
 
     query = """
         SELECT t.id, t.user_id, t.account_id, t.target_account_id, t.category_id, t.subcategory_id,
@@ -1661,30 +1700,40 @@ def get_budgets():
 def set_budget():
     user_id = request.user["id"]
     data = request.get_json() or {}
-    month = int(data.get("month", date.today().month))
-    year = int(data.get("year", date.today().year))
-    amount = float(data.get("amount", 0.0))
+    try:
+        month = int(data.get("month", date.today().month))
+        year = int(data.get("year", date.today().year))
+        amount = float(data.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid budget month, year, or amount"}), 400
+    if not (1 <= month <= 12) or not (2000 <= year <= 2100):
+        return jsonify({"success": False, "error": "Invalid budget month or year"}), 400
     category_id = data.get("category_id") # None for overall
 
     if amount <= 0:
         return jsonify({"success": False, "error": "Budget amount must be positive"}), 400
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    if category_id:
-        cursor.execute("DELETE FROM budgets WHERE user_id = ? AND month = ? AND year = ? AND category_id = ?",
-                       (user_id, month, year, category_id))
-        cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, ?, ?, ?, ?)",
-                       (user_id, category_id, month, year, amount))
-        new_budget_id = cursor.lastrowid
-    else:
-        cursor.execute("DELETE FROM budgets WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)",
-                       (user_id, month, year))
-        cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, NULL, ?, ?, ?)",
-                       (user_id, month, year, amount))
-        new_budget_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        if category_id:
+            cursor.execute("DELETE FROM budgets WHERE user_id = ? AND month = ? AND year = ? AND category_id = ?",
+                           (user_id, month, year, category_id))
+            cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, ?, ?, ?, ?)",
+                           (user_id, category_id, month, year, amount))
+            new_budget_id = cursor.lastrowid
+        else:
+            cursor.execute("DELETE FROM budgets WHERE user_id = ? AND month = ? AND year = ? AND (category_id IS NULL OR category_id = 0)",
+                           (user_id, month, year))
+            cursor.execute("INSERT INTO budgets (user_id, category_id, month, year, amount) VALUES (?, NULL, ?, ?, ?)",
+                           (user_id, month, year, amount))
+            new_budget_id = cursor.lastrowid
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
     # Trigger predictive evaluation immediately so user receives alert/status
     threading.Thread(target=database.generate_predictive_notifications, args=(user_id,), daemon=True).start()
@@ -1745,25 +1794,33 @@ def delete_overall_budget():
     """Deletes overall monthly budget and purges any over-budget alerts."""
     user_id = request.user["id"]
     today = date.today()
-    month = int(request.args.get("month", today.month))
-    year = int(request.args.get("year", today.year))
+    try:
+        month = int(request.args.get("month", today.month))
+        year = int(request.args.get("year", today.year))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid month or year"}), 400
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "DELETE FROM budgets WHERE user_id = ? AND (category_id IS NULL OR category_id = 0) AND month = ? AND year = ?",
-        (user_id, month, year)
-    )
-    affected = cursor.rowcount
-    cursor.execute("""
-        DELETE FROM notifications 
-        WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
-    """, (user_id,))
-    cursor.execute("""
-        DELETE FROM financial_alerts 
-        WHERE user_id = ? AND alert_type IN ('BUDGET_OVERRUN', 'BUDGET_80')
-    """, (user_id,))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM budgets WHERE user_id = ? AND (category_id IS NULL OR category_id = 0) AND month = ? AND year = ?",
+            (user_id, month, year)
+        )
+        affected = cursor.rowcount
+        cursor.execute("""
+            DELETE FROM notifications 
+            WHERE user_id = ? AND (title LIKE '%Budget Overrun%' OR title LIKE '%Budget Threshold%')
+        """, (user_id,))
+        cursor.execute("""
+            DELETE FROM financial_alerts 
+            WHERE user_id = ? AND alert_type IN ('BUDGET_OVERRUN', 'BUDGET_80')
+        """, (user_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return jsonify({"success": True, "deleted": affected, "message": "Overall monthly budget removed"}), 200
 
 def calculate_next_recurrence_date(current_date_str: str, frequency: str = "MONTHLY", due_day: int = 1) -> str:
@@ -3053,15 +3110,17 @@ def get_chart_history_6m():
     start_date_str = f"{earliest_y:04d}-{earliest_m:02d}-01"
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
-        FROM transactions
-        WHERE user_id = ? AND SUBSTR(date, 1, 10) >= ?
-        GROUP BY SUBSTR(date, 1, 7), transaction_type
-    """, (user_id, start_date_str))
-    rows = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT SUBSTR(date, 1, 7) as ym, transaction_type, SUM(amount) as total
+            FROM transactions
+            WHERE user_id = ? AND SUBSTR(date, 1, 10) >= ?
+            GROUP BY SUBSTR(date, 1, 7), transaction_type
+        """, (user_id, start_date_str))
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
 
     monthly_totals = {}
     for r in rows:
@@ -3110,16 +3169,18 @@ def get_chart_history_weekly():
     sunday = monday + timedelta(days=6)
 
     conn = database.get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT SUBSTR(date, 1, 10) as d, SUM(amount) as daily_total
-        FROM transactions
-        WHERE user_id = ? AND transaction_type = 'EXPENSE' 
-          AND SUBSTR(date, 1, 10) >= ? AND SUBSTR(date, 1, 10) <= ?
-        GROUP BY SUBSTR(date, 1, 10)
-    """, (user_id, monday.isoformat(), sunday.isoformat()))
-    daily_rows = {row["d"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT SUBSTR(date, 1, 10) as d, SUM(amount) as daily_total
+            FROM transactions
+            WHERE user_id = ? AND transaction_type = 'EXPENSE' 
+              AND SUBSTR(date, 1, 10) >= ? AND SUBSTR(date, 1, 10) <= ?
+            GROUP BY SUBSTR(date, 1, 10)
+        """, (user_id, monday.isoformat(), sunday.isoformat()))
+        daily_rows = {row["d"]: float(row["daily_total"] or 0.0) for row in cursor.fetchall()}
+    finally:
+        conn.close()
 
     days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     history = []
@@ -3455,7 +3516,7 @@ MERCHANT_CATEGORY_RULES = [
     (r'(?i)\b(netflix|spotify|prime video|hotstar|disney|apple music|youtube premium)\b', "Entertainment", "Digital Subscriptions"),
     # Bills & Utilities
     (r'(?i)\b(airtel|jio|vodafone|vi|bsnl|broadband|wifi)\b', "Bills & Utilities", "Mobile & Internet"),
-    (r'(r?i)\b(electricity|bescom|tata power|adani power|water board|igl|indane|hp gas)\b', "Bills & Utilities", "Utilities"),
+    (r'(?i)\b(electricity|bescom|tata power|adani power|water board|igl|indane|hp gas)\b', "Bills & Utilities", "Utilities"),
 ]
 
 SAMPLE_RECEIPTS = {

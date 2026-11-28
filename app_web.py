@@ -48,7 +48,10 @@ def add_security_headers(response):
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    if request.path in ["/", "/mobile", "/app"] or request.path.startswith("/api/"):
+    response.headers["Permissions-Policy"] = "camera=(self), geolocation=(), microphone=(self)"
+    if request.path == "/static/service-worker.js":
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    elif request.path in ["/", "/mobile", "/app"] or request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -655,14 +658,14 @@ def analysis():
 
     rows = cursor.fetchall()
 
-    # Current Month Expense
+    # Current Month Expense (SQLite + PostgreSQL compatible)
+    cur_month_pattern = f"{current_year:04d}-{current_month:02d}%"
     cursor.execute("""
         SELECT SUM(amount)
         FROM expenses
         WHERE user_id = ?
-        AND CAST(strftime('%m', date) AS INTEGER)=?
-        AND CAST(strftime('%Y', date) AS INTEGER)=?
-    """,(user_id,current_month,current_year))
+        AND date LIKE ?
+    """, (user_id, cur_month_pattern))
 
     spent = cursor.fetchone()[0]
 
@@ -677,13 +680,13 @@ def analysis():
         prev_month = current_month - 1
         prev_year = current_year
 
+    prev_month_pattern = f"{prev_year:04d}-{prev_month:02d}%"
     cursor.execute("""
         SELECT SUM(amount)
         FROM expenses
         WHERE user_id = ?
-        AND CAST(strftime('%m', date) AS INTEGER)=?
-        AND CAST(strftime('%Y', date) AS INTEGER)=?
-    """, (user_id, prev_month, prev_year))
+        AND date LIKE ?
+    """, (user_id, prev_month_pattern))
 
     prev_month_spent = cursor.fetchone()[0]
     if prev_month_spent is None:

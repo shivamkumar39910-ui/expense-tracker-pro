@@ -531,7 +531,11 @@ class BudgetRiskEngine:
             risk_level = "CRITICAL" if mtd_spend > monthly_budget else "HIGH"
             risk_status = "DANGER"
             overrun = float(max(mtd_spend, projected_spend) - monthly_budget)
-            risk_reason = f"Paced to exceed budget by Rs.{overrun:,.2f} ({budget_usage_pct}% of budget)."
+            if mtd_spend > monthly_budget:
+                breach_amt = float(mtd_spend - monthly_budget)
+                risk_reason = f"Budget breached by Rs.{breach_amt:,.2f} ({budget_usage_pct}% projected)."
+            else:
+                risk_reason = f"Paced to exceed budget by Rs.{overrun:,.2f} ({budget_usage_pct}% of budget)."
         elif budget_usage_pct >= 90.0:
             risk_level = "MODERATE"
             risk_status = "CAUTION"

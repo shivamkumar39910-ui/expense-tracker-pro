@@ -18,7 +18,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0B0F19">
   <meta name="format-detection" content="telephone=no">
-  <meta name="app-shell-version" content="v6.7">
+  <meta name="app-shell-version" content="v6.8">
 
   <!-- Instant Synchronous PWA Standalone Detection (Zero-Flicker) -->
   <script>
@@ -3565,7 +3565,7 @@
           <div id="privacyModeStatusBadge" style="font-size:11px; font-weight:700; color:var(--text-muted);">Disabled</div>
         </div>
 
-        <div class="tx-item" onclick="alert('Two-Factor Authentication (2FA) is ACTIVE. Every login requires OTP verification.')" style="margin-bottom:18px;">
+        <div class="tx-item" onclick="showToast('Two-Factor Authentication (2FA) is ACTIVE. Every login requires OTP verification.', 'success')" style="margin-bottom:18px;">
           <div class="tx-left">
             <div class="tx-icon-box" style="background:var(--color-emerald);"><span class="material-icons-round">verified_user</span></div>
             <div>
@@ -5950,6 +5950,16 @@
       } catch (e) {}
     }
 
+    function escHtml(v) {
+      return String(v === undefined || v === null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    window.escHtml = escHtml;
+
     // Native In-App Confirm Sheet Controller (Replaces blocking browser confirm())
     let _quickConfirmCallback = null;
     function showConfirmSheet(title, message, confirmLabel = 'Confirm', onConfirm = null, isDanger = true) {
@@ -6094,15 +6104,15 @@
             window.location.reload();
           }
         };
-        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_7'));
+        navigator.serviceWorker.addEventListener('controllerchange', () => triggerSwUpgradeReload('v6_8'));
         navigator.serviceWorker.addEventListener('message', (evt) => {
-          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.7-cache') {
-            triggerSwUpgradeReload('v6_7');
+          if (evt.data && evt.data.type === 'SW_ACTIVATED' && evt.data.cache === 'expense-pro-v6.8-cache') {
+            triggerSwUpgradeReload('v6_8');
           } else if (evt.data && evt.data.type === 'SW_HTML_UPDATED' && evt.data.version) {
             triggerSwUpgradeReload(evt.data.version);
           }
         });
-        navigator.serviceWorker.register('/static/service-worker.js?v=6.7').then(reg => {
+        navigator.serviceWorker.register('/static/service-worker.js?v=6.8').then(reg => {
           reg.update();
         }).catch(() => {});
       }
@@ -6143,6 +6153,34 @@
         initializeAppData(false).catch(console.error);
         if (navigator.onLine && APP_STATE.offlineQueue && APP_STATE.offlineQueue.length > 0) {
           triggerManualSync().catch(console.warn);
+        }
+
+        // Handle PWA App Shortcut deep links (?action=new_expense, ?tab=insights|wallets|analytics|budgets)
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const scTab = urlParams.get('tab');
+          const scAction = urlParams.get('action');
+          const pinCleared = !APP_STATE.isPinEnabled || APP_STATE.pinUnlockedThisSession;
+          if (pinCleared) {
+            if (scTab === 'insights') {
+              switchTab('tab-ai');
+            } else if (scTab === 'wallets' || scTab === 'home') {
+              switchTab('tab-home');
+              const pills = document.getElementById('accountPillsRow');
+              if (pills && scTab === 'wallets') setTimeout(() => pills.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+            } else if (scTab === 'analytics') {
+              switchTab('tab-analytics');
+            } else if (scTab === 'budgets') {
+              switchTab('tab-budgets');
+            } else if (scTab === 'profile') {
+              switchTab('tab-profile');
+            }
+            if (scAction === 'new_expense' && typeof openQuickEntrySheet === 'function') {
+              setTimeout(() => openQuickEntrySheet('EXPENSE'), 80);
+            }
+          }
+        } catch (scErr) {
+          console.warn('PWA shortcut handling note:', scErr);
         }
       }
 
@@ -7590,12 +7628,12 @@
           <div class="tx-left">
             <div class="tx-icon-box" style="background:#3B82F6; width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">category</span></div>
             <div>
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${c.category}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${escHtml(c.category)}</div>
               <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">MTD: ₹${c.mtd_spend.toLocaleString('en-IN')} ➔ Projected: ₹${c.projected_month_end.toLocaleString('en-IN')} (${c.pct_of_projected_total}%)</div>
             </div>
           </div>
           <div style="text-align:right;">
-            <span style="font-size:10px; background:rgba(139,92,246,0.12); padding:2px 6px; border-radius:6px; color:var(--color-purple-text); font-weight:700;">${c.confidence}</span>
+            <span style="font-size:10px; background:rgba(139,92,246,0.12); padding:2px 6px; border-radius:6px; color:var(--color-purple-text); font-weight:700;">${escHtml(c.confidence)}</span>
           </div>
         `;
         container.appendChild(div);
@@ -7625,8 +7663,8 @@
           <div class="tx-left">
             <div class="tx-icon-box" style="background:var(--color-amber); width:34px; height:34px;"><span class="material-icons-round" style="font-size:18px;">event</span></div>
             <div>
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${b.title}</div>
-              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Due: ${b.due_date || 'Upcoming'}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary);">${escHtml(b.title)}</div>
+              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary);">Due: ${escHtml(b.due_date || 'Upcoming')}</div>
             </div>
           </div>
           <div style="text-align:right;">
@@ -7670,9 +7708,9 @@
           <div class="tx-left" style="align-items:flex-start;">
             <div class="tx-icon-box" style="background:${iconBg}; margin-top:2px;"><span class="material-icons-round">${icon}</span></div>
             <div style="flex:1;">
-              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:2px;">${r.title}</div>
-              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.4;">${r.explanation}</div>
-              <div style="font-size:11px; color:var(--color-sapphire); font-weight:700;">💡 Action: ${r.suggested_action}</div>
+              <div class="tx-title" style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:2px;">${escHtml(r.title)}</div>
+              <div class="tx-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.4;">${escHtml(r.explanation)}</div>
+              <div style="font-size:11px; color:var(--color-sapphire); font-weight:700;">💡 Action: ${escHtml(r.suggested_action)}</div>
             </div>
           </div>
         `;
@@ -8111,11 +8149,11 @@
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="material-icons-round" style="color:${iconColor}; font-size:20px;">${iconName}</span>
-              <span style="font-size:13px; font-weight:800; color:var(--text-primary);">${n.title}</span>
+              <span style="font-size:13px; font-weight:800; color:var(--text-primary);">${escHtml(n.title)}</span>
             </div>
             ${!n.is_read ? '<span style="width:8px; height:8px; border-radius:50%; background:var(--color-ruby);"></span>' : ''}
           </div>
-          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">${n.message}</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">${escHtml(n.message)}</div>
           <div style="display:flex; justify-content:space-between; align-items:center; width:100%; font-size:10px; color:var(--text-muted); margin-top:2px;">
             <span>${n.created_at ? n.created_at.substring(0, 16) : ''}</span>
             ${n.action_route ? '<span style="color:var(--color-emerald); font-weight:700;">Tap to view →</span>' : ''}
@@ -8189,19 +8227,19 @@
       if (!toastEl) {
         toastEl = document.createElement('div');
         toastEl.id = 'globalAppToast';
-        toastEl.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.98);border:1px solid rgba(255,255,255,0.18);color:#FFF;padding:10px 18px;border-radius:22px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;z-index:999999;opacity:0;pointer-events:none;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);max-width:90vw;white-space:nowrap;';
+        toastEl.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.98);border:1px solid rgba(255,255,255,0.18);color:#FFF;padding:10px 18px;border-radius:22px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;z-index:999999;opacity:0;pointer-events:none;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);max-width:min(92vw,420px);white-space:normal;text-align:center;line-height:1.35;';
         document.body.appendChild(toastEl);
       }
       const icon = type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'info'));
       const iconColor = type === 'success' ? '#10B981' : (type === 'error' ? '#EF4444' : (type === 'warning' ? '#F59E0B' : '#38BDF8'));
-      toastEl.innerHTML = `<span class="material-icons-round" style="color:${iconColor}; font-size:18px;">${icon}</span><span>${msg}</span>`;
+      toastEl.innerHTML = `<span class="material-icons-round" style="color:${iconColor}; font-size:18px; flex-shrink:0;">${icon}</span><span>${escHtml(msg)}</span>`;
       toastEl.style.opacity = '1';
       toastEl.style.transform = 'translateX(-50%) translateY(0)';
       clearTimeout(toastEl._timer);
       toastEl._timer = setTimeout(() => {
         toastEl.style.opacity = '0';
         toastEl.style.transform = 'translateX(-50%) translateY(20px)';
-      }, 2600);
+      }, 2800);
     }
     window.showAppToast = showToast;
 
@@ -8268,15 +8306,16 @@
         const daysBadge = g.days_left !== null && g.days_left !== undefined 
           ? `<span style="font-size:10px; color:${g.days_left <= 0 ? 'var(--color-ruby)' : 'var(--color-sapphire)'}; font-weight:700;">${g.days_left > 0 ? g.days_left + ' days left' : 'Due/Past'}</span>` 
           : '';
+        const safeGoalTitleJs = escHtml(String(g.title || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 
         item.innerHTML = `
           <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
             <div style="display:flex; align-items:center; gap:10px;">
-              <div class="tx-icon-box" style="background:${g.color_hex || '#10B981'};">
-                <span class="material-icons-round">${g.icon || 'savings'}</span>
+              <div class="tx-icon-box" style="background:${escHtml(g.color_hex || '#10B981')};">
+                <span class="material-icons-round">${escHtml(g.icon || 'savings')}</span>
               </div>
               <div>
-                <div class="tx-title" style="font-size:15px; font-weight:700;">${g.title}</div>
+                <div class="tx-title" style="font-size:15px; font-weight:700;">${escHtml(g.title)}</div>
                 <div class="tx-meta">Target: ₹${(g.target_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})} ${daysBadge}</div>
               </div>
             </div>
@@ -8290,7 +8329,7 @@
 
           <!-- Progress Bar -->
           <div style="width:100%; background:var(--bg-card-subtle); height:8px; border-radius:4px; overflow:hidden; width:100%;">
-            <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${g.color_hex || '#10B981'}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
+            <div style="width:${g.progress_pct}%; height:100%; background:linear-gradient(90deg, ${escHtml(g.color_hex || '#10B981')}, var(--color-emerald)); border-radius:4px; transition:width 0.4s ease;"></div>
           </div>
 
           <!-- Actions Row -->
@@ -8299,10 +8338,10 @@
               ${g.remaining_amount > 0 ? `₹${(g.remaining_amount || 0).toLocaleString('en-IN')} remaining` : 'Target reached! 🎉'}
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn-pill-solid emerald" onclick="openGoalDepositModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.remaining_amount || 0})">
+              <button class="btn-pill-solid emerald" onclick="openGoalDepositModal('${escHtml(g.id)}', '${safeGoalTitleJs}', ${Number(g.remaining_amount) || 0})">
                 + Deposit
               </button>
-              <button class="btn-pill-soft" onclick="openGoalWithdrawModal('${g.id}', '${(g.title || '').replace(/'/g, "\'")}', ${g.current_amount || 0})">
+              <button class="btn-pill-soft" onclick="openGoalWithdrawModal('${escHtml(g.id)}', '${safeGoalTitleJs}', ${Number(g.current_amount) || 0})">
                 ↑ Withdraw
               </button>
               <button class="btn-icon-header" style="width:28px; height:28px;" onclick="deleteGoal('${g.id}')" title="Delete Goal">
@@ -8788,40 +8827,41 @@
     }
 
     async function deleteMonthlyBudget() {
+      const confirmTitle = (APP_STATE.language === 'hi') ? 'मासिक बजट हटाएं?' : 'Remove Monthly Budget?';
       const confirmMsg = (APP_STATE.language === 'hi')
         ? 'क्या आप अपना मासिक बजट हटाना चाहते हैं? इसके बाद कोई ओवर-बजट नोटिफिकेशन नहीं आएगा।'
         : 'Are you sure you want to remove your monthly budget? You will no longer receive over-budget alerts.';
-      if (!confirm(confirmMsg)) return;
+      showConfirmSheet(confirmTitle, confirmMsg, (APP_STATE.language === 'hi') ? 'हटाएं' : 'Remove Budget', async () => {
+        closeMonthlyBudgetModal();
+        triggerHaptic('medium');
 
-      closeMonthlyBudgetModal();
-      triggerHaptic('medium');
+        if (!APP_STATE.budgets) APP_STATE.budgets = {};
+        APP_STATE.budgets.overall_budget = 0;
+        APP_STATE.budgets.remaining = 0;
+        APP_STATE.budgets.utilization_pct = 0;
+        APP_STATE.budgets.is_exceeded = false;
+        APP_STATE.budgets.safe_daily_cap = 0;
 
-      if (!APP_STATE.budgets) APP_STATE.budgets = {};
-      APP_STATE.budgets.overall_budget = 0;
-      APP_STATE.budgets.remaining = 0;
-      APP_STATE.budgets.utilization_pct = 0;
-      APP_STATE.budgets.is_exceeded = false;
-      APP_STATE.budgets.safe_daily_cap = 0;
-
-      if (APP_STATE.forecast) {
-        APP_STATE.forecast.monthly_budget = 0;
-        APP_STATE.forecast.budget = 0;
-        APP_STATE.forecast.ai_one_liner = (APP_STATE.language === 'hi') ? 'कोई मासिक बजट सेट नहीं है।' : 'No monthly budget set.';
-      }
-      LOCAL_PENDING_OPS.clearBudgetOverride();
-      commitAllScreensAtomic();
-      persistUnifiedLocalState();
-      showToast((APP_STATE.language === 'hi') ? 'मासिक बजट हटा दिया गया' : 'Monthly budget removed', 'info');
-
-      try {
-        await apiRequest('/budgets/overall', 'DELETE');
-        const notifRes = await apiRequest('/notifications?unread_only=true');
-        if (notifRes && notifRes.success) {
-          updateNotificationBadge(notifRes.unread_count || 0);
+        if (APP_STATE.forecast) {
+          APP_STATE.forecast.monthly_budget = 0;
+          APP_STATE.forecast.budget = 0;
+          APP_STATE.forecast.ai_one_liner = (APP_STATE.language === 'hi') ? 'कोई मासिक बजट सेट नहीं है।' : 'No monthly budget set.';
         }
-      } catch (err) {
-        console.warn('deleteMonthlyBudget note:', err);
-      }
+        LOCAL_PENDING_OPS.clearBudgetOverride();
+        commitAllScreensAtomic();
+        persistUnifiedLocalState();
+        showToast((APP_STATE.language === 'hi') ? 'मासिक बजट हटा दिया गया' : 'Monthly budget removed', 'info');
+
+        try {
+          await apiRequest('/budgets/overall', 'DELETE');
+          const notifRes = await apiRequest('/notifications?unread_only=true');
+          if (notifRes && notifRes.success) {
+            updateNotificationBadge(notifRes.unread_count || 0);
+          }
+        } catch (err) {
+          console.warn('deleteMonthlyBudget note:', err);
+        }
+      }, true);
     }
 
     // Safe Category Extraction Helpers (Supports Array or {expense:[], income:[]})
@@ -8943,7 +8983,7 @@
                 <span class="material-icons-round" style="font-size:18px;">${cb.category_icon || 'tag'}</span>
               </div>
               <div>
-                <div class="tx-title" style="font-size:14px; font-weight:700;">${cb.category_name}</div>
+                <div class="tx-title" style="font-size:14px; font-weight:700;">${escHtml(cb.category_name)}</div>
                 <div class="tx-meta">Spent ₹${(cb.spent || 0).toLocaleString('en-IN')} of ₹${(cb.budget_limit || 0).toLocaleString('en-IN')}</div>
               </div>
             </div>
@@ -10752,14 +10792,14 @@
         <div class="tx-left">
           ${iconBoxMarkup}
           <div>
-            <div class="tx-title">${title}</div>
-            <div class="tx-meta">${subtitle}</div>
+            <div class="tx-title">${escHtml(title)}</div>
+            <div class="tx-meta">${escHtml(subtitle)}</div>
           </div>
         </div>
         <div class="tx-right">
           <div class="tx-amount ${colorClass}">${sign}₹${formattedAmount}</div>
           <span class="tx-badge" style="background:${isTransfer ? 'rgba(59,130,246,0.15)' : isIncome ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}; color:${isTransfer ? 'var(--color-sapphire)' : isIncome ? 'var(--color-emerald)' : 'var(--color-ruby)'};">
-            ${tx.transaction_type}
+            ${escHtml(tx.transaction_type)}
           </span>
         </div>
       `;
@@ -11006,7 +11046,7 @@
       ACTIVE_ACCOUNT_ID = accId;
       const res = await apiRequest(`/accounts/${accId}`);
       if (!res || !res.success) {
-        alert('Could not load account details');
+        showToast('Could not load account details', 'error');
         return;
       }
 
@@ -11058,11 +11098,11 @@
       });
 
       if (res && res.success) {
-        alert(`Account successfully reconciled! New Balance: ₹${res.data.new_balance}`);
+        showToast(`Account successfully reconciled! New Balance: ₹${res.data.new_balance}`, 'success');
         closeAccountStatementSheet();
         await initializeAppData();
       } else {
-        alert(res?.error || 'Failed to reconcile balance');
+        showToast(res?.error || 'Failed to reconcile balance', 'error');
       }
     }
 
@@ -11388,12 +11428,10 @@
               }
             } else {
               if (typeof showToast === 'function') showToast(res?.error || 'Failed to delete category', 'error');
-              else alert(res?.error || 'Failed to delete category');
             }
           } catch (err) {
             console.error('Delete category error:', err);
             if (typeof showToast === 'function') showToast('Failed to delete category: ' + (err.message || err), 'error');
-            else alert('Failed to delete category: ' + (err.message || err));
           }
         },
         true
@@ -11427,12 +11465,10 @@
               }
             } else {
               if (typeof showToast === 'function') showToast(res?.error || 'Failed to delete subcategory', 'error');
-              else alert(res?.error || 'Failed to delete subcategory');
             }
           } catch (err) {
             console.error('Delete subcategory error:', err);
             if (typeof showToast === 'function') showToast('Failed to delete subcategory: ' + (err.message || err), 'error');
-            else alert('Failed to delete subcategory: ' + (err.message || err));
           }
         },
         true
@@ -11737,7 +11773,7 @@
       const input = document.getElementById('newCategoryNameInput');
       const name = input ? input.value.trim() : '';
       if (!name) {
-        alert('Please enter a category name');
+        showToast('Please enter a category name', 'warning');
         return;
       }
       const catType = APP_STATE.sheetType || 'EXPENSE';
@@ -11841,7 +11877,7 @@
       const input = document.getElementById('newSubcategoryNameInput');
       const name = input ? input.value.trim() : '';
       if (!name) {
-        alert('Please enter a subcategory name');
+        showToast('Please enter a subcategory name', 'warning');
         return;
       }
       closeAddSubcategoryModal();
@@ -11903,7 +11939,7 @@
     async function submitQuickTransaction() {
       const amount = parseFloat(APP_STATE.sheetAmount);
       if (isNaN(amount) || amount <= 0) {
-        alert('Please enter a valid positive amount.');
+        showToast('Please enter a valid positive amount.', 'warning');
         return;
       }
 
@@ -11920,7 +11956,7 @@
 
       if (APP_STATE.sheetType === 'TRANSFER') {
         if (APP_STATE.sheetAccountId === APP_STATE.sheetTargetAccountId) {
-          alert('Destination account must be different from payment account.');
+          showToast('Destination account must be different from payment account.', 'warning');
           return;
         }
         payload.target_account_id = APP_STATE.sheetTargetAccountId;
@@ -12100,7 +12136,7 @@
         txt.innerText = msg || '';
         box.classList.toggle('visible', Boolean(msg));
       } else if (msg) {
-        alert(msg);
+        showToast(msg, 'error');
       }
     }
     function clearAuthError() { showAuthError(''); }
@@ -12575,14 +12611,12 @@
 
         if (res && res.success) {
           startSignupCountdown(30);
-          if (typeof showToast === 'function') {
-            showToast(res.message || 'Fresh verification code dispatched!', 'info');
-          }
+          showToast(res.message || 'Fresh verification code dispatched!', 'info');
         } else {
-          alert(res?.error || 'Failed to resend code. Please try again.');
+          showToast(res?.error || 'Failed to resend code. Please try again.', 'error');
         }
       } catch (e) {
-        alert('Failed to resend verification code.');
+        showToast('Failed to resend verification code.', 'error');
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -12630,7 +12664,7 @@
       }
 
       if (otp.length !== 6) {
-        alert('Please enter all 6 digits of the verification code.');
+        showToast('Please enter all 6 digits of the verification code.', 'warning');
         return;
       }
 
@@ -12651,10 +12685,10 @@
           if (signupCountdownTimer) clearInterval(signupCountdownTimer);
           await completeAuthAndEnterApp(res, 'Account verified! Welcome, ' + (res.user?.name || 'User') + '!');
         } else {
-          alert(res?.error || 'Invalid verification code. Please check and try again.');
+          showToast(res?.error || 'Invalid verification code. Please check and try again.', 'error');
         }
       } catch (err) {
-        alert('Verification error: ' + (err.message || 'Network error'));
+        showToast('Verification error: ' + (err.message || 'Network error'), 'error');
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -13119,7 +13153,7 @@
       const phone = (phoneInp ? phoneInp.value : '').trim();
 
       if (!name) {
-        alert('Please enter your full name.');
+        showToast('Please enter your full name.', 'warning');
         return;
       }
 
@@ -13138,16 +13172,16 @@
             localStorage.setItem('user_profile', JSON.stringify(APP_STATE.user));
           }
           updateUserUI();
-      closeAllSheets();
+          closeAllSheets();
           closeEditProfileModal();
           triggerHaptic('medium');
-          alert('Profile updated successfully!');
+          showToast('Profile updated successfully!', 'success');
         } else {
-          alert(res?.error || 'Failed to update profile.');
+          showToast(res?.error || 'Failed to update profile.', 'error');
         }
       } catch (err) {
         console.error('Error updating profile:', err);
-        alert('Failed to save profile changes. Please try again.');
+        showToast('Failed to save profile changes. Please try again.', 'error');
       } finally {
         if (btn) {
           btn.innerText = origText;
@@ -13172,12 +13206,12 @@
           const bal = (acc.current_balance !== undefined && acc.current_balance !== null) ? Number(acc.current_balance) : 0;
           div.innerHTML = `
             <div class="tx-left">
-              <div class="tx-icon-box" style="background:${acc.color_hex || '#4F46E5'};">
-                <span class="material-icons-round">${acc.icon || 'account_balance_wallet'}</span>
+              <div class="tx-icon-box" style="background:${escHtml(acc.color_hex || '#4F46E5')};">
+                <span class="material-icons-round">${escHtml(acc.icon || 'account_balance_wallet')}</span>
               </div>
               <div>
-                <div class="tx-title">${acc.name || 'Account'}</div>
-                <div class="tx-meta">${acc.account_type || 'BANK'}</div>
+                <div class="tx-title">${escHtml(acc.name || 'Account')}</div>
+                <div class="tx-meta">${escHtml(acc.account_type || 'BANK')}</div>
               </div>
             </div>
             <div class="tx-right">
@@ -13295,18 +13329,18 @@
 
         item.innerHTML = `
           <div class="tx-left">
-            <div class="tx-icon-box" style="background:${bill.category_color || '#3B82F6'}; width:38px; height:38px;">
-              <span class="material-icons-round" style="font-size:20px;">${bill.category_icon || 'event_repeat'}</span>
+            <div class="tx-icon-box" style="background:${escHtml(bill.category_color || '#3B82F6')}; width:38px; height:38px;">
+              <span class="material-icons-round" style="font-size:20px;">${escHtml(bill.category_icon || 'event_repeat')}</span>
             </div>
             <div>
-              <div class="tx-title" style="font-size:14px;">${bill.title}</div>
+              <div class="tx-title" style="font-size:14px;">${escHtml(bill.title)}</div>
               <div class="tx-meta" style="color:${dueColor}; font-weight:600;">${dueText} • Day ${bill.due_day} of month</div>
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <div style="text-align:right;">
               <div class="tx-amount" style="font-size:14px; color:var(--text-primary);">₹${bill.amount.toLocaleString('en-IN')}</div>
-              <div class="tx-meta">${bill.frequency}</div>
+              <div class="tx-meta">${escHtml(bill.frequency)}</div>
             </div>
             <button class="btn-pill-soft emerald" onclick="payRecurringBill(${bill.id})">
               ⚡ Pay
@@ -13435,7 +13469,7 @@
       localStorage.setItem('expense_offline_queue', JSON.stringify(APP_STATE.offlineQueue));
       updateSyncBadge();
 
-      alert('📱 Saved offline! Transaction will be synchronized automatically once connected.');
+      showToast('📱 Saved offline! Transaction will sync automatically when back online.', 'info');
 
       return {
         success: true,
@@ -13859,7 +13893,7 @@
           errBox.innerText = msg;
           errBox.style.display = 'block';
         } else {
-          alert(msg);
+          showToast(msg, 'warning');
         }
         triggerHaptic('medium');
         if (targetEl) targetEl.focus();
@@ -13995,7 +14029,7 @@
         window.URL.revokeObjectURL(url);
         a.remove();
       } catch (err) {
-        alert('Failed to download CSV export: ' + err.message);
+        showToast('Failed to download CSV export: ' + err.message, 'error');
       }
     }
 
@@ -14098,7 +14132,7 @@
       const startVal = document.getElementById('stmtCustomStart')?.value;
       const endVal = document.getElementById('stmtCustomEnd')?.value;
       if (!startVal || !endVal) {
-        alert('Please select both Start Date and End Date.');
+        showToast('Please select both Start Date and End Date.', 'warning');
         return;
       }
       const label = `Custom (${formatDisplayDate(startVal)} – ${formatDisplayDate(endVal)})`;
@@ -14140,7 +14174,7 @@
           const row = document.createElement('div');
           row.style.cssText = 'display:flex; justify-content:space-between; font-size:11.5px; border-bottom:1px solid var(--border-card); padding:5px 0;';
           row.innerHTML = `
-            <span style="color:var(--text-primary);"><span style="color:${c.color};">●</span> ${c.category_name} <span style="color:var(--text-muted);">(${c.count} tx)</span></span>
+            <span style="color:var(--text-primary);"><span style="color:${escHtml(c.color)};">●</span> ${escHtml(c.category_name)} <span style="color:var(--text-muted);">(${c.count} tx)</span></span>
             <strong style="color:var(--text-primary);">${sym}${Number(c.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
           `;
           catList.appendChild(row);
@@ -14168,8 +14202,8 @@
           row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; font-size:11.5px; border-bottom:1px solid var(--border-card); padding:6px 0;';
           row.innerHTML = `
             <div style="min-width:0; padding-right:8px;">
-              <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${tx.category_name || 'Transaction'}${tx.note ? ' — ' + tx.note : ''}</div>
-              <div style="font-size:10px; color:var(--text-muted);">${tx.date} • ${tx.account_name || 'Account'}</div>
+              <div style="font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml(tx.category_name || 'Transaction')}${tx.note ? ' — ' + escHtml(tx.note) : ''}</div>
+              <div style="font-size:10px; color:var(--text-muted);">${escHtml(tx.date)} • ${escHtml(tx.account_name || 'Account')}</div>
             </div>
             <strong style="color:${amtColor}; flex-shrink:0;">${sign}${sym}${Number(tx.amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong>
           `;
@@ -14195,7 +14229,7 @@
     function printFinancialStatement() {
       const s = APP_STATE.currentStatement;
       if (!s) {
-        alert('Please wait for statement data to load first.');
+        showToast('Please wait for statement data to load first.', 'info');
         return;
       }
       const container = document.getElementById('printOnlyStatementContainer');
@@ -14413,7 +14447,7 @@
           await initializeAppData(true);
         }
       } catch (err) {
-        alert("Failed to update currency preference.");
+        showToast('Failed to update currency preference.', 'error');
       }
     }
 
@@ -14450,7 +14484,7 @@
         const res = await apiRequest('/receipts/scan', 'POST', { sample_type: sampleKey });
         applyScannedReceipt(res);
       } catch (e) {
-        alert("Receipt parsing error: " + (e.message || e));
+        showToast('Receipt parsing error: ' + (e.message || e), 'error');
         hideScannerLoading();
       }
     }
@@ -14458,7 +14492,7 @@
     async function scanRawReceiptText() {
       const text = document.getElementById('rawReceiptTextInput').value.trim();
       if (!text) {
-        alert("Please paste receipt or SMS text first.");
+        showToast('Please paste receipt or SMS text first.', 'warning');
         return;
       }
       triggerHaptic('medium');
@@ -14467,7 +14501,7 @@
         const res = await apiRequest('/receipts/scan', 'POST', { raw_text: text });
         applyScannedReceipt(res);
       } catch (e) {
-        alert("Text parsing error: " + (e.message || e));
+        showToast('Text parsing error: ' + (e.message || e), 'error');
         hideScannerLoading();
       }
     }
@@ -14492,7 +14526,7 @@
 
         applyScannedReceipt(res);
       } catch (e) {
-        alert("Image scan error: " + (e.message || e));
+        showToast('Image scan error: ' + (e.message || e), 'error');
         hideScannerLoading();
       }
     }
@@ -14500,7 +14534,7 @@
     function applyScannedReceipt(res) {
       hideScannerLoading();
       if (!res || !res.success || !res.receipt) {
-        alert(res?.message || res?.error || "Could not recognize receipt data.");
+        showToast(res?.message || res?.error || 'Could not recognize receipt data.', 'warning');
         return;
       }
       triggerHaptic('heavy');
@@ -14559,11 +14593,11 @@
       const accountId = parseInt(document.getElementById('reviewAccountSelect').value);
 
       if (!amount || amount <= 0) {
-        alert("Please enter a valid positive amount.");
+        showToast('Please enter a valid positive amount.', 'warning');
         return;
       }
       if (!accountId) {
-        alert("Please select a valid payment account.");
+        showToast('Please select a valid payment account.', 'warning');
         return;
       }
 
@@ -14613,10 +14647,10 @@
           showToast(`₹${amount.toLocaleString('en-IN')} receipt recorded!`, 'success');
           initializeAppData(false).catch(() => {});
         } else {
-          alert(res?.error || 'Failed to record transaction.');
+          showToast(res?.error || 'Failed to record transaction.', 'error');
         }
       } catch (e) {
-        alert("Error saving transaction: " + (e.message || e));
+        showToast('Error saving transaction: ' + (e.message || e), 'error');
       } finally {
         if (btn) {
           btn.innerText = origText;
@@ -14730,7 +14764,7 @@
           if (banner) banner.style.display = 'none';
         }
       } catch (e) {
-        alert("Failed to dismiss alert: " + (e.message || e));
+        showToast('Failed to dismiss alert: ' + (e.message || e), 'error');
       }
     }
 
@@ -14776,7 +14810,7 @@
     async function analyzeSmsText() {
       const text = document.getElementById('smsTextInput').value.trim();
       if (!text) {
-        alert("Please paste SMS text or click a sample preset first.");
+        showToast('Please paste SMS text or click a sample preset first.', 'warning');
         return;
       }
 
@@ -14790,7 +14824,7 @@
       try {
         const res = await apiRequest('/parser/parse-sms', 'POST', { text });
         if (!res || !res.success || !res.transaction) {
-          alert(res?.message || res?.error || "Could not extract transaction data from SMS text.");
+          showToast(res?.message || res?.error || 'Could not extract transaction data from SMS text.', 'warning');
           return;
         }
 
@@ -14847,7 +14881,7 @@
         card.style.display = 'block';
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
-        alert("SMS analysis error: " + (e.message || e));
+        showToast('SMS analysis error: ' + (e.message || e), 'error');
       } finally {
         if (btn) {
           btn.innerText = origText;
@@ -14865,11 +14899,11 @@
       const accountId = parseInt(document.getElementById('smsReviewAccountSelect').value);
 
       if (!amount || amount <= 0) {
-        alert("Please enter a valid positive amount.");
+        showToast('Please enter a valid positive amount.', 'warning');
         return;
       }
       if (!accountId) {
-        alert("Please select a valid payment account.");
+        showToast('Please select a valid payment account.', 'warning');
         return;
       }
 
@@ -14920,10 +14954,10 @@
           showToast(`₹${amount.toLocaleString('en-IN')} SMS transaction saved!`, 'success');
           initializeAppData(false).catch(() => {});
         } else {
-          alert(res?.error || 'Failed to save transaction.');
+          showToast(res?.error || 'Failed to save transaction.', 'error');
         }
       } catch (e) {
-        alert("Error saving transaction: " + (e.message || e));
+        showToast('Error saving transaction: ' + (e.message || e), 'error');
       } finally {
         if (btn) {
           btn.innerText = origText;
@@ -15050,12 +15084,13 @@
             item.style.background = 'var(--bg-card-subtle)';
             item.style.borderRadius = '10px';
             item.style.padding = '10px 12px';
+            const safeSubJs = escHtml(String(c.title || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
             item.innerHTML = `
               <div>
-                <div style="font-size:13px; font-weight:800; color:var(--text-primary);">${c.title}</div>
-                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${c.reason}</div>
+                <div style="font-size:13px; font-weight:800; color:var(--text-primary);">${escHtml(c.title)}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${escHtml(c.reason)}</div>
               </div>
-              <button class="btn-pill-solid purple" onclick="convertSubCandidate('${c.title.replace(/'/g, "\\'")}', ${c.amount})">
+              <button class="btn-pill-solid purple" onclick="convertSubCandidate('${safeSubJs}', ${Number(c.amount) || 0})">
                 + Track Bill
               </button>
             `;
@@ -15082,14 +15117,14 @@
           frequency: 'MONTHLY'
         });
         if (res && res.success) {
-          alert(`✅ '${title}' is now tracked as a recurring bill!`);
+          showToast(`✅ '${title}' is now tracked as a recurring bill!`, 'success');
           loadSubscriptionsOverview();
           await initializeAppData(true);
         } else {
-          alert(res?.error || "Failed to convert subscription.");
+          showToast(res?.error || 'Failed to convert subscription.', 'error');
         }
       } catch (e) {
-        alert("Error converting candidate: " + (e.message || e));
+        showToast('Error converting candidate: ' + (e.message || e), 'error');
       }
     }
 
